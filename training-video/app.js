@@ -163,7 +163,8 @@ function stopSpeech(){speechEpoch++;clearTimeout(speechStartTimer);speechStartTi
 function speakingTarget(){return $('coachGuideText')&&!$('lesson').classList.contains('hidden')?$('coachGuideText'):null}
 function renderReadAlong(el,text,index=0,length=0){if(!el)return;const clean=String(text||'');const a=clean.slice(0,index),b=clean.slice(index,index+Math.max(1,length)),c=clean.slice(index+Math.max(1,length));el.innerHTML=`<span class="spoken-text">${escapeHtml(a)}</span><strong class="spoken-current">${escapeHtml(b)}</strong><span>${escapeHtml(c)}</span>`}
 function setMouthViseme(){const wrap=$('coachPortraitWrap');if(!wrap)return;wrap.classList.remove('viseme-a','viseme-o','viseme-m','viseme-e','viseme-rest')}
-function speak(text,{onend,gender=profile.gender,target=null}={}){
+function speak(text,{onend,gender=profile.gender,target=null,key='',label='',group='Hauptschulung'}={}){
+ text=window.KCSpokenTextCore?.resolve?.(text,{key,label:label||'Gesprochener Schulungstext',group,speaker:gender==='male'?'Marc':'Laura',source:'Hauptschulung'})||text;
  const clean=String(text||'').replace(/\s+/g,' ').trim();
  if(!clean){onend?.();return}
  if(!soundEnabled||!window.speechSynthesis){if(target)target.textContent=clean;setTrainingVoiceMonitor(soundEnabled?'error':'off',soundEnabled?'Keine Gerätestimme':'Ton aus');onend?.();return}
@@ -419,7 +420,7 @@ function openLessonQuiz(step){
 function chapterQuizResult(){const list=lessonModule==='quick'?quick:advanced;let total=0,correct=0;list.forEach((step,i)=>{if(!step.quiz)return;total++;if(profile.quizStats?.[`${lessonModule}:${i}`]?.correct)correct++});return{total,correct,percent:total?Math.round(correct/total*100):100}}
 function repeatCurrentChapter(){stopSpeech();$('chapterRewardOverlay').classList.add('hidden');profile[lessonModule+'Done']=[];Object.keys(profile.quizStats||{}).filter(k=>k.startsWith(lessonModule+':')).forEach(k=>delete profile.quizStats[k]);lessonIndex=0;saveProfile();show('lesson');renderLesson()}
 function showChapterReward(){
- pendingChapterCompletion=true;const r=chapterQuizResult(),formal=profile.addressMode==='sie';$('chapterRewardIcon').textContent=r.percent===100?'🏆':r.percent>=80?'👍':'📘';$('chapterRewardTitle').textContent=r.percent===100?'Herzlichen Glückwunsch!':'Kapitel abgeschlossen';
+ pendingChapterCompletion=true;const r=chapterQuizResult(),formal=profile.addressMode==='sie';$('chapterRewardIcon').textContent=r.percent===100?'🏆':r.percent>=80?'👍':'📘';$('chapterRewardTitle').textContent=r.percent===100?`Herzlichen Glückwunsch ${profile.name||''}!`:'Kapitel abgeschlossen';
  $('chapterRewardText').textContent=r.percent===100?(formal?'Sie haben alle Wissensfragen richtig beantwortet.': 'Du hast alle Wissensfragen richtig beantwortet.'):(formal?`Sie haben ${r.correct} von ${r.total} Fragen richtig beantwortet.`:`Du hast ${r.correct} von ${r.total} Fragen richtig beantwortet.`)+(r.percent<80?(formal?' Um Ihr Wissen weiter zu festigen, können Sie das Kapitel gern wiederholen.':' Um dein Wissen weiter zu festigen, kannst du das Kapitel gern wiederholen.'):'');
  let actions=$('chapterRewardActions');if(!actions){actions=document.createElement('div');actions.id='chapterRewardActions';actions.className='chapter-reward-actions';$('chapterRewardContinue').replaceWith(actions)}actions.innerHTML=`<button id="chapterRepeat" type="button">Kapitel wiederholen</button><button id="chapterRewardContinue" class="primary" type="button">Nein, weiter ▶</button>`;$('chapterRepeat').onclick=repeatCurrentChapter;$('chapterRewardContinue').onclick=()=>{$('chapterRewardOverlay').classList.add('hidden');showChapterChoice()};$('chapterRewardOverlay').classList.remove('hidden');
 }

@@ -1,22 +1,30 @@
 {
   "schema": "KC_RELEASE_MANIFEST_V1",
   "product": "KC FUTURA Academy",
-  "version": "2.3.0",
-  "displayVersion": "Beta 2.2.6",
-  "academyVersion": "Beta 2.2.6",
-  "versionCoreVersion": "0.3.0",
-  "databaseCoreVersion": "0.6.1",
-  "build": "2026-08-03T14:55:00+02:00",
-  "cacheVersion": "kc-futura-academy-2.2.6",
+  "version": "2.5.1",
+  "displayVersion": "Beta 2.5.1",
+  "academyVersion": "Beta 2.5.1",
+  "versionCoreVersion": "0.4.0",
+  "databaseCoreVersion": "0.7.0",
+  "installationManagerVersion": "0.1.0",
+  "build": "2026-08-03T20:15:00+02:00",
+  "cacheVersion": "kc-futura-academy-2.5.1",
   "requiredAssets": [
     "academy/index.html",
     "academy/app.js",
     "academy/styles.css",
     "academy/version.json",
     "academy/version-update-release-core.js",
+    "academy/installation-manager-core.js",
+    "academy/project-health-regression-core.js",
     "academy/supabase-adapter.js",
     "cores/database-security-core/database-security-core.js",
-    "training-video/index.html"
+    "training-video/index.html",
+    "shared/spoken-text-core.js",
+    "cores/universal-database-connector-core/universal-database-connector-core.js",
+    "academy/configuration-core.js"
   ],
-  "label": "Beta 2.3.0"
+  "label": "Beta 2.5.1",
+  "databaseConnectorCoreVersion": "0.2.0",
+  "configurationCoreVersion": "0.2.0"
 }

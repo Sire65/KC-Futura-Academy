@@ -90,8 +90,8 @@ const state={
 if(get('localStorage','kcAcademyAudioBeta103')!=='1'){state.sound=true;set('localStorage','kcAcademyAudioBeta103','1');saveSettings?.()}
 const MIN_NAME_LENGTH=2;
 const SPEECH_LEAD_MS=180;
-const VOICE_CORE_VERSION='2.3.0';
-const ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersionNumber||'2.2.6');
+const VOICE_CORE_VERSION='2.4.1';
+const ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersionNumber||'2.4.1');
 const ELEVEN_CONFIG_KEY='kcAcademyElevenLabsConfigV1';
 const SUPERADMIN_CODE='1234';
 const EPISODE_OVERRIDE_KEY='kcAcademyEpisodeOverridesV1';
@@ -119,6 +119,8 @@ elevenConfig.providerSettings.elevenlabs=elevenConfig.providerSettings.elevenlab
 elevenConfig.providerSettings.openai=elevenConfig.providerSettings.openai||{modelId:'gpt-4o-mini-tts',outputFormat:'mp3',instructions:'Sprich natürlich, freundlich, klar und auf Deutsch.'};
 elevenConfig.providerSettings.azure=elevenConfig.providerSettings.azure||{modelId:'azure-neural',outputFormat:'audio-24khz-48kbitrate-mono-mp3',instructions:''};
 window.KCVoiceProvider?.configure({...elevenConfig,provider:state.voiceProvider});
+
+window.addEventListener('kc-db-connector-status',e=>{const t=e.detail?.type||'';const busy=t.includes('start')||t==='routing-changed'||t==='mirror-changed';[indexedTrafficLed,supabaseTrafficLed].forEach(led=>{if(!led)return;led.classList.toggle('is-maintenance',busy);if(!busy&&t.includes('end'))setTimeout(()=>led.classList.remove('is-maintenance'),450)});});
 window.KCSupabaseAdapter?.setActivityHandler?.(phase=>{if(phase==='start')flashLed(supabaseTrafficLed)});
 window.addEventListener('kc:supabase-status',updateDbStatus);
 
@@ -131,8 +133,23 @@ const defaultSystemTexts={
   emergency_checklist:'Checkliste: Erste-Hilfe-Kasten · Feuerlöscher · Wasserabsperrhahn · Gasabsperrung · Stromhauptschalter · Fluchtwege · Notruf- und Handwerkernummern · verantwortliche Ansprechpartner.'
 };
 let systemTexts={...defaultSystemTexts,...safeParse(get('localStorage',SYSTEM_TEXT_KEY,'{}'),{})};
-const resolveSystemText=(key,name=state.name||'Teilnehmer')=>(systemTexts[key]||defaultSystemTexts[key]||'').replaceAll('{name}',name);
-function renderSystemTextEditor(){const host=document.querySelector('#systemTextEditor');if(!host)return;host.innerHTML=`<h3>Systemtexte</h3><p class="settings-note">Begrüßungen und feste Zwischentexte für Laura und Marc bearbeiten.</p>${Object.entries(defaultSystemTexts).map(([k])=>`<label>${k.replaceAll('_',' ')}<textarea rows="3" data-system-text="${k}">${esc(systemTexts[k]||'')}</textarea></label>`).join('')}<div class="actions"><button id="saveSystemTexts" class="primary">Systemtexte speichern</button><button id="resetSystemTexts" class="secondary">Standard wiederherstellen</button></div>`;document.querySelector('#saveSystemTexts').onclick=()=>{host.querySelectorAll('[data-system-text]').forEach(x=>systemTexts[x.dataset.systemText]=x.value.trim());set('localStorage',SYSTEM_TEXT_KEY,JSON.stringify(systemTexts));document.querySelector('#episodeEditorStatus').textContent='Systemtexte gespeichert.'};document.querySelector('#resetSystemTexts').onclick=()=>{systemTexts={...defaultSystemTexts};set('localStorage',SYSTEM_TEXT_KEY,JSON.stringify(systemTexts));renderSystemTextEditor()}}
+const resolveSystemText=(key,name=state.name||'Teilnehmer')=>window.KCSpokenTextCore?.resolve?.((systemTexts[key]||defaultSystemTexts[key]||'').replaceAll('{name}',name),{key:`system:${key}`,label:key.replaceAll('_',' '),group:'Begrüßung und feste Systemtexte'})||'';
+function seedSpokenTexts(){
+  const rows=[];
+  Object.entries(defaultSystemTexts).forEach(([key,value])=>rows.push({key:`system:${key}`,text:value,label:key.replaceAll('_',' '),group:'Begrüßung und feste Systemtexte',speaker:key.includes('marc')?'Marc':key.includes('laura')?'Laura':''}));
+  Object.entries(chars).forEach(([key,c])=>rows.push({key:`character:${key}:intro`,text:c.intro,label:`Vorstellung ${c.name}`,group:'Figurenvorstellungen',speaker:c.name,source:'Academy Character Studio'}));
+  window.KCSpokenTextCore?.seed?.(rows);
+}
+function renderSystemTextEditor(){
+ const host=document.querySelector('#systemTextEditor');if(!host)return;seedSpokenTexts();
+ const rows=window.KCSpokenTextCore?.list?.()||[];const groups=[...new Set(rows.map(x=>x.group))];
+ host.innerHTML=`<div class="spoken-editor-head"><div><h3>Alle gesprochenen Texte</h3><p class="settings-note">Begrüßungen, Vorstellungen, Folgen-Dialoge und alle weiteren gesprochenen Texte zentral ändern. Jeder neu abgespielte Text wird automatisch in diese Inventur aufgenommen.</p></div><input id="spokenTextSearch" type="search" placeholder="Text, Figur oder Bereich suchen"></div><div id="spokenTextRows">${groups.map(group=>`<section class="spoken-text-group"><h4>${esc(group)}</h4>${rows.filter(x=>x.group===group).map(x=>`<label class="spoken-text-row" data-spoken-row="${esc((x.label+' '+x.speaker+' '+x.text).toLowerCase())}"><span><b>${esc(x.label)}</b>${x.speaker?`<small>${esc(x.speaker)}</small>`:''}${x.changed?'<em>geändert</em>':''}</span><textarea rows="3" data-spoken-key="${esc(x.key)}">${esc(x.text)}</textarea><button type="button" class="ghost-dark" data-spoken-reset="${esc(x.key)}">Standard</button></label>`).join('')}</section>`).join('')}</div><div class="actions"><button id="saveSystemTexts" class="primary">Alle Sprachtexte speichern</button><button id="resetSystemTexts" class="secondary">Alle Änderungen zurücksetzen</button></div>`;
+ document.querySelector('#spokenTextSearch').oninput=e=>{const q=e.target.value.trim().toLowerCase();host.querySelectorAll('[data-spoken-row]').forEach(row=>row.hidden=q&&!row.dataset.spokenRow.includes(q))};
+ host.querySelectorAll('[data-spoken-reset]').forEach(btn=>btn.onclick=()=>{window.KCSpokenTextCore?.reset?.(btn.dataset.spokenReset);renderSystemTextEditor()});
+ document.querySelector('#saveSystemTexts').onclick=()=>{host.querySelectorAll('[data-spoken-key]').forEach(x=>window.KCSpokenTextCore?.set?.(x.dataset.spokenKey,x.value.trim()));Object.keys(defaultSystemTexts).forEach(k=>systemTexts[k]=window.KCSpokenTextCore?.resolve?.(defaultSystemTexts[k],{key:`system:${k}`,label:k,group:'Begrüßung und feste Systemtexte'}));set('localStorage',SYSTEM_TEXT_KEY,JSON.stringify(systemTexts));document.querySelector('#episodeEditorStatus').textContent='Alle gesprochenen Texte wurden gespeichert.';renderSystemTextEditor()};
+ document.querySelector('#resetSystemTexts').onclick=()=>{window.KCSpokenTextCore?.resetAll?.();systemTexts={...defaultSystemTexts};set('localStorage',SYSTEM_TEXT_KEY,JSON.stringify(systemTexts));renderSystemTextEditor()};
+}
+
 function updateDbStatus(){indexedLed?.classList.remove('led-off');indexedLed?.classList.add('led-ok');const d=window.KCSupabaseAdapter?.diagnostics?.()||{};const online=Boolean(d.enabled&&d.configured&&d.online);supabaseLed?.classList.toggle('led-ok',online);supabaseLed?.classList.toggle('led-off',!online);supabaseLed?.classList.toggle('led-warn',Boolean(d.enabled&&d.configured&&!d.online))}
 
 const CATEGORY_DEFS={
@@ -187,7 +204,7 @@ const chars={
   laura:{name:'Laura',role:'Trainerin',img:'laura.png',intro:'Herzlich willkommen. Ich bin Laura und begleite dich Schritt für Schritt durch die KC FUTURA Academy. Mir ist wichtig, dass du dich sicher fühlst und aus jeder Situation etwas Praktisches mitnimmst.'},
   marc:{name:'Marc',role:'Praxiscoach',img:'marc.png',intro:'Hallo. Ich bin Marc und begleite dich als Praxiscoach. Mir sind klare Abläufe, gute Zusammenarbeit und Lösungen wichtig, die sich am Weihnachtsmarkt wirklich bewähren.'},
   herr_becker:{name:'Herr Becker',role:'langjähriger Stammgast',img:'herr_becker.png',intro:'Guten Tag. Ich bin Herr Becker und komme seit vielen Jahren zum Köcheclub. Mir sind ein heißes Getränk, gutes Essen und ein freundliches Wort besonders wichtig.'},
-  frau_schmitt:{name:'Frau Schmitt',role:'Stammgast',img:'frau_schmitt.png',intro:'Guten Tag. Ich bin Frau Schmitt. Auf dem Weihnachtsmarkt lege ich großen Wert auf Freundlichkeit, Sauberkeit, Qualität und eine ehrliche Beratung.'},
+  frau_schmitt:{name:'Frau Schmitt',role:'Stammgast',img:'frau_schmitt.png',intro:'Guten Tag. Ich bin Frau Schmitt. Ich habe eine Laktoseunverträglichkeit und achte deshalb besonders auf verlässliche Allergeninformationen. Außerdem lege ich großen Wert auf Freundlichkeit, Sauberkeit, Qualität und eine ehrliche Beratung.'},
   lukas:{name:'Lukas',role:'junger Student',img:'lukas.png',intro:'Hallo. Ich bin Lukas und studiere zurzeit. Mir ist wichtig, freundlich behandelt zu werden und dass der Jugendschutz verantwortungsvoll umgesetzt wird.'},
   michael:{name:'Michael',role:'erfahrener Koch',img:'michael.png',intro:'Hallo. Ich bin Michael, ein erfahrener Koch. Mir sind Qualität, verlässliche Abläufe und ein gutes Zusammenspiel im Team besonders wichtig.'},
   sabrina:{name:'Sabrina',role:'jüngere Köchin',img:'sabrina.png',intro:'Hallo. Ich bin Sabrina. Mir ist wichtig, dass neue Helfer willkommen sind, Aufgaben fair verteilt werden und wir auch in stressigen Situationen zusammenhalten.'},
@@ -596,7 +613,7 @@ const VoiceCore={
   }
 };
 function stopSpeech(){VoiceCore.stop()}
-function speak(raw,opts={}){return VoiceCore.speak(raw,opts)}
+function speak(raw,opts={}){const key=opts.audioKey||'';const meta={key,label:key||'Gesprochener Text',group:key.startsWith('character:')?'Figurenvorstellungen':key.startsWith('coach:')?'Begrüßung und Coachtexte':key.startsWith('module:')?'Episoden und Szenen':'Weitere gesprochene Texte',speaker:opts.characterKey?chars[opts.characterKey]?.name||opts.characterKey:''};return VoiceCore.speak(window.KCSpokenTextCore?.resolve?.(raw,meta)||raw,opts)}
 async function runQuizCountdown(){
   const host=document.querySelector('#quizCountdown');if(!host||!state.countdownEnabled)return;
   for(const n of [3,2,1]){if(state.view!=='scene'||state.paused)return;host.innerHTML=`<span>${n}</span>${n===1?`<small>${settingLabel('Jetzt Antwort wählen!','Jetzt Antwort wählen!')}</small>`:''}`;host.classList.add('show');await new Promise(r=>setTimeout(r,520));host.classList.remove('show');await new Promise(r=>setTimeout(r,70))}
@@ -720,7 +737,7 @@ async function introduceCharacter(key){
   document.querySelectorAll('.character').forEach(x=>x.classList.toggle('selected',x.dataset.character===key));
   const panel=document.querySelector('#characterIntro');
   if(panel)panel.innerHTML=`<div class="character-intro-inner"><img src="${AV+c.img}" alt="${c.name}"><div><b>${c.name}</b><small>${c.role}</small><p id="characterIntroText">${esc(text(c.intro))}</p></div></div>`;
-  await speak(c.intro,{highlight:document.querySelector('#characterIntroText'),characterKey:key,audioKey:`character:${key}:intro`});
+  const spokenIntro=window.KCSpokenTextCore?.resolve?.(c.intro,{key:`character:${key}:intro`,label:`Vorstellung ${c.name}`,group:'Figurenvorstellungen',speaker:c.name})||c.intro;await speak(spokenIntro,{highlight:document.querySelector('#characterIntroText'),characterKey:key,audioKey:`character:${key}:intro`});
 }
 
 function moduleRunCount(id){const x=TelemetryCore.summary().byModule[id];return Number(x?.runs||0)}
@@ -831,7 +848,16 @@ let adminClickTimes=[],adminHoldTimer=null,adminModuleKey='',adminSceneIndex=0;
 function openAdminPin(){stopSpeech();document.querySelector('#adminPinModal').hidden=false;document.body.classList.add('modal-open');const i=document.querySelector('#adminPinInput');i.value='';document.querySelector('#adminPinError').textContent='';setTimeout(()=>i.focus(),50)}
 function closeAdminPin(){document.querySelector('#adminPinModal').hidden=true;document.body.classList.remove('modal-open')}
 function verifyAdminPin(){const v=document.querySelector('#adminPinInput').value;if(v!==SUPERADMIN_CODE){document.querySelector('#adminPinError').textContent='Code nicht korrekt.';return}closeAdminPin();state.adminUnlocked=true;openEpisodeEditor()}
-function openEpisodeEditor(){if(!state.adminUnlocked){openAdminPin();return}stopSpeech();document.querySelector('#episodeEditorModal').hidden=false;document.body.classList.add('modal-open');renderEpisodeEditor();renderSystemTextEditor();renderAdminDocs();renderAdminSystem();renderAdminLearningReport();window.KCDatabaseSecurityCore?.render?.(document.querySelector('#databaseSecurityAdmin'));bindAdminTabs()}
+
+window.addEventListener('kc-configuration-apply-all',e=>{const c=e.detail?.configuration||{};let changed=false;
+ const map=[['general.coach','coach'],['general.addressMode','address'],['voice.rate','speechRate'],['voice.enabled','sound'],['voice.provider','voiceProvider'],['academy.autoContinue','autoContinue'],['academy.quizShuffle','shuffleAnswers']];
+ for(const [ck,sk] of map){if(c[ck]!==undefined&&state[sk]!==c[ck]){state[sk]=c[ck];changed=true}}
+ if(c['voice.volume']!==undefined){const v=Math.max(0,Math.min(1,Number(c['voice.volume'])));const scaled=Math.round(v*10);if(state.volume!==scaled){state.volume=scaled;changed=true}}
+ if(changed){saveSettings();window.KCVoiceProvider?.configure({...elevenConfig,provider:state.voiceProvider});}
+});
+window.addEventListener('kc-configuration-changed',e=>{const d=e.detail||{};window.dispatchEvent(new CustomEvent('kc-core-configuration-updated',{detail:d}));});
+
+function openEpisodeEditor(){if(!state.adminUnlocked){openAdminPin();return}stopSpeech();document.querySelector('#episodeEditorModal').hidden=false;document.body.classList.add('modal-open');renderEpisodeEditor();renderSystemTextEditor();renderAdminDocs();renderAdminSystem();renderAdminLearningReport();window.KCDatabaseSecurityCore?.render?.(document.querySelector('#databaseSecurityAdmin'));window.KCUniversalDatabaseConnectorCore?.render?.(document.querySelector('#universalDatabaseNetworkAdmin'));window.KCFuturaConfigurationCore?.render?.(document.querySelector('#systemConfigurationAdmin'));bindAdminTabs()}
 
 function bindAdminTabs(){document.querySelectorAll('.admin-tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.admin-tab').forEach(x=>x.classList.toggle('active',x===btn));document.querySelectorAll('.admin-pane').forEach(x=>x.classList.toggle('active',x.dataset.adminPane===btn.dataset.adminTab))});const a=document.querySelector('#adminOpenSettings'),v=document.querySelector('#adminOpenVoice');if(a)a.onclick=()=>openSettings();if(v)v.onclick=()=>{openSettings();document.querySelector('[data-tab="voice"]')?.click()}}
 function renderAdminDocs(){const host=document.querySelector('#adminDocsContent');if(!host)return;host.innerHTML='<article><b>Pflichtenheft</b><small>Architektur und Funktionsumfang</small></article><article><b>Studio-Handbuch</b><small>UI- und Core-Regeln</small></article><article><b>TÜV-Handbuch</b><small>Prüf- und Freigabegates</small></article><article><b>Roadmap</b><small>Folgen und Entwicklungsstand</small></article><button id="adminOpenDocs" class="primary">Projektunterlagen öffnen</button>';document.querySelector('#adminOpenDocs').onclick=openDocs}
