@@ -1,0 +1,12 @@
+# Beta 2.3.0 – Foundation Consolidation
+
+- gemeinsamer Teilnehmer-Daten-Core
+- automatische Migration der bisherigen Hauptschulung
+- identische Teilnehmer-ID in Academy und Training
+- verschlüsselte Speicherung über vorhandenen Secure Storage Core
+- Lernfortschritt wird in die vorhandene Outbox gestellt
+- Adminbereich zeigt lokale Hauptschulung und Academy gemeinsam
+- Aktualisieren liest die gemeinsamen Quellen neu ein
+- neuer Button „Teilnehmerdaten prüfen“
+- Studio-Abgleich und TÜV-Prüfanmeldung
+- 40 automatisierte Regressionstests

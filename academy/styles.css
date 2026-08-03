@@ -243,3 +243,19 @@ body[data-theme="contrast"] .panel,body[data-theme="contrast"] .dashboard-card,b
 .kc-update-banner[hidden]{display:none}.kc-update-banner span{flex:1;font-size:.92rem}.kc-update-banner button{white-space:nowrap}
 @media (pointer:coarse) and (min-width:700px){button,.primary,.secondary,input,select{min-height:48px}.choice-card{min-height:92px}.welcome-grid{gap:20px}.modal-card{max-width:min(94vw,980px)}.diagnostics-modal{max-width:720px}.system-status-grid{gap:14px}.system-status-grid>article{padding:16px}.actions{gap:14px}.settings-note{font-size:.96rem}}
 @media (max-width:900px) and (orientation:landscape){.welcome-grid{grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr)}.welcome-card{padding:20px}.club-card{align-self:stretch}.start-actions{flex-wrap:wrap}}
+
+.first-run-modal{max-width:520px}.first-run-badge{display:inline-block;background:#123b60;color:#fff;border-radius:999px;padding:7px 13px;font-weight:900;margin-bottom:8px}.first-run-name{display:grid;gap:7px;font-weight:900;margin:18px 0 8px}.first-run-name input{min-height:54px;border:2px solid #4c718f;border-radius:12px;padding:10px 13px;font-size:1.15rem}.first-run-modal .primary{width:100%;min-height:52px}.release-progress{height:12px;border-radius:999px;background:#dce7ee;overflow:hidden}.release-progress>div{height:100%;width:0;background:#178ac0;transition:width .2s}.release-result-list{margin-top:10px}.release-result-list p{margin:5px 0;font-weight:700}
+
+/* Beta 2.2.6: geführte Ersteinrichtung und sichere Diagrammgrenzen */
+.first-run-modal{max-width:min(92vw,760px)}
+.first-run-lead{margin-top:-4px;color:var(--muted)}
+.first-run-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.first-run-name{grid-column:1/-1}
+.first-run-fieldset{border:1px solid #b8cad7;border-radius:13px;padding:12px;display:flex;gap:18px;flex-wrap:wrap}
+.first-run-fieldset legend{font-weight:900;color:var(--navy);padding:0 5px}
+.first-run-fieldset label{display:flex;align-items:center;gap:7px;font-weight:800}
+.first-run-check{grid-column:1/-1;padding:10px 12px;border:1px solid #c8d7e1;border-radius:12px;background:#f7fafc}
+.first-run-note{padding:11px 13px;border-left:5px solid #e8c500;background:#fff8d9;border-radius:10px}
+.line-chart.meaningful{overflow:hidden!important;max-width:100%;display:block}
+.chart-card{contain:paint}
+@media(max-width:700px){.first-run-grid{grid-template-columns:1fr}.first-run-name,.first-run-check{grid-column:auto}}

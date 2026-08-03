@@ -64,9 +64,9 @@ let lessonUnlockTimer=null;
 let lessonNarrationToken=0,lessonExplanationDone=false,lessonTipStarted=false,lessonNarrationMode='idle';
 let quizAutoAdvanceTimer=null,pendingChapterCompletion=false;
 
-function fresh(){return{name:'',gender:'female',voiceVariant:'one',addressMode:'du',assistant:true,sound:true,save:true,quick:0,advanced:0,practice:0,quickDone:[],advancedDone:[],passedTasks:[],attempts:{},feedbackSubmittedAt:'',trainingStartedAt:'',lastActivityAt:'',introCompleted:false,quizStats:{},lessonStats:{},sessionId:''}}
+function fresh(){return{participantId:'',name:'',gender:'female',voiceVariant:'one',addressMode:'du',assistant:true,sound:true,save:true,quick:0,advanced:0,practice:0,quickDone:[],advancedDone:[],passedTasks:[],attempts:{},feedbackSubmittedAt:'',trainingStartedAt:'',lastActivityAt:'',introCompleted:false,quizStats:{},lessonStats:{},sessionId:''}}
 function loadProfile(){try{return {...fresh(),...JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}}catch{return fresh()}}
-function saveProfile(){profile.lastActivityAt=new Date().toISOString();if(profile.save)localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
+function saveProfile(){profile.lastActivityAt=new Date().toISOString();if(profile.save)localStorage.setItem(STORAGE_KEY,JSON.stringify(profile));window.KCParticipantDataCore?.saveTraining?.(profile).then(saved=>{if(saved?.participantId&&!profile.participantId){profile.participantId=saved.participantId;localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}}).catch(()=>{})}
 function overall(){return Math.round((profile.quick+profile.advanced+profile.practice)/3)}
 function show(id){
  sections.forEach(x=>$(x)?.classList.toggle('hidden',x!==id));

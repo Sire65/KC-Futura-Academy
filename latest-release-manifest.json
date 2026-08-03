@@ -1,11 +1,22 @@
 {
   "schema": "KC_RELEASE_MANIFEST_V1",
   "product": "KC FUTURA Academy",
-  "version": "2.2.4",
-  "displayVersion": "Beta 2.2.4",
-  "academyVersion": "Beta 2.2.4",
-  "versionCoreVersion": "0.1.0",
+  "version": "2.3.0",
+  "displayVersion": "Beta 2.2.6",
+  "academyVersion": "Beta 2.2.6",
+  "versionCoreVersion": "0.3.0",
   "databaseCoreVersion": "0.6.1",
-  "build": "2026-08-03T13:50:00+02:00",
-  "cacheVersion": "kc-futura-academy-2.2.4"
+  "build": "2026-08-03T14:55:00+02:00",
+  "cacheVersion": "kc-futura-academy-2.2.6",
+  "requiredAssets": [
+    "academy/index.html",
+    "academy/app.js",
+    "academy/styles.css",
+    "academy/version.json",
+    "academy/version-update-release-core.js",
+    "academy/supabase-adapter.js",
+    "cores/database-security-core/database-security-core.js",
+    "training-video/index.html"
+  ],
+  "label": "Beta 2.3.0"
 }
