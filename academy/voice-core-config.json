@@ -1,0 +1,42 @@
+{
+  "version": "2.3.0",
+  "providerMode": "adapter",
+  "defaultProvider": "local",
+  "providers": [
+    {
+      "id": "elevenlabs",
+      "displayName": "ElevenLabs",
+      "serverSecret": "ELEVENLABS_API_KEY",
+      "ready": true
+    },
+    {
+      "id": "openai",
+      "displayName": "OpenAI TTS",
+      "serverSecret": "OPENAI_API_KEY",
+      "ready": true
+    },
+    {
+      "id": "azure",
+      "displayName": "Microsoft Azure Speech",
+      "serverSecrets": [
+        "AZURE_SPEECH_KEY",
+        "AZURE_SPEECH_REGION"
+      ],
+      "ready": true
+    },
+    {
+      "id": "local",
+      "displayName": "Lokales Voice Pack / Aufnahme",
+      "ready": true
+    },
+    {
+      "id": "system",
+      "displayName": "Gerätestimme (Notfall)",
+      "ready": true
+    }
+  ],
+  "security": {
+    "browserSecretsForbidden": true,
+    "serverGateway": "Supabase Edge Function kc-voice-generate"
+  }
+}

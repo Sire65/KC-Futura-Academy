@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#102d4c">
+  <title>KC FUTURA Academy · Beta 1.6.6</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app" class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo"><img src="assets/kc_logo.webp" alt="Köcheclub Werne"><span>Since 1991</span></div>
+      <div>
+        <small>KC FUTURA · Köcheclub Werne</small>
+        <h1>Academy</h1>
+        <p>Erstellt &amp; Designed by: Hans-Joachim Koch</p>
+      </div>
+    </div>
+    <div id="sceneProgress" class="scene-progress" aria-label="Szenenfortschritt" hidden></div>
+    <div id="voiceMonitor" class="voice-monitor is-ready" role="status" aria-live="polite" aria-label="Audio- und Stimmenstatus">
+      <div class="voice-scope" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span id="voiceMonitorText">Ton bereit</span>
+    </div>
+    <div class="time-core" aria-label="Zeitinformationen">
+      <span id="dateDisplay">--.--.----</span>
+      <strong id="clockDisplay">--:--:--</strong>
+      <span id="elapsedDisplay">Laufzeit 00:00:00</span>
+    </div>
+    <div class="top-actions">
+      <button id="backBtn" class="ghost" disabled>← Zurück</button>
+      <button id="pauseBtn" class="ghost">⏸ Pause</button>
+      <div class="sound-control-wrap"><button id="soundBtn" class="icon-btn" aria-label="Ton ein oder aus">🔊</button><div id="volumePopover" class="volume-popover" hidden><label for="headerVolume">Lautstärke <b id="headerVolumeValue">7/10</b></label><div class="volume-range-wrap"><input id="headerVolume" type="range" min="1" max="10" step="0.5" value="7" list="volumeTicks"><datalist id="volumeTicks"><option value="1"><option value="2"><option value="3"><option value="4"><option value="5"><option value="6"><option value="7"><option value="8"><option value="9"><option value="10"></datalist><div class="volume-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="volume-scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div></div></div></div>
+      <button id="dashboardBtn" class="icon-btn" aria-label="Mein Lernstand öffnen" title="Mein Lernstand">📊</button>
+      <button id="roadmapBtn" class="icon-btn" aria-label="Academy-Roadmap öffnen" title="Academy-Roadmap">🗺️</button>
+      
+      <span class="status-separator" aria-hidden="true"></span><div class="db-status-cluster" aria-label="Datenbankstatus"><div class="db-status-pair" title="IndexedDB"><span id="indexedLed" class="status-led led-off"></span><span id="indexedTrafficLed" class="status-led traffic-led"></span></div><div class="db-status-pair" title="Supabase"><span id="supabaseLed" class="status-led led-off"></span><span id="supabaseTrafficLed" class="status-led traffic-led"></span></div></div><button id="settingsBtn" class="icon-btn" aria-label="Einstellungen öffnen" title="Einstellungen">⚙️</button>
+      <button id="exitBtn" class="icon-btn danger" aria-label="Academy verlassen" title="Academy verlassen">🚪</button>
+    </div>
+  </header>
+  <main id="screen" aria-live="polite"></main>
+  <footer class="footerbar">
+    <span id="progressLabel">Bereit</span>
+    <div class="progress"><i id="progressBar"></i></div>
+    <button id="repeatBtn" class="ghost" hidden>Noch einmal hören</button>
+  </footer>
+</div>
+
+<div id="settingsModal" class="modal-shell" hidden>
+  <div class="modal-card settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <button id="settingsClose" class="modal-close" aria-label="Einstellungen schließen">×</button>
+    <h2 id="settingsTitle">Meine Academy-Einstellungen</h2>
+    <div class="settings-tabs user-settings-tabs">
+      <button class="settings-tab active" data-tab="general">Lernen &amp; Ton</button>
+      <button class="settings-tab" data-tab="design">Darstellung</button>
+    </div>
+    <section class="settings-pane active" data-pane="general">
+      <div class="settings-grid">
+        <label>Hauptcoach<select id="modalCoach"><option value="laura">Laura</option><option value="marc">Marc</option></select></label>
+        <label>Anrede<select id="modalAddress"><option value="du">Du</option><option value="sie">Sie</option></select></label>
+        <label>Sprechgeschwindigkeit<input id="modalRate" type="range" min="0.75" max="1.15" step="0.05" value="1"></label>
+        <label class="checkline"><input id="modalSubtitles" type="checkbox"> Untertitel anzeigen</label>
+        <label class="checkline"><input id="modalSound" type="checkbox"> Ton aktiv</label>
+        <label>Lautstärke <b id="modalVolumeValue">7/10</b><input id="modalVolume" type="range" min="1" max="10" step="0.5" value="7"></label>
+        <label>Quiz-Voreinstellung<select id="modalQuizMode"><option value="standard">Standard mit Ansage und 3-2-1</option><option value="short">Immer verkürzen und sofort freigeben</option></select></label>
+        <label class="checkline"><input id="modalShuffleAnswers" type="checkbox"> Antworten pro Durchgang mischen</label>
+        <label class="checkline"><input id="modalCountdown" type="checkbox"> Countdown 3-2-1 anzeigen</label>
+        <label class="checkline"><input id="modalAutoContinue" type="checkbox"> Kapitel automatisch fortsetzen</label>
+        <label class="checkline"><input id="modalSkipIntroductions" type="checkbox"> Figurenvorstellungen überspringen</label>
+        <label class="checkline"><input id="modalOpenLast" type="checkbox"> Letzte Folge beim Start anbieten</label>
+        <label>Startansicht<select id="modalEpisodeView"><option value="episodes">Nach Folgen</option><option value="categories">Nach Kategorien</option></select></label><label class="checkline"><input id="modalRememberView" type="checkbox"> Letzte Ansicht merken</label>
+      </div>
+      <div class="audio-tuv-card">
+        <div><b>Programminterner Audio-TÜV</b><p id="audioTuvStatus" class="settings-note">Noch nicht geprüft.</p></div>
+        <button id="runAudioTuv" class="secondary" type="button">Audio und Stimme prüfen</button>
+      </div>
+      <p class="settings-note">Änderungen gelten sofort und werden lokal gespeichert.</p>
+    </section>
+    <section class="settings-pane" data-pane="voice">
+      <div class="voice-provider-row"><label>Sprachquelle<select id="voiceProvider"><option value="local">Gespeichertes Voice Pack / Aufnahme</option><option value="system">Gerätestimme (nur Notfall)</option><option value="elevenlabs">ElevenLabs</option><option value="openai">OpenAI TTS</option><option value="azure">Microsoft Azure Speech</option></select></label><button id="voiceExportConfig" class="secondary">Voice-Konfiguration exportieren</button></div>
+      <div id="elevenLabsPanel" class="elevenlabs-panel" hidden>
+        <h3>KC Voice Provider – vorbereitete Cloud-Anbindung</h3><p class="settings-note">Ein gemeinsamer Supabase-Zugang schützt die geheimen Anbieter-Schlüssel. In FUTURA werden nur Projekt-URL, veröffentlichbarer Schlüssel und die feste Stimme je Figur eingetragen.</p>
+        <div class="elevenlabs-config-grid"><label>Supabase-Projekt-URL oder Funktions-URL<input id="elevenEndpoint" type="url" value="https://iddudrxuihdodnvejxcp.supabase.co" readonly title="Projekt-URL ist für Future Academy bereits eingetragen"></label><label>Supabase Publishable / Anon Key<input id="elevenAnonKey" type="password" autocomplete="off" placeholder="sb_publishable_… oder eyJ…"></label><label>Provider-Modell<select id="elevenModel"></select></label><label>Stimme der ausgewählten Figur<input id="elevenVoiceId" type="text" placeholder="Voice-ID oder Voice-Name"></label><label id="providerInstructionsLabel">Sprechregie / Stil<textarea id="providerInstructions" rows="3" placeholder="Natürlich, freundlich und klar auf Deutsch sprechen."></textarea></label><label>Ausgabeformat<select id="providerOutputFormat"></select></label></div>
+        <div class="provider-summary" id="providerSummary"></div><div class="checkline-row"><label class="checkline"><input id="elevenAutoGenerate" type="checkbox"> Nach Textänderungen automatisch neu erzeugen</label></div><div class="provider-actions"><button id="elevenSaveConfig" class="secondary">Verbindung speichern</button><button id="elevenTest" class="secondary">Verbindung testen</button><button id="elevenGenerateCurrent" class="primary">Aktuelle Stimme neu erzeugen</button><button id="elevenGenerateAll" class="primary">Alle veralteten Stimmen aktualisieren</button></div><p id="elevenStatus" class="settings-note">Noch nicht eingerichtet. Anbieter-Schlüssel bleiben ausschließlich als Supabase Secrets gespeichert.</p>
+      </div>
+      <div class="voice-studio-grid">
+        <div>
+          <label>Figur<select id="voiceCharacter"></select></label>
+          <label>Dialog<select id="voiceDialog"></select></label>
+          <label>Text<textarea id="voiceText" rows="6" readonly></textarea></label>
+        </div>
+        <div class="recorder-card">
+          <div id="recordingStatus" class="recording-status">Bereit</div>
+          <div class="recorder-actions">
+            <button id="recordStart" class="primary">● Aufnahme starten</button>
+            <button id="recordStop" class="secondary" disabled>■ Stoppen</button>
+            <button id="recordPlay" class="secondary" disabled>▶ Anhören</button>
+            <button id="recordSave" class="primary" disabled>Speichern</button>
+            <button id="recordDelete" class="ghost" disabled>Löschen</button>
+          </div>
+          <label class="upload-label">Audiodatei importieren<input id="audioUpload" type="file" accept="audio/*"></label>
+          <p class="settings-note">Aufnahmen werden im Browser gespeichert und können später exportiert oder durch professionelle Audiodateien ersetzt werden. Bei fehlender Aufnahme nutzt FUTURA weiterhin die Gerätestimme.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-pane" data-pane="character">
+      <h3>KC Character Studio 1.0</h3>
+      <p class="settings-note">Figurenprofile zentral prüfen und für spätere Folgen vorbereiten. Änderungen werden nur lokal in dieser Academy gespeichert.</p>
+      <div class="character-studio-grid">
+        <div class="character-list" id="characterStudioList"></div>
+        <div class="character-editor">
+          <img id="characterStudioImage" alt="Figurenvorschau">
+          <label>Name<input id="characterStudioName" type="text"></label>
+          <label>Rolle<input id="characterStudioRole" type="text"></label>
+          <label>Vorstellung<textarea id="characterStudioIntro" rows="7"></textarea></label>
+          <div class="actions"><button id="characterStudioPreview" class="secondary">▶ Vorstellung anhören</button><button id="characterStudioSave" class="primary">Profil speichern</button><button id="characterStudioReset" class="ghost-dark">Zurücksetzen</button></div>
+        </div>
+      </div>
+    </section>
+    <section class="settings-pane" data-pane="design">
+      <h3>KC Design Core 0.1 – vorbereitet</h3>
+      <p>Hier können später Farbschemata, Kontrast, Schriftgröße und saisonale Designs verwaltet werden.</p>
+      <div class="theme-preview-row">
+        <button class="theme-preview selected" data-theme="classic"><span></span>Klassisch Blau</button>
+        <button class="theme-preview" data-theme="winter"><span></span>Winter</button>
+        <button class="theme-preview" data-theme="contrast"><span></span>Hoher Kontrast</button>
+      </div>
+      <div class="design-controls"><label>Schriftgröße<input id="designFontScale" type="range" min="0.9" max="1.2" step="0.05" value="1"></label><label>Bewegungen reduzieren<input id="designReduceMotion" type="checkbox"></label></div>
+    </section>
+  </div>
+</div>
+
+<div id="dashboardModal" class="modal-shell" hidden>
+  <div class="modal-card dashboard-modal" role="dialog" aria-modal="true" aria-labelledby="dashboardTitle">
+    <button id="dashboardClose" class="modal-close" aria-label="Mein Lernstand schließen">×</button>
+    <h2 id="dashboardTitle">Mein Lernstand</h2>
+    <div id="dashboardContent"></div>
+  </div>
+</div>
+
+<div id="roadmapModal" class="modal-shell" hidden>
+  <div class="modal-card roadmap-modal" role="dialog" aria-modal="true" aria-labelledby="roadmapTitle">
+    <button id="roadmapClose" class="modal-close" aria-label="Roadmap schließen">×</button>
+    <h2 id="roadmapTitle">KC FUTURA Academy · Roadmap</h2>
+    <p class="settings-note">Folgen, Entwicklungsstand und automatische Metadaten aus dem KC Scene Core.</p>
+    <div id="roadmapContent"></div>
+  </div>
+</div>
+
+<div id="docsModal" class="modal-shell" hidden>
+  <div class="modal-card docs-modal" role="dialog" aria-modal="true" aria-labelledby="docsTitle">
+    <button id="docsClose" class="modal-close" aria-label="Projektunterlagen schließen">×</button>
+    <h2 id="docsTitle">KC FUTURA Academy · Projektunterlagen</h2>
+    <p class="settings-note">Verbindliche Grundlagen für Entwicklung, Studio, TÜV und Roadmap.</p>
+    <div id="docsContent" class="docs-grid"></div>
+  </div>
+</div>
+
+
+
+<div id="kcUpdateBanner" class="kc-update-banner" hidden><b>Neue Academy-Version verfügbar.</b><span id="kcUpdateText"></span><button id="kcUpdateNow" class="primary">Neue Version laden</button></div>
+<div id="diagnosticsModal" class="modal-shell" hidden><div class="modal-card compact diagnostics-modal" role="dialog" aria-modal="true" aria-labelledby="diagnosticsTitle"><button id="diagnosticsClose" class="modal-close" aria-label="Systemstatus schließen">×</button><h2 id="diagnosticsTitle">KC FUTURA · Systemstatus</h2><div id="diagnosticsContent" class="system-status-grid"></div><div class="actions diagnostics-actions"><button id="diagnosticsRun" class="primary">System prüfen</button><button id="diagnosticsSupportExport" class="secondary" hidden>Supportbericht erstellen</button><button id="diagnosticsSupportMail" class="secondary" hidden>Per E-Mail senden</button></div><p class="settings-note">Bei Problemen zuerst „System prüfen“ drücken. Danach den Supportbericht erstellen und per E-Mail senden.</p></div></div>
+<div id="adminPinModal" class="modal-shell" hidden><div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="adminPinTitle"><h2 id="adminPinTitle">Geschützter Academy-Bereich</h2><p>Bitte vierstelligen Superadmin-Code eingeben.</p><input id="adminPinInput" class="admin-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"><p id="adminPinError" class="admin-error" aria-live="polite"></p><div class="actions"><button id="adminPinCancel" class="secondary">Abbrechen</button><button id="adminPinConfirm" class="primary">Öffnen</button></div></div></div>
+<div id="episodeEditorModal" class="modal-shell" hidden><div class="modal-card episode-editor-modal" role="dialog" aria-modal="true" aria-labelledby="episodeEditorTitle"><button id="episodeEditorClose" class="modal-close" aria-label="Baukasten schließen">×</button><h2 id="episodeEditorTitle">KC FUTURA Academy · Geschützter Bereich</h2><div class="admin-tabs"><button class="admin-tab active" data-admin-tab="episodes">Episoden</button><button class="admin-tab" data-admin-tab="systemtexts">Systemtexte</button><button class="admin-tab" data-admin-tab="voice">Einstellungen &amp; KC Voice Studio</button><button class="admin-tab" data-admin-tab="docs">Projektunterlagen</button><button class="admin-tab" data-admin-tab="reports">Teilnehmer &amp; Statistik</button><button class="admin-tab" data-admin-tab="system">Systemstatus</button><button class="admin-tab" data-admin-tab="database">Datenbank &amp; Sicherheit</button></div><section class="admin-pane active" data-admin-pane="episodes"><p class="settings-note">Folgen, Szenen, Sprecher, Texte, Fragen, Antworten und Extra-Tipps bearbeiten. Änderungen werden verschlüsselt lokal gespeichert.</p><div class="episode-editor-grid"><aside><h3>Episoden</h3><div id="episodeEditorList" class="episode-editor-list"></div></aside><aside><h3>Szenen</h3><div id="episodeEditorScenes" class="episode-editor-scenes"></div></aside><section id="episodeEditorForm" class="episode-editor-form"></section></div></section><section class="admin-pane" data-admin-pane="systemtexts"><div id="systemTextEditor"></div></section><section class="admin-pane" data-admin-pane="voice"><div class="admin-shortcuts"><button id="adminOpenSettings" class="primary">Einstellungen öffnen</button><button id="adminOpenVoice" class="secondary">Direkt zum KC Voice Studio</button></div><p class="settings-note">Provider, Voice-IDs, Testansagen und Voice Packs werden im vorhandenen Voice Studio verwaltet.</p></section><section class="admin-pane" data-admin-pane="docs"><div id="adminDocsContent" class="docs-grid"></div></section><section class="admin-pane" data-admin-pane="reports"><div id="adminLearningReport"></div></section><section class="admin-pane" data-admin-pane="database"><div id="databaseSecurityAdmin"></div></section><section class="admin-pane" data-admin-pane="system"><div id="adminSystemStatus" class="system-status-grid"></div><section class="performance-monitor" aria-labelledby="performanceMonitorTitle"><div class="performance-monitor-head"><h3 id="performanceMonitorTitle">Datenbank-Geschwindigkeit</h3><button id="performanceRefresh" class="secondary" type="button" title="Geschwindigkeit beider Datenbanken neu messen">Neu messen</button></div><div id="performanceGauges" class="performance-gauges" aria-live="polite"></div></section><section class="cloud-device-monitor" aria-labelledby="cloudDeviceMonitorTitle"><div class="performance-monitor-head"><div><h3 id="cloudDeviceMonitorTitle">Geräte &amp; Live-Synchronisation</h3><p class="settings-note">Gerätename, letzter Kontakt und Übertragungszähler der aktuellen Cloud-Sitzung.</p></div><button id="cloudDeviceRefresh" class="secondary" type="button" title="Geräteliste und Synchronisationswerte aktualisieren">Aktualisieren</button></div><div class="device-name-editor"><label>Gerätename<input id="cloudDeviceName" type="text" maxlength="60" placeholder="z. B. iPad Küche"></label><button id="cloudDeviceSave" class="primary" type="button" title="Gerätenamen verschlüsselt speichern und an Supabase melden">Gerätenamen speichern</button></div><div id="cloudSyncCounters" class="cloud-sync-counters" aria-live="polite"></div><div id="cloudDeviceList" class="cloud-device-list" aria-live="polite"></div><p class="settings-note">Hinweis: Ohne echtes Supabase-Superadmin-Konto zeigt RLS nur Geräte derselben anonymen Cloud-Sitzung. Eine vereinsweite Gesamtliste wird im nächsten Authentifizierungs-Sprint freigeschaltet.</p></section><div class="supabase-admin-card"><h3>Supabase-Onlineanbindung</h3><p class="settings-note status-ok"><b>Projekt erkannt:</b> Future Academy · iddudrxuihdodnvejxcp · Frankfurt</p><p class="settings-note">Hier werden nur die veröffentlichbare Projekt-URL und der Publishable Key gespeichert. Geheime Schlüssel gehören niemals in die Academy.</p><div class="cloud-assistant" id="cloudAssistant">
+<div class="cloud-project-summary"><div><b>Projekt</b><span>Future Academy</span></div><div><b>Region</b><span>Frankfurt</span></div><div><b>Projekt-ID</b><span>iddudrxuihdodnvejxcp</span></div><div><b>Tabelle</b><span>academy_encrypted_events</span></div></div>
+<div class="elevenlabs-config-grid cloud-config-grid"><label>Supabase-Projekt-URL<input id="supabaseProjectUrl" type="url" value="https://iddudrxuihdodnvejxcp.supabase.co" readonly title="Projekt-URL ist für Future Academy bereits eingetragen"></label><label>Supabase Publishable Key<div class="secret-input-wrap"><input id="supabasePublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><button id="supabaseKeyToggle" type="button" class="icon-button" title="Publishable Key anzeigen oder verbergen" aria-label="Publishable Key anzeigen oder verbergen">👁</button></div></label></div>
+<div id="supabaseChecklist" class="cloud-checklist" aria-live="polite"><span data-check="url">○ Projekt-URL</span><span data-check="key">○ Publishable Key</span><span data-check="auth">○ Anonyme Anmeldung</span><span data-check="db">○ Datenbank</span><span data-check="rls">○ RLS</span><span data-check="sync">○ Synchronisation</span></div>
+<div class="cloud-options"><label class="checkline"><input id="supabaseEnabled" type="checkbox"> Online-Synchronisation aktivieren</label><label class="checkline"><input id="supabaseAutoSync" type="checkbox" checked> Automatisch synchronisieren</label><label class="checkline"><input id="supabaseOfflineAllowed" type="checkbox" checked> Offline weiterarbeiten</label><label>Synchronisationsintervall<select id="supabaseSyncInterval"><option value="30">30 Sekunden</option><option value="60">1 Minute</option><option value="300">5 Minuten</option></select></label></div>
+<div class="provider-actions"><button id="supabaseSave" class="primary" disabled>Verbindung speichern</button><button id="supabaseTest" class="secondary" disabled>Verbindung testen</button><button id="supabaseSyncNow" class="secondary" disabled>Jetzt synchronisieren</button></div>
+<div id="supabaseTestDetails" class="cloud-test-details" hidden></div><p id="supabaseAdminMessage" class="settings-note" aria-live="polite">Bitte den Publishable Key einfügen.</p>
+</div></div></section><p id="episodeEditorStatus" class="settings-note" aria-live="polite"></p></div></div>
+<div id="participantChoiceModal" class="modal-shell" hidden><div class="modal-card compact participant-choice-modal" role="dialog" aria-modal="true" aria-labelledby="participantChoiceTitle"><h2 id="participantChoiceTitle">Teilnehmer auswählen</h2><p id="participantDuplicateCount"></p><p>Der Name ist nur eine Anzeige. Jede Person erhält intern eine eigene Teilnehmer-ID.</p><div class="participant-choice-actions"><button id="participantSame" class="secondary">Ich bin dieselbe Person</button><button id="participantDifferent" class="primary">Ich bin eine andere Person</button></div><div id="participantRecoveryArea" hidden><label>Wiederherstellungscode<input id="participantRecoveryCode" type="text" maxlength="20" placeholder="z. B. KALLE-4827"></label><button id="participantClaim" class="primary">Lernstand übernehmen</button></div><p id="participantChoiceError" class="admin-error" aria-live="polite"></p><button id="participantChoiceCancel" class="ghost-dark">Abbrechen</button></div></div><div id="participantCodeModal" class="modal-shell" hidden><div class="modal-card compact participant-code-modal" role="dialog" aria-modal="true" aria-labelledby="participantCodeTitle"><h2 id="participantCodeTitle">Dein persönlicher Wiederherstellungscode</h2><p>Bewahre diesen Code sicher auf. Damit kannst du deinen Lernstand später auf einem anderen Gerät übernehmen.</p><div id="participantCodeValue" class="participant-code-value"></div><div class="actions"><button id="participantCodeCopy" class="secondary">Code kopieren</button><button id="participantCodeContinue" class="primary">Weiter zur Academy</button></div></div></div><div id="exitModal" class="modal-shell" hidden>
+  <div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
+    <h2 id="exitTitle">Academy verlassen?</h2>
+    <p>Der gespeicherte Fortschritt bleibt erhalten. Möchten Sie die Schulung wirklich verlassen?</p>
+    <div class="actions">
+      <button id="exitCancel" class="secondary">Zurück zur Academy</button>
+      <button id="exitConfirm" class="danger-button">Ja, verlassen</button>
+    </div>
+  </div>
+</div>
+
+<script src="deployment-config.js?v=2.2.2"></script>
+<script src="secure-storage-core.js?v=2.2.2"></script>
+<script src="supabase-adapter.js?v=2.2.2"></script>
+<script src="../cores/database-security-core/database-security-core.js?v=2.2.2"></script>
+<script src="kc-voice-provider.js"></script>
+<script>
+KCSecureStorage.ready.then(()=>{
+  const script=document.createElement('script');
+  script.src='app.js?v=2.2.2';
+  document.body.appendChild(script);
+});
+</script>
+
+<script>
+(function(){
+ const LOCAL=window.KC_FUTURA_VERSION||{};
+ const text=v=>`${v.academyVersion||'Academy'} · Core ${v.databaseCoreVersion||'—'} · Build ${v.build||'—'}`;
+ window.KC_FUTURA_RELEASE=LOCAL;
+ async function checkUpdate(){
+   try{
+     const r=await fetch('version.json?ts='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
+     const remote=await r.json(); window.KC_FUTURA_RELEASE=remote;
+     document.querySelectorAll('[data-academy-release]').forEach(n=>n.textContent=remote.academyVersion||'Beta 2.2.2');
+     const current=String(LOCAL.academyVersionNumber||'2.2.2');
+     if(String(remote.academyVersionNumber||current)!==current){
+       const b=document.getElementById('kcUpdateBanner'); if(b){b.hidden=false;document.getElementById('kcUpdateText').textContent=text(remote)}
+     }
+   }catch(e){console.warn('Updateprüfung nicht verfügbar',e)}
+ }
+ async function forceUpdate(){
+   try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister()}}
+   catch(e){}
+   try{if('caches' in window){for(const k of await caches.keys())await caches.delete(k)}}catch(e){}
+   const u=new URL(location.href);u.searchParams.set('update',Date.now());location.replace(u.toString());
+ }
+ document.addEventListener('DOMContentLoaded',()=>{checkUpdate();document.getElementById('kcUpdateNow')?.addEventListener('click',forceUpdate)});
+ window.KCFuturaUpdater={checkUpdate,forceUpdate,version:LOCAL};
+})();
+</script>
+</body>
+</html>

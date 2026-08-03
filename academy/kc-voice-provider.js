@@ -1,0 +1,7 @@
+'use strict';
+(function(){
+  const config={endpoint:'',anonKey:'',provider:'elevenlabs'};
+  function normalizeEndpoint(value){const v=String(value||'').trim().replace(/\/+$/,'');if(!v)return '';if(/\/functions\/v1\/kc-voice-generate$/i.test(v))return v;if(/\.supabase\.co$/i.test(v))return `${v}/functions/v1/kc-voice-generate`;return v}
+  const api={version:'2.0.0',configure(next={}){Object.assign(config,next);config.endpoint=normalizeEndpoint(config.endpoint);return {...config}},getConfig(){return {...config}},isConfigured(){return Boolean(config.endpoint&&config.anonKey&&config.provider)},async generate(payload={}){if(!this.isConfigured())throw new Error('Die Voice-Verbindung ist noch nicht eingerichtet.');if(!String(payload.text||'').trim())throw new Error('Kein Text vorhanden.');const response=await fetch(config.endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':config.anonKey,'Authorization':`Bearer ${config.anonKey}`},body:JSON.stringify({...payload,provider:payload.provider||config.provider})});if(!response.ok){let detail='';try{detail=(await response.json())?.error||''}catch{detail=await response.text()}throw new Error(detail||`Spracherzeugung fehlgeschlagen (${response.status}).`)}const blob=await response.blob();if(!blob.size)throw new Error('Der Sprachdienst hat keine Audiodaten geliefert.');return blob}};
+  window.KCVoiceProvider=api;window.KCElevenLabsProvider=api;
+})();
