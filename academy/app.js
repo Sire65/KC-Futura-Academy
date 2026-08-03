@@ -91,7 +91,7 @@ if(get('localStorage','kcAcademyAudioBeta103')!=='1'){state.sound=true;set('loca
 const MIN_NAME_LENGTH=2;
 const SPEECH_LEAD_MS=180;
 const VOICE_CORE_VERSION='2.3.0';
-const ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersionNumber||'2.2.2');
+const ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersionNumber||'2.2.4');
 const ELEVEN_CONFIG_KEY='kcAcademyElevenLabsConfigV1';
 const SUPERADMIN_CODE='1234';
 const EPISODE_OVERRIDE_KEY='kcAcademyEpisodeOverridesV1';

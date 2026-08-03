@@ -182,44 +182,20 @@
   </div>
 </div>
 
-<script src="deployment-config.js?v=2.2.2"></script>
-<script src="secure-storage-core.js?v=2.2.2"></script>
-<script src="supabase-adapter.js?v=2.2.2"></script>
-<script src="../cores/database-security-core/database-security-core.js?v=2.2.2"></script>
+<script src="deployment-config.js?v=2.2.4"></script>
+<script src="secure-storage-core.js?v=2.2.4"></script>
+<script src="supabase-adapter.js?v=2.2.4"></script>
+<script src="../cores/database-security-core/database-security-core.js?v=2.2.4"></script>
 <script src="kc-voice-provider.js"></script>
 <script>
 KCSecureStorage.ready.then(()=>{
   const script=document.createElement('script');
-  script.src='app.js?v=2.2.2';
+  script.src='app.js?v=2.2.4';
   document.body.appendChild(script);
 });
 </script>
 
-<script>
-(function(){
- const LOCAL=window.KC_FUTURA_VERSION||{};
- const text=v=>`${v.academyVersion||'Academy'} · Core ${v.databaseCoreVersion||'—'} · Build ${v.build||'—'}`;
- window.KC_FUTURA_RELEASE=LOCAL;
- async function checkUpdate(){
-   try{
-     const r=await fetch('version.json?ts='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
-     const remote=await r.json(); window.KC_FUTURA_RELEASE=remote;
-     document.querySelectorAll('[data-academy-release]').forEach(n=>n.textContent=remote.academyVersion||'Beta 2.2.3');
-     const current=String(LOCAL.academyVersionNumber||'2.2.2');
-     if(String(remote.academyVersionNumber||current)!==current){
-       const b=document.getElementById('kcUpdateBanner'); if(b){b.hidden=false;document.getElementById('kcUpdateText').textContent=text(remote)}
-     }
-   }catch(e){console.warn('Updateprüfung nicht verfügbar',e)}
- }
- async function forceUpdate(){
-   try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister()}}
-   catch(e){}
-   try{if('caches' in window){for(const k of await caches.keys())await caches.delete(k)}}catch(e){}
-   const u=new URL(location.href);u.searchParams.set('update',Date.now());location.replace(u.toString());
- }
- document.addEventListener('DOMContentLoaded',()=>{checkUpdate();document.getElementById('kcUpdateNow')?.addEventListener('click',forceUpdate)});
- window.KCFuturaUpdater={checkUpdate,forceUpdate,version:LOCAL};
-})();
-</script>
+<script src="version-update-release-core.js?v=2.2.4"></script>
+
 </body>
 </html>

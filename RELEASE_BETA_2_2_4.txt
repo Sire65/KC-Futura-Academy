@@ -1,0 +1,11 @@
+# RELEASE BETA 2.2.4 – VERSION/UPDATE STABILISIERUNG
+
+- Version, Update & Release Core 0.1.0 integriert
+- Studio-Inventur und TÜV-Anmeldung ergänzt
+- widersprüchliche Versionsnummern vereinheitlicht
+- falsche Updatewarnung bei gleicher Version beseitigt
+- Updatebutton mit Fortschritt, Ergebnis und verständlicher Fehlermeldung
+- Academy-Release-Manifest nicht mehr als Bilderrechner-Manifest interpretiert
+- Endanwendertext bei unbekanntem UI-Schema entschärft
+- Cache-Busting auf 2.2.4 angehoben
+- Publish-Struktur erneut vollständig geprüft

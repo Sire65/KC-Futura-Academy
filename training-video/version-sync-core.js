@@ -10,8 +10,8 @@ function managerManifest(){
 }
 function status(training,embedded,current){
  const actual=current||embedded;
- if(!actual)return {level:'yellow',label:'Versionsprüfung eingeschränkt',detail:'Kein aktuelles Produktmanifest erreichbar.'};
- if(actual.uiSchemaVersion!==training.supportedUiSchema)return {level:'red',label:'Schulung prüfen',detail:`UI-Schema ${actual.uiSchemaVersion||'unbekannt'} weicht von ${training.supportedUiSchema} ab.`};
+ if(!actual)return {level:'yellow',label:'Schulungsgrundlage nicht vollständig prüfbar',detail:'Die Schulung kann gestartet werden. Bei Problemen bitte den Systemcheck verwenden.'};
+ if(actual.uiSchemaVersion&&actual.uiSchemaVersion!==training.supportedUiSchema)return {level:'yellow',label:'Schulungsgrundlage prüfen',detail:'Die erkannte Bilderrechner-Oberfläche unterscheidet sich von der Schulungsgrundlage. Die Schulung kann trotzdem gestartet werden.'};
  const c=cmp(actual.version,training.basedOnProductVersion);
  const shown=actual.displayVersion||`V${actual.version}`;
  if(c===0)return {level:'green',label:'Aktuell und kompatibel',detail:`KC Bilderrechner ${shown}`};
@@ -22,9 +22,9 @@ async function check(){
  const [training,embedded,release]=await Promise.all([
   safeJson('training-version-manifest.json',FALLBACK_TRAINING),
   safeJson('../pos/version-manifest.json',FALLBACK_PRODUCT),
-  safeJson('../latest-release-manifest.json',null)
+  Promise.resolve(null)
  ]);
- const stored=managerManifest();const current=(release&&cmp(release.version||'0',stored?.version||'0')>=0)?release:(stored||release);
+ const stored=managerManifest();const current=stored||embedded;
  const result=status(training,embedded,current);
  const payload={checkedAt:new Date().toISOString(),training,embedded,release,current:current||embedded,result};
  window.KCVersionSync=payload;
