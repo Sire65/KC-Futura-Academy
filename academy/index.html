@@ -204,7 +204,7 @@ KCSecureStorage.ready.then(()=>{
    try{
      const r=await fetch('version.json?ts='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
      const remote=await r.json(); window.KC_FUTURA_RELEASE=remote;
-     document.querySelectorAll('[data-academy-release]').forEach(n=>n.textContent=remote.academyVersion||'Beta 2.2.2');
+     document.querySelectorAll('[data-academy-release]').forEach(n=>n.textContent=remote.academyVersion||'Beta 2.2.3');
      const current=String(LOCAL.academyVersionNumber||'2.2.2');
      if(String(remote.academyVersionNumber||current)!==current){
        const b=document.getElementById('kcUpdateBanner'); if(b){b.hidden=false;document.getElementById('kcUpdateText').textContent=text(remote)}

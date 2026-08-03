@@ -1,0 +1,225 @@
+{
+  "version": "3.03",
+  "note": "Nur Schulungsressourcen. Bilder können bei unveränderten Dateinamen jederzeit ersetzt werden.",
+  "areas": [
+    {
+      "id": "kopfzeile",
+      "file": "01_kopfzeile.svg",
+      "title": "Kopfzeile",
+      "subtitle": "Vereinsname · Veranstaltung · Bediener · Status · Uhrzeit",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Vereins- und Veranstaltungsname",
+          "text": "Zeigt, für welchen Verein und welche Veranstaltung der Bilderrechner gerade verwendet wird."
+        },
+        {
+          "title": "Kassenname",
+          "text": "Kennzeichnet eindeutig, an welcher Kasse gearbeitet wird."
+        },
+        {
+          "title": "Bediener",
+          "text": "Zeigt die aktuell angemeldete Person."
+        },
+        {
+          "title": "Datum und Uhrzeit",
+          "text": "Dienen der zeitlichen Orientierung und der korrekten Zuordnung von Vorgängen."
+        },
+        {
+          "title": "Status und Programmtasten",
+          "text": "Hier befinden sich Statusanzeigen sowie Ton, Menü, Sperre und Programmende."
+        }
+      ]
+    },
+    {
+      "id": "meldungszeile",
+      "file": "02_meldungszeile.svg",
+      "title": "Meldungs- und Moduszeile",
+      "subtitle": "Bediener · Suche · Trainingsmodus · Stoßzeiten · Happy Hour · Meldungen",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Bedieneranzeige",
+          "text": "Bestätigt noch einmal, wer den Bilderrechner gerade bedient."
+        },
+        {
+          "title": "Artikelsuche",
+          "text": "Hilft, einen Artikel schnell über seinen Namen zu finden."
+        },
+        {
+          "title": "Trainingsmodus",
+          "text": "Kennzeichnet Übungsvorgänge, die nicht als normaler Verkauf zählen."
+        },
+        {
+          "title": "Stoßzeiten",
+          "text": "Vereinfacht die Oberfläche bei starkem Andrang."
+        },
+        {
+          "title": "Happy Hour",
+          "text": "Zeigt an, ob zeitabhängige Sonderpreise aktiv sind."
+        },
+        {
+          "title": "Meldungsanzeige",
+          "text": "Informiert über Hinweise, Warnungen und den aktuellen Betriebszustand."
+        }
+      ]
+    },
+    {
+      "id": "warengruppen",
+      "file": "03_warengruppen.svg",
+      "title": "Warengruppen",
+      "subtitle": "Auswahl und Navigation der Warengruppen",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Warengruppen",
+          "text": "Bestimmen, welche passenden Artikel auf der Fläche angezeigt werden."
+        },
+        {
+          "title": "Artikelbild",
+          "text": "Erleichtert das schnelle Erkennen des gewünschten Artikels."
+        },
+        {
+          "title": "Artikelname und Preis",
+          "text": "Zeigen eindeutig, was gebucht wird und welcher Preis gilt."
+        },
+        {
+          "title": "Info-Taste",
+          "text": "Öffnet hinterlegte Informationen wie Allergene und weitere Hinweise."
+        },
+        {
+          "title": "Plus-Taste",
+          "text": "Öffnet Varianten oder Zusätze, ohne den Standardartikel zu verändern."
+        },
+        {
+          "title": "Happy-Hour-Kennzeichnung",
+          "text": "Macht einen aktuell geltenden Sonderpreis sichtbar."
+        }
+      ]
+    },
+    {
+      "id": "warenkorb",
+      "file": "05_warenkorb.svg",
+      "title": "Warenkorb",
+      "subtitle": "Positionen · Mengen · Löschen · Rabatt · Gesamtsumme",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Artikelpositionen",
+          "text": "Zeigen alle ausgewählten Artikel einzeln an."
+        },
+        {
+          "title": "Mengensteuerung",
+          "text": "Erhöht oder verringert die Menge des markierten Artikels."
+        },
+        {
+          "title": "Mülleimer je Position",
+          "text": "Entfernt nur den betreffenden Artikel aus dem offenen Warenkorb."
+        },
+        {
+          "title": "Rabattbereich",
+          "text": "Zeigt gegebenenfalls einen Positions- oder Gesamtrabatt."
+        },
+        {
+          "title": "Gesamtsumme",
+          "text": "Zeigt den aktuell zu zahlenden Gesamtbetrag."
+        }
+      ]
+    },
+    {
+      "id": "zahlungsbereich",
+      "file": "06_zahlungsbereich.svg",
+      "title": "Zahlungsbereich",
+      "subtitle": "Scheine · Münzen · Rückgeld · Stimmt so · Bar · QR/Karte",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Scheine und Münzen",
+          "text": "Erfassen, welchen Bargeldbetrag der Gast gegeben hat."
+        },
+        {
+          "title": "Gegebener Betrag",
+          "text": "Zeigt die bereits erfasste Zahlung."
+        },
+        {
+          "title": "Offener Betrag und Rückgeld",
+          "text": "Zeigen, was noch fehlt oder zurückgegeben werden muss."
+        },
+        {
+          "title": "Stimmt so",
+          "text": "Behandelt einen Mehrbetrag als Trinkgeld."
+        },
+        {
+          "title": "Bar, QR und Karte",
+          "text": "Schließen den Vorgang mit der jeweils freigegebenen Zahlungsart ab."
+        }
+      ]
+    },
+    {
+      "id": "sondertasten",
+      "file": "07_sondertasten.svg",
+      "title": "Sondertasten",
+      "subtitle": "Personal · Pfand · Trinkgeld · Reklamation · Bon · Mehr",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Personal",
+          "text": "Bucht Personalbeköstigung als eigene Buchungsart."
+        },
+        {
+          "title": "Pfandrückgabe",
+          "text": "Erfasst zurückgegebene Gläser oder Feuerzangen."
+        },
+        {
+          "title": "Trinkgeld",
+          "text": "Ermöglicht zusätzliche oder nachträgliche Trinkgeldbuchungen."
+        },
+        {
+          "title": "Reklamation",
+          "text": "Bearbeitet einen bereits abgeschlossenen Vorgang nachvollziehbar."
+        },
+        {
+          "title": "Bon",
+          "text": "Öffnet Bonfunktionen und vorhandene Belege."
+        },
+        {
+          "title": "Mehr",
+          "text": "Öffnet weitere, seltener benötigte Funktionen."
+        }
+      ]
+    },
+    {
+      "id": "warengruppen_artikel",
+      "file": "03_warengruppen.svg",
+      "title": "Warengruppen und Artikelbuttons",
+      "subtitle": "Auswahl und Navigation der Warengruppen",
+      "status": "placeholder",
+      "features": [
+        {
+          "title": "Warengruppen",
+          "text": "Bestimmen, welche passenden Artikel auf der Fläche angezeigt werden."
+        },
+        {
+          "title": "Artikelbild",
+          "text": "Erleichtert das schnelle Erkennen des gewünschten Artikels."
+        },
+        {
+          "title": "Artikelname und Preis",
+          "text": "Zeigen eindeutig, was gebucht wird und welcher Preis gilt."
+        },
+        {
+          "title": "Info-Taste",
+          "text": "Öffnet hinterlegte Informationen wie Allergene und weitere Hinweise."
+        },
+        {
+          "title": "Plus-Taste",
+          "text": "Öffnet Varianten oder Zusätze, ohne den Standardartikel zu verändern."
+        },
+        {
+          "title": "Happy-Hour-Kennzeichnung",
+          "text": "Macht einen aktuell geltenden Sonderpreis sichtbar."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f3553"/><stop offset="1" stop-color="#17668a"/></linearGradient></defs>
+<rect width="1440" height="760" rx="34" fill="url(#bg)"/>
+<rect x="55" y="55" width="1330" height="650" rx="28" fill="#fff" opacity=".97"/>
+<text x="720" y="265" text-anchor="middle" font-family="Arial,sans-serif" font-size="58" font-weight="700" fill="#143d5b">Zahlungsbereich</text>
+<text x="720" y="350" text-anchor="middle" font-family="Arial,sans-serif" font-size="31" fill="#536979">Scheine · Münzen · Rückgeld · Stimmt so · Bar · QR/Karte</text>
+<rect x="370" y="430" width="700" height="105" rx="18" fill="#fff5c7" stroke="#d39b00" stroke-width="3"/>
+<text x="720" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#704f00">VORLÄUFIGER PLATZHALTER</text>
+<text x="720" y="518" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" fill="#704f00">Später durch den endgültigen Screenshot ersetzen</text>
+<text x="720" y="635" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" fill="#71869a">KC Bilderrechner · Interaktive Schulung FUTURA</text>
+</svg>

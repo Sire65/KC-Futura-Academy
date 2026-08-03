@@ -1,0 +1,12 @@
+{
+  "schema": "KC_TRAINING_VERSION_MANIFEST_V1",
+  "product": "KC Bilderrechner – Interaktive Schulung",
+  "trainingVersion": "3.1.0-FUTURA",
+  "basedOnProductVersion": "0.31.3.6.11",
+  "supportedUiSchema": "0.31.3.6-r11-ui.1",
+  "compatibleProductRange": "0.31.3.6 Repair 11",
+  "status": "Candidate",
+  "change": "Erster Lernschritt startet automatisch mit fester Reihenfolge Erklärung, Vorführung und Extra-Tipp. Wissensfragen werden erst danach freigegeben.",
+  "version": "3.11 FUTURA",
+  "notes": "Tiefenprüfung mit 24 automatisierten Syntax-, Struktur-, Zustands- und Ablaufprüfungen. Browserautomatisierung bleibt durch lokale Administratorrichtlinie blockiert."
+}

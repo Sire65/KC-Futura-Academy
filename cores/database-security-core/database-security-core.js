@@ -1,6 +1,6 @@
 'use strict';
 (function(){
- const VERSION=(window.KC_FUTURA_VERSION?.databaseCoreVersion||'0.6.1'), ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersion||'Beta 2.2.2'), AUDIT='kcDbSecurityAuditV1', POLICY='kcDeviceSecurityPolicyV1', TESTS='kcDbSecurityTestResultsV1';
+ const VERSION=(window.KC_FUTURA_VERSION?.databaseCoreVersion||'0.6.1'), ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersion||'Beta 2.2.3'), AUDIT='kcDbSecurityAuditV1', POLICY='kcDeviceSecurityPolicyV1', TESTS='kcDbSecurityTestResultsV1';
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const read=(k,f)=>{try{return JSON.parse(window.KCSecureStorage?.getItem(k)||'null')??f}catch{return f}};
  const write=(k,v)=>window.KCSecureStorage?.setItem(k,JSON.stringify(v));

@@ -2,8 +2,8 @@
   "schema": "KC_RELEASE_MANIFEST_V1",
   "product": "KC FUTURA Academy",
   "version": "2.2.2",
-  "displayVersion": "Beta 2.2.2",
-  "academyVersion": "Beta 2.2.2",
+  "displayVersion": "Beta 2.2.3",
+  "academyVersion": "Beta 2.2.3",
   "databaseCoreVersion": "0.6.1",
   "build": "2026-08-03T12:45:00+02:00"
 }
