@@ -15,3 +15,10 @@ window.KC_DEPLOYMENT_CONFIG={
     subject:'KC FUTURA Supportbericht'
   }
 };
+/* Karriereleiter wird nur innerhalb der FUTURA-Academy nachgeladen; Training/POS bleiben unverändert. */
+if(/\/academy\/(?:index\.html)?$/i.test(location.pathname)){
+  const s=document.createElement('script');
+  s.src='karriereleiter/academy-launcher.js?v=1.2.0';
+  s.defer=true;
+  document.head.appendChild(s);
+}
