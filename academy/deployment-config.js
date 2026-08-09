@@ -15,3 +15,10 @@ window.KC_DEPLOYMENT_CONFIG={
     subject:'KC FUTURA Supportbericht'
   }
 };
+/* KC FUTURA Karriereleiter Release 1.3.1 – nur innerhalb der Academy laden. */
+if(/\/academy\/(?:index\.html)?$/i.test(location.pathname)){
+  const s=document.createElement('script');
+  s.src='karriereleiter/academy-launcher.js?v=1.3.1';
+  s.defer=true;
+  document.head.appendChild(s);
+}
