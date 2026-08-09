@@ -1,0 +1,27 @@
+name: Karriereleiter Release Gate
+
+on:
+  pull_request:
+    paths:
+      - 'academy/karriereleiter/**'
+      - 'academy/deployment-config.js'
+      - 'scripts/verify_karriereleiter_release.py'
+      - '.github/workflows/karriereleiter-release.yml'
+  push:
+    branches:
+      - 'release/karriereleiter-*'
+    paths:
+      - 'academy/karriereleiter/**'
+      - 'academy/deployment-config.js'
+      - 'scripts/verify_karriereleiter_release.py'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Karriereleiter release integrity
+        run: python scripts/verify_karriereleiter_release.py
