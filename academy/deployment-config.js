@@ -16,3 +16,12 @@ window.KC_DEPLOYMENT_CONFIG={
     subject:'KC FUTURA Supportbericht'
   }
 };
+(function loadKiccTelemetry(){
+  if(document.querySelector('script[data-kicc-futura]'))return;
+  const script=document.createElement('script');
+  script.src='kicc-heartbeat.js?v=2.5.1-kicc1';
+  script.async=true;
+  script.dataset.kiccFutura='1';
+  script.onerror=()=>{window.KC_FUTURA_KICC_STATE={programId:'kc-futura-academy',localBridge:false,remoteBridge:false,lastError:'KICC_TELEMETRY_LOAD_FAILED'};};
+  (document.head||document.documentElement).appendChild(script);
+})();
