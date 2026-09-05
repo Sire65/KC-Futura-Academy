@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#17130f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Karriereleiter V19.8 · Didaktik 1.3 · 418</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app" class="app-shell">
+  <section id="startScreen" class="screen start-screen active">
+    <div class="start-panel">
+      <div class="brand-line"><span>KC FUTURA · KARRIERE-CHALLENGE</span><b>V19.8 · Didaktik 1.3 · 418</b></div>
+      <h1>Karriereleiter</h1>
+      <p>Wähle einen oder mehrere Berufe. Bei Mehrfachwahl mischt Karriereleiter die Fragen aus deinen gewählten Laufbahnen.</p>
+      <div class="profession-picker" aria-label="Berufslaufbahnen">
+        <label class="profession-card"><input type="checkbox" value="Küche" checked><span class="profession-icon">🍳</span><span><b>Koch / Köchin</b><small>Küche · Service · Warenkunde</small></span></label>
+        <label class="profession-card"><input type="checkbox" value="Bäckerei"><span class="profession-icon">🥖</span><span><b>Bäcker / Bäckerin</b><small>Teige · Brot · Produktion</small></span></label>
+        <label class="profession-card"><input type="checkbox" value="Konditorei"><span class="profession-icon">🍰</span><span><b>Konditor / Konditorin</b><small>Patisserie · Schokolade · Torten</small></span></label>
+        <label class="profession-card"><input type="checkbox" value="Metzgerei"><span class="profession-icon">🥩</span><span><b>Fleischer / Metzger</b><small>Fleisch · Wurst · Warenkunde</small></span></label>
+      </div>
+      <div id="lastStandInfo" class="last-stand hidden"></div>
+      <div id="startCareerRibbon" class="career-ribbon"></div>
+      <div class="mentor-row">
+        <article><img src="assets/antoine.jpg" alt="Antoine"><div><b>Antoine</b><span>klassische Küche · Saucen · Menü</span></div></article>
+        <article><img src="assets/viktor.jpg" alt="Viktor"><div><b>Viktor</b><span>Regionalküche · Fleisch · Garnituren</span></div></article>
+        <article><img src="assets/sofia.jpg" alt="Sofia"><div><b>Sofia</b><span>Warenkunde · Hygiene · Organisation</span></div></article>
+      </div>
+      <div class="start-actions">
+        <button id="continueBtn" type="button" class="primary-btn hidden">Weiter beim letzten Stand</button>
+        <button id="startBtn" type="button" class="secondary-btn">Neue Karriere</button><button id="examCenterStartBtn" type="button" class="primary-btn">🎓 Prüfungsvorbereitung</button><button id="flashcardsStartBtn" type="button" class="secondary-btn">🗂️ Mein Lernkasten</button><button id="anatomyLabStartBtn" type="button" class="secondary-btn">🐄 Teilstücke lernen & Puzzle</button><button id="kitchenBookStartBtn" type="button" class="secondary-btn">📚 Küchenbuch</button>
+      </div>
+      <div class="start-foot"><span>IndexedDB lokal</span><span>Supabase vorbereitet</span><span>Tablet ohne Scrollen</span></div>
+    </div>
+  </section>
+
+  <section id="gameScreen" class="screen game-screen">
+    <header class="topbar">
+      <div class="rank-block"><span id="professionStatus">Koch / Köchin</span><strong id="rankName">Praktikant</strong></div>
+      <div class="top-stat"><span>Punkte</span><b id="score">0</b></div>
+      <div class="top-stat optional"><span>Treffer</span><b id="accuracy">100%</b></div>
+      <div class="question-progress-box">
+        <div><span id="questionCounter">Frage 1 / 10</span><small id="difficulty">Grundlage</small></div>
+        <div class="question-progress"><i id="questionProgressFill"></i></div>
+      </div>
+      <button id="onlineBtn" class="icon-btn" aria-label="Online-Spieler">👥<i id="onlineDot"></i></button>
+      <button id="voiceBtn" class="icon-btn" aria-label="Sprache ein oder aus">🔊</button>
+      <button id="pauseBtn" class="icon-btn pause" aria-label="Pause">Ⅱ</button>
+      <div class="db-led-cluster" aria-label="Datenbankstatus">
+        <div class="db-led-stack" title="IndexedDB"><span>IDB</span><i id="idbConnLed" class="db-led green"></i><i id="idbTrafficLed" class="db-led yellow"></i></div>
+        <div class="db-led-stack" title="Supabase"><span>SB</span><i id="supabaseConnLed" class="db-led green"></i><i id="supabaseTrafficLed" class="db-led yellow"></i></div>
+      </div>
+      <button id="exitBtn" class="icon-btn exit-btn" aria-label="Karriereleiter verlassen" title="Ausgang">🚪</button>
+    </header>
+
+    <div class="career-strip">
+      <div id="careerSteps" class="career-steps"></div>
+      <div class="career-progress-line"><div class="progress-track"><i id="rankProgress"></i></div><span id="streakInfo"></span></div>
+    </div>
+
+    <main class="game-workspace">
+      <section class="challenge-card">
+        <div class="challenge-head">
+          <div><span id="sectionEyebrow" class="section-eyebrow hidden">Materialkunde</span><span id="category" class="category">Gerichte & Zutaten</span><h2 id="title">Aufgabe</h2></div>
+          <div class="challenge-meta"><button id="calculatorBtn" class="calc-launch hidden" aria-label="Rechner öffnen">🧮 <span>Rechner</span></button><span id="timeBonus">ohne Zeitdruck</span><span id="examBadge" class="exam-badge hidden">PRÜFUNG</span></div>
+        </div>
+        <p id="prompt" class="prompt"></p>
+        <div id="questionArea" class="question-area"></div>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <div id="repeatRow" class="repeat-row hidden"><button id="repeatBtn" class="repeat-btn">↻ Frage wiederholen</button><span>Wiederholung = Lernbonus, keine doppelte Karrierewertung</span></div>
+        <aside id="knowledgeCard" class="knowledge-card hidden">
+          <div><b id="knowledgeTitle">Gut zu wissen</b><span class="knowledge-actions"><button id="bookmarkKnowledgeBtn" class="tiny-icon" aria-label="Wissenskarte merken" title="Im Küchenbuch merken">☆</button><button id="speakKnowledgeBtn" class="tiny-icon" aria-label="Erklärung vorlesen">🔊</button></span></div>
+          <p id="knowledgeText"></p>
+          <div id="knowledgeFacts" class="knowledge-facts"></div>
+        </aside>
+        <div id="deepDiveRow" class="deep-dive-row hidden"><button id="deepDiveBtn" class="deep-dive-btn">📖 Rezept</button><span>Zusatzwissen erst nach der Lösung</span></div>
+      </section>
+
+      <aside class="mentor-panel">
+        <div class="mentor-head"><img id="mentorImage" src="assets/antoine.jpg" alt="Antoine"><div><span>Dein Küchenmentor</span><h3 id="mentorName">Antoine</h3><p id="mentorRole"></p></div></div>
+        <div class="mentor-bubble"><b id="mentorBubbleTitle">Bereit?</b><p id="mentorBubbleText">Ich helfe dir, wenn du mich brauchst.</p></div>
+        <div class="speech-module">
+          <div class="speech-title"><b>Sprache</b><span id="speechStatus">bereit</span></div>
+          <canvas id="speechScope" width="280" height="52" aria-label="Sprachoszilloskop"></canvas>
+          <div class="speech-actions">
+            <button id="readQuestionBtn" class="speech-btn">Frage vorlesen</button>
+            <button id="autoReadBtn" class="speech-btn active">Auto an</button>
+          </div>
+        </div>
+        <button id="advisorBtn" class="advisor-btn"><img id="advisorFace" src="assets/antoine.jpg" alt=""><span><b id="advisorName">Antoine fragen</b><small id="jokerCount">3 Joker</small></span></button>
+        <button id="examPrepBtn" class="prep-btn">Prüfung vorbereiten</button>
+      </aside>
+    </main>
+
+    <footer class="game-footer">
+      <button id="homeBtn" class="secondary-btn compact">Menü</button><button id="anatomyLabGameBtn" class="secondary-btn compact">🐄 Teilstücke</button><button id="kitchenBookGameBtn" class="secondary-btn compact" aria-label="Mein Küchenbuch">📚</button>
+      <div id="roundHint" class="round-hint">Runde mit 10 Aufgaben</div>
+      <button id="nextBtn" class="primary-btn compact" disabled>Weiter</button>
+    </footer>
+  </section>
+
+  <section id="summaryScreen" class="screen summary-screen">
+    <div class="summary-card">
+      <header><div><span class="eyebrow">RUNDENAUSWERTUNG</span><h2 id="summaryTitle">Deine Runde</h2></div><div class="summary-score"><b id="summaryCorrect">0 / 10</b><span id="summaryPercent">0 %</span><small id="summaryRepeatInfo" class="summary-repeat-info">keine Wiederholung</small><small id="summaryQuickInfo" class="summary-quick-info">Quick: —</small><small id="summaryBonusInfo" class="summary-bonus-info">Zusatzaufgaben: —</small></div></header>
+      <div class="summary-grid">
+        <div class="donut-card"><div id="resultDonut" class="donut"><div><b id="donutPercent">0%</b><span>richtig</span></div></div><div class="legend"><span><i class="lg-good"></i>richtig <b id="legendGood">0</b></span><span><i class="lg-bad"></i>falsch <b id="legendBad">0</b></span><span><i class="lg-joker"></i>Joker <b id="legendJoker">0</b></span></div></div>
+        <div class="category-card"><h3>Fachgebiete</h3><div id="categoryBars" class="category-bars"></div></div>
+        <div class="time-card"><h3>Zeit & Tempo</h3><div class="time-kpis"><div><span>Gesamt</span><b id="totalTime">0:00</b></div><div><span>Ø Antwort</span><b id="avgTime">0 s</b></div><div><span>Schnellste</span><b id="fastTime">0 s</b></div></div><div id="timeBars" class="time-bars"></div></div>
+        <div class="career-card"><h3>Karriere</h3><div class="career-big"><b id="summaryRank">Praktikant</b><span id="summaryNext">bis Azubi</span></div><div class="progress-track large"><i id="summaryCareerFill"></i></div><p id="summaryCareerText"></p><p id="summaryLearningFocus" class="summary-learning-focus"></p><div class="mentor-summary"><img id="summaryMentorImg" src="assets/sofia.jpg" alt=""><p id="summaryMentorText"></p></div></div>
+      </div>
+      <footer><button id="summaryHomeBtn" class="secondary-btn">Menü</button><button id="summaryPrepBtn" class="secondary-btn hidden">5 Übungen</button><button id="summaryActionBtn" class="primary-btn">Nächste Runde</button></footer>
+    </div>
+  </section>
+
+  <section id="promotionScreen" class="screen promotion-screen"><div class="promotion-card"><span class="eyebrow">BEFÖRDERUNG</span><div class="promotion-portrait"><img id="promotionMentor" src="assets/antoine.jpg" alt=""><div><h2 id="promotionTitle">Azubi</h2><p id="promotionText"></p></div></div><div id="promotionUnlock" class="unlock-box"></div><div id="promotionStats" class="promotion-mini-stats"></div><div class="promotion-actions"><button id="certificateBtn" class="secondary-btn">🖨 Stufenurkunde</button><button id="promotionBtn" class="primary-btn">Weiter</button></div></div></section>
+
+  <section id="endScreen" class="screen end-screen"><div class="promotion-card"><span class="eyebrow">KARRIERE GEMEISTERT</span><h2>Küchendirektor</h2><p id="endText"></p><div class="final-stats"><div><span>Punkte</span><b id="finalScore">0</b></div><div><span>Richtig</span><b id="finalCorrect">0</b></div><div><span>Beste Serie</span><b id="finalCombo">x1</b></div></div><div class="promotion-actions"><button id="finalCertificateBtn" class="secondary-btn">🖨 Abschlussurkunde</button><button id="playAgainBtn" class="primary-btn">Neue Karriere</button><button id="endHomeBtn" class="secondary-btn">Menü</button></div></div></section>
+
+  <div id="pauseOverlay" class="overlay hidden"><div class="pause-card"><div class="pause-symbol">Ⅱ</div><h2>Pause</h2><p>Die Runde und der Zeitbonus sind angehalten.</p><button id="resumeBtn" class="primary-btn">Fortsetzen</button></div></div>
+
+
+  <div id="calculatorOverlay" class="overlay calculator-overlay hidden"><div class="calculator-sheet" role="dialog" aria-modal="true" aria-label="Rechner"><header><div><span class="eyebrow">RECHNER</span><h3>Zum Rechnen</h3></div><button id="closeCalculatorBtn" class="icon-btn" aria-label="Rechner schließen">×</button></header><div class="calc-display"><small id="calcExpression">0</small><strong id="calcResult">0</strong></div><div id="calcKeys" class="calc-keys" aria-label="Rechnertastatur"><button data-key="C" class="calc-clear">C</button><button data-key="⌫">⌫</button><button data-key="%">%</button><button data-key="÷" class="calc-op">÷</button><button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="×" class="calc-op">×</button><button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="−" class="calc-op">−</button><button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="+" class="calc-op">+</button><button data-key="0" class="calc-zero">0</button><button data-key=",">,</button><button data-key="=" class="calc-equals">=</button></div><p>Der Rechner hilft beim Rechenweg. Die Antwort wählst du anschließend in der Aufgabe aus.</p></div></div>
+
+  <div id="quickOverlay" class="overlay quick-overlay hidden"><div class="quick-sheet" role="dialog" aria-modal="true" aria-label="Quick Challenge">
+    <header class="quick-head"><div><span class="quick-kicker">⚡ QUICK!</span><h2 id="quickTitle">Schnell entscheiden</h2><p id="quickPrompt"></p></div><div class="quick-clock"><b id="quickTimerText">15</b><small>Sek.</small></div></header>
+    <div class="quick-timer"><i id="quickTimerFill"></i></div>
+    <div class="quick-workspace"><div class="quick-basket"><div class="basket-art">🧺</div><b id="quickBasketLabel">Einkaufskorb</b><div id="quickBasketItems" class="quick-basket-items"></div><span id="quickProgress">0 / 0</span></div><div id="quickItems" class="quick-items"></div></div>
+    <div id="quickFeedback" class="quick-feedback">Ziehe oder tippe die richtigen Dinge in den Korb.</div>
+    <footer><span id="quickPenaltyHint">Falscher Griff kostet 2 Sekunden.</span><button id="quickContinueBtn" class="primary-btn compact hidden">Weiter</button></footer>
+  </div></div>
+
+  <div id="deepDiveModal" class="overlay deep-dive-overlay hidden"><div class="deep-dive-sheet" role="dialog" aria-modal="true" aria-label="Rezept und Fachwissen">
+    <header><div><span id="deepDiveKind" class="eyebrow">REZEPT</span><h2 id="deepDiveTitle">Rezept</h2><p id="deepDiveSubtitle"></p></div><button id="closeDeepDiveBtn" class="icon-btn" aria-label="Schließen">×</button></header>
+    <div class="deep-dive-content"><figure id="deepDiveFigure" class="deep-dive-figure hidden"><img id="deepDiveImage" alt=""></figure><section><h3 id="deepDiveIngredientHeading">Zutaten</h3><div id="deepDiveIngredients" class="deep-dive-ingredients"></div></section><section><h3 id="deepDiveStepHeading">Zubereitung</h3><ol id="deepDiveSteps" class="deep-dive-steps"></ol></section><aside id="deepDiveTip" class="deep-dive-tip"></aside></div>
+    <footer><button id="speakDeepDiveBtn" class="secondary-btn compact">🔊 Vorlesen</button><button id="deepDiveBackBtn" class="primary-btn compact">Zurück zum Spiel</button></footer>
+  </div></div>
+
+  <div id="kitchenBookModal" class="overlay kitchen-book-overlay hidden"><div class="kitchen-book-sheet" role="dialog" aria-modal="true" aria-label="Mein Küchenbuch">
+    <header><div><span class="eyebrow">MEIN KÜCHENBUCH</span><h2>Entdecktes Fachwissen</h2><p>Gespeicherte Rezepte und Wissenskarten aus deinen bisherigen Runden.</p></div><button id="closeKitchenBookBtn" class="icon-btn" aria-label="Schließen">×</button></header>
+    <div class="book-toolbar"><div class="book-filters"><button class="active" data-book-filter="all">Alle</button><button data-book-filter="Rezept">Rezepte</button><button data-book-filter="Wissenskarte">Wissen</button><button data-book-filter="Fachwissen">Fachwissen</button></div><span id="bookCount">0 Einträge</span></div>
+    <div id="kitchenBookGrid" class="kitchen-book-grid"></div>
+    <footer><button id="bookPrevBtn" class="secondary-btn compact">‹ Zurück</button><span id="bookPageInfo">1 / 1</span><button id="bookNextBtn" class="secondary-btn compact">Weiter ›</button></footer>
+  </div></div>
+
+
+  <div id="anatomyLabModal" class="overlay anatomy-lab-overlay hidden"><div class="anatomy-lab-sheet" role="dialog" aria-modal="true" aria-label="Teilstücke lernen und Puzzle"><header><div><span class="eyebrow">FLEISCHKUNDE · LERNEN & PUZZLE</span><h3 id="anatomyLabTitle">Teilstücke trainieren</h3></div><button id="closeAnatomyLabBtn" class="icon-btn" aria-label="Schließen">×</button></header><div class="anatomy-lab-toolbar"><div id="anatomyLabAnimals" class="anatomy-animal-selector"></div><div class="anatomy-mode-selector"><button id="anatomyLearnModeBtn" type="button" class="anatomy-mode-btn">📖 Lernen</button><button id="anatomyPuzzleModeBtn" type="button" class="anatomy-mode-btn active">🧩 Puzzle</button></div></div><p id="anatomyLabStatus" class="anatomy-lab-status">Wähle ein Tier.</p><div id="anatomyLabPuzzle" class="anatomy-lab-puzzle"></div></div></div>
+
+
+  <div id="flashcardsModal" class="overlay flashcards-overlay hidden"><div class="flashcards-sheet" role="dialog" aria-modal="true" aria-label="Mein Lernkasten">
+    <header><div><span class="eyebrow">ADAPTIVER KARTEIKASTEN</span><h3>🗂️ Mein Lernkasten</h3><p>Fällige Karten, persönliche Schwächen und prüfungsrelevantes Fachwissen.</p></div><button id="closeFlashcardsBtn" class="icon-btn" aria-label="Schließen">×</button></header>
+    <div class="flashcards-stats"><div><b id="flashDueCount">0</b><span>Heute fällig</span></div><div><b id="flashTotalCount">0</b><span>Karten gesamt</span></div><div><b id="flashMasteredCount">0</b><span>Fach 5</span></div><div><b id="flashWeakCount">0</b><span>Schwächen</span></div></div>
+    <div class="flashcards-toolbar"><button class="active" data-flash-filter="due">Heute fällig</button><button data-flash-filter="weak">Schwächen</button><button data-flash-filter="exam">Prüfungskarten</button><button data-flash-filter="all">Alle Karten</button><button id="flashSeedBtn" class="secondary-btn compact">+ Lernkarten ergänzen</button></div>
+    <div id="flashEmpty" class="flash-empty hidden">Für diesen Filter sind gerade keine Karten fällig.</div>
+    <div id="flashStudy" class="flash-study">
+      <div class="flash-meta"><span id="flashCategory">Fachwissen</span><span id="flashBox">Fach 1</span><span id="flashProgress">1 / 1</span></div>
+      <button id="flashCard" class="flash-card" type="button" aria-label="Lernkarte umdrehen"><div class="flash-front"><img id="flashImage" class="hidden" alt=""><small>FRAGE</small><h2 id="flashFront">Frage</h2><span>Antippen zum Umdrehen</span></div><div class="flash-back"><small>ANTWORT & ZUSATZWISSEN</small><h2 id="flashBackTitle">Antwort</h2><p id="flashBack">Erklärung</p><div id="flashFacts" class="flash-facts"></div></div></button>
+      <div id="flashRateRow" class="flash-rate hidden"><button data-flash-rate="again">↻ Nochmal</button><button data-flash-rate="hard">Unsicher</button><button data-flash-rate="good" class="primary-btn">Gewusst</button><button data-flash-rate="easy">Sehr sicher</button></div>
+    </div>
+    <footer><span id="flashHint">Leitner-System: Sichere Karten wandern in höhere Fächer und erscheinen seltener.</span><button id="flashSpeakBtn" class="secondary-btn compact">🔊 Vorlesen</button></footer>
+  </div></div>
+
+  <div id="examCenterModal" class="overlay exam-center-overlay hidden"><div class="exam-center-sheet" role="dialog" aria-modal="true" aria-label="Prüfungsvorbereitung"><header><div><span class="eyebrow">PRÜFUNGSZENTRUM</span><h3>Abschluss-, Gesellen- & Meisterprüfung</h3></div><button id="closeExamCenterBtn" class="icon-btn" aria-label="Schließen">×</button></header><div class="exam-center-grid"><div><p class="exam-intro">Wähle dein Prüfungsziel. Das Training mischt Fachfragen nach den hinterlegten Prüfungsbereichen. Es sind keine Originalprüfungsaufgaben.</p><div id="examProfileGrid" class="exam-profile-grid"></div></div><section id="examProfileDetail" class="exam-profile-detail"><h3 id="examProfileTitle">Prüfung</h3><h4>Prüfungsbereiche</h4><ul id="examAreaList"></ul><h4>Praxis-Checkliste</h4><ul id="examPracticeList"></ul><p id="examSourceNote" class="exam-source-note"></p><button id="examStartSimulationBtn" class="primary-btn">Prüfungstraining starten</button></section></div></div></div>
+  <div id="advisorModal" class="overlay hidden"><div class="modal-sheet"><header><div><span class="eyebrow">JOKER & TIPPGEBER</span><h3>Chef fragen</h3></div><button id="closeAdvisorBtn" class="icon-btn">×</button></header><p>Ein Joker gibt einen kurzen fachlichen Hinweis. Die Avatare erklären außerdem falsche Antworten.</p><div id="advisorCards" class="advisor-cards"></div></div></div>
+
+  <div id="onlineModal" class="overlay hidden"><div class="modal-sheet online-sheet"><header><div><span class="eyebrow">ONLINE & CHALLENGE</span><h3>Wer spielt gerade?</h3></div><button id="closeOnlineBtn" class="icon-btn">×</button></header><div class="online-status"><i id="onlineStatusDot"></i><b id="onlineStatusText">Supabase nicht verbunden</b></div><div class="player-profile"><label>Spielname<input id="playerNameInput" maxlength="24" placeholder="z. B. Hans"></label><button id="savePlayerNameBtn" class="secondary-btn compact">Speichern</button></div><div id="onlinePlayers" class="online-players"><p class="empty">Sobald Futura/Supabase verbunden ist, erscheinen hier aktive Spieler.</p></div><div id="incomingChallenge" class="incoming-challenge hidden"></div></div></div>
+</div>
+<script src="futura-preload.js"></script>
+<script src="crypto.js"></script>
+<script src="storage.js"></script>
+<script src="flashcards.js"></script>
+<script src="online.js"></script>
+<script src="admin.js"></script>
+<script src="adaptive.js"></script>
+<script src="didaktik-core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

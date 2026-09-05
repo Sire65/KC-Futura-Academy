@@ -23,6 +23,7 @@ function setVoiceMonitor(mode='ready',label=''){
   voiceMonitor.classList.add(`is-${mode}`);
   const defaultLabel={ready:'Ton bereit',speaking:'Stimme läuft',pending:'Stimme startet',off:'Ton aus',error:'Tonfehler'}[mode]||'Ton bereit';
   if(voiceMonitorText)voiceMonitorText.textContent=label||defaultLabel;
+  window.dispatchEvent(new CustomEvent('kc:voice-monitor',{detail:{mode,label:label||defaultLabel}}));
 }
 async function unlockAcademyAudio(){
   try{
@@ -37,7 +38,9 @@ function primeAcademySpeech(){
   if(academySpeechPrimed||!('speechSynthesis' in window))return;
   academySpeechPrimed=true;
   try{
-    speechSynthesis.cancel();speechSynthesis.resume();
+    /* 02.09.2026: Auch hier nur abbrechen, wenn wirklich etwas laeuft - siehe VoiceCore.stop(). */
+    if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
+    speechSynthesis.resume();
     const u=new SpeechSynthesisUtterance(' ');u.lang='de-DE';u.volume=.01;u.rate=1;
     u.onend=()=>{try{speechSynthesis.resume()}catch{}};speechSynthesis.speak(u);
   }catch{academySpeechPrimed=false}
@@ -66,7 +69,8 @@ const sceneProgress=document.querySelector('#sceneProgress');
 const dateDisplay=document.querySelector('#dateDisplay');
 const clockDisplay=document.querySelector('#clockDisplay');
 const elapsedDisplay=document.querySelector('#elapsedDisplay');
-const AV='assets/avatars_clean/';
+const ACADEMY_SCRIPT_BASE=new URL('./',document.currentScript?.src||location.href);
+const AV=new URL('assets/avatars_clean/',ACADEMY_SCRIPT_BASE).href;
 
 const safeParse=(s,f)=>{try{return JSON.parse(s)}catch{return f}};
 const flashLed=el=>{if(!el)return;el.classList.remove('is-active');void el.offsetWidth;el.classList.add('is-active');setTimeout(()=>el.classList.remove('is-active'),650)};
@@ -77,20 +81,25 @@ const launchParams=new URLSearchParams(location.search);
 const launchName=(launchParams.get('name')||'').trim();
 const launchCoach=launchParams.get('coach');
 const launchAddress=launchParams.get('address');
+const launchVoice=launchParams.get('voice');
 const launchModule=launchParams.get('module');
 const returnUrl=launchParams.get('return')||'../training-video/index.html';
 
 const state={
   name:launchName||get('sessionStorage','kcAcademyName',''),
-  coach:(launchCoach==='marc'||launchCoach==='laura'?launchCoach:(saved.coach||'laura')),address:(launchAddress==='sie'||launchAddress==='du'?launchAddress:(saved.address||'du')),voice:saved.voice||'default',speechRate:Number(saved.speechRate)||1,theme:saved.theme||'classic',fontScale:Number(saved.fontScale)||1,reduceMotion:Boolean(saved.reduceMotion),quizMode:(saved.quizMode==='short'?'short':'standard'),shuffleAnswers:saved.shuffleAnswers!==false,countdownEnabled:saved.countdownEnabled!==false,autoContinue:Boolean(saved.autoContinue),skipIntroductions:Boolean(saved.skipIntroductions),openLast:Boolean(saved.openLast),volume:Math.max(1,Math.min(10,Number(saved.volume)||7)),rememberView:saved.rememberView!==false,voiceProvider:(saved.voiceProvider==='provider'?'elevenlabs':(saved.voiceProvider||'local')),
+  coach:(launchCoach==='marc'||launchCoach==='laura'?launchCoach:(saved.coach||'laura')),address:(launchAddress==='sie'||launchAddress==='du'?launchAddress:(saved.address||'du')),voice:(launchVoice==='one'||launchVoice==='two'?launchVoice:(saved.voice||'default')),speechRate:Number(saved.speechRate)||1,theme:saved.theme||'classic',fontScale:Number(saved.fontScale)||1,reduceMotion:Boolean(saved.reduceMotion),quizMode:(saved.quizMode==='short'?'short':'standard'),quizDifficultyMode:['beginner','advanced','expert'].includes(saved.quizDifficultyMode)?saved.quizDifficultyMode:'auto',quizHistory:Array.isArray(saved.quizHistory)?saved.quizHistory:[],shuffleAnswers:saved.shuffleAnswers!==false,countdownEnabled:saved.countdownEnabled!==false,autoContinue:Boolean(saved.autoContinue),skipIntroductions:Boolean(saved.skipIntroductions),openLast:Boolean(saved.openLast),volume:Math.max(1,Math.min(10,Number(saved.volume)||7)),rememberView:saved.rememberView!==false,voiceProvider:(saved.voiceProvider==='provider'?'elevenlabs':(saved.voiceProvider||'local')),
   subtitles:saved.subtitles!==false,sound:saved.sound!==false,module:null,step:0,score:0,total:0,
   lastSpeech:'',completed:safeParse(get('localStorage','kcAcademyCompleted','{}'),{}),
   view:'welcome',paused:false,pendingModule:launchModule,startTime:Date.now(),pausedAt:0,totalPaused:0,speechToken:0,countedQuestions:new Set(),moduleStartedAt:0,figuresCollapsed:false,figuresLocked:false,quizShorten:false,adminUnlocked:false,episodeView:(saved.episodeView==='categories'?'categories':'episodes'),filterOpen:false,categoryLocks:{},episodeFilters:{search:'',category:'all',figure:'all',status:'all',duration:'all'}
 };
 if(get('localStorage','kcAcademyAudioBeta103')!=='1'){state.sound=true;set('localStorage','kcAcademyAudioBeta103','1');saveSettings?.()}
 const MIN_NAME_LENGTH=2;
-const SPEECH_LEAD_MS=180;
-const VOICE_CORE_VERSION='2.4.1';
+/* 02.09.2026: Anlauf der Sprachausgabe. SPEECH_LEAD_MS ist der Abstand, den Chrome nach
+   einem Abbruch braucht, bevor der naechste Satz sauber beginnt (180 ms waren zu knapp).
+   SPEECH_MIN_LEAD_MS gilt, wenn gar nichts abgebrochen wurde - dann darf es schnell gehen. */
+const SPEECH_LEAD_MS=280;
+const SPEECH_MIN_LEAD_MS=60;
+const VOICE_CORE_VERSION='2.6.15';
 const ACADEMY_VERSION=(window.KC_FUTURA_VERSION?.academyVersionNumber||'2.4.1');
 const ELEVEN_CONFIG_KEY='kcAcademyElevenLabsConfigV1';
 const SUPERADMIN_CODE='1234';
@@ -186,6 +195,8 @@ const MODULE_META={
   vorplatz:{primary:'hygiene',categories:['hygiene','organisation','gemeinschaft'],figures:['eugen','gisela','michael','sabrina']},
   parkgenehmigung:{primary:'organisation',categories:['organisation','sicherheit'],figures:['eugen','michael']},
   kalleblick:{primary:'gemeinschaft',categories:['gemeinschaft','service','hygiene'],figures:['kalle','eugen','gisela']},
+  mantaplatte:{primary:'gemeinschaft',categories:['gemeinschaft','team','service'],figures:['kalle','hannes','laura','marc']},
+  rueckstellprobe:{primary:'hygiene',categories:['hygiene','organisation','sicherheit'],figures:['dr_brinkmann','michael','laura','marc']},
   gemeinsam:{primary:'team',categories:['team','gemeinschaft','organisation'],figures:['eugen','gisela','kalle','michael','sabrina']},
   kinderbetreuung:{primary:'team',categories:['team','organisation','sicherheit','gemeinschaft'],figures:['julia','michael','laura','marc']},
   wasserschlauch:{primary:'sicherheit',categories:['sicherheit','organisation','team'],figures:['julia','kalle','michael','marc']},
@@ -194,6 +205,8 @@ const MODULE_META={
   bereitschaft:{primary:'organisation',categories:['organisation','team','sicherheit'],figures:['laura','michael','hannes']},
   barzahlung:{primary:'organisation',categories:['organisation','service'],figures:['michael','kalle','herr_becker','marc','laura']},
   panne:{primary:'team',categories:['team','organisation','gemeinschaft'],figures:['michael','sabrina','hannes','laura','marc']},
+  verbandskasten:{primary:'sicherheit',categories:['sicherheit','organisation','team'],figures:['frau_schmitt','herr_becker','sabrina','michael','detlef','marc']},
+  papiertuete:{primary:'sicherheit',categories:['sicherheit','organisation','team','gemeinschaft'],figures:['gisela','herr_koslowski','kalle','michael','marc']},
   finale:{primary:'gemeinschaft',categories:['gemeinschaft','service'],figures:['herr_becker','frau_schmitt','michael','sabrina']}
 };
 const metaFor=id=>MODULE_META[id]||{primary:'gemeinschaft',categories:['gemeinschaft'],figures:modules[id]?.cast||[]};
@@ -210,13 +223,18 @@ const chars={
   sabrina:{name:'Sabrina',role:'jüngere Köchin',img:'sabrina.png',intro:'Hallo. Ich bin Sabrina. Mir ist wichtig, dass neue Helfer willkommen sind, Aufgaben fair verteilt werden und wir auch in stressigen Situationen zusammenhalten.'},
   leo:{name:'Leo',role:'schüchterner Jungkoch',img:'leo.png',intro:'Hallo. Ich bin Leo, Jungkoch und noch etwas zurückhaltend. Ich möchte den Köcheclub kennenlernen, neue Erfahrungen sammeln und Schritt für Schritt meinen Platz im Team finden.'},
   dr_brinkmann:{name:'Dr. Brinkmann',role:'Lebensmittelüberwachung',img:'dr_brinkmann.png',intro:'Guten Tag. Ich bin Dr. Brinkmann von der Lebensmittelüberwachung. Mir sind sauberes Arbeiten, sichere Lebensmittel und verständliche, praxistaugliche Hygieneregeln besonders wichtig.'},
-  julia:{name:'Julia',role:'ehrenamtliche Helferin',img:'julia.png',intro:'Hallo. Ich bin Julia und unterstütze den Köcheclub zum ersten Mal. Mir ist wichtig, Fragen stellen zu dürfen, gute Erklärungen zu bekommen und Schritt für Schritt sicherer im Team zu werden.'},
+  julia:{name:'Julia',role:'ehrenamtliche Helferin und alleinerziehende Mutter',img:'julia.png',intro:'Hallo. Ich bin Julia und helfe zum ersten Mal ehrenamtlich beim Köcheclub. Neben den Schichten muss ich die Betreuung meines Sohnes Alexander organisieren. Ich möchte mit anpacken, aber auch offen sagen dürfen, wenn Vor- und Nachbereitung oder die Belastung zu viel werden.'},
   herr_koslowski:{name:'Herr Koslowski',role:'Standnachbar',img:'herr_koslowski.png',intro:'Guten Tag. Ich bin Herr Koslowski vom Nachbarstand und verkaufe Mützen, Schals und Handschuhe. Mir sind gute Nachbarschaft, klare Absprachen und gegenseitige Hilfe auf dem Weihnachtsmarkt besonders wichtig.'},
   eugen:{name:'Eugen',role:'Hausmeister & Platzwart',img:'eugen.png',intro:'Hömma, ich bin Eugen, Hausmeister und Platzwart auf dem Weihnachtsmarkt. Mir ist wichtig, dass Anlieferung, Parken, Rettungswege und Sauberkeit vernünftig geregelt sind. Ich meckere manchmal, aber nur, damit der Laden läuft.'},
-  gisela:{name:'Gisela',role:'Helferin vom Bratwurststand',img:'gisela.png',intro:'Hallo, ich bin Gisela vom Bratwurststand gegenüber. Ich helfe gern, sage offen meine Meinung und finde meistens eine praktische Lösung, bevor aus einer Kleinigkeit ein großes Problem wird.'},
+  gisela:{name:'Gisela „Gisi“',role:'neugierige, warmherzige Helferin vom Bratwurststand',img:'gisela.png',intro:'Hömma, ich bin Gisela vom Bratwurststand gegenüber – aber hier sagen fast alle Gisi. Ich kriege auf dem Markt viel mit, rede gern und sage offen meine Meinung. Böse Gerüchte sind nicht mein Ding; wenn ich mich einmische, steckt meistens ein nützlicher Hinweis dahinter.'},
   kalle:{name:'Kalle',role:'Rentner & Stammgast',img:'kalle.png',intro:'Tach zusammen, ich bin Kalle. Ich komme oft auf den Weihnachtsmarkt, kenne viele Leute und habe für fast jede Situation einen Spruch. Mir sind Freundlichkeit, Ordnung und ein bisschen Humor besonders wichtig.'},
   hannes:{name:'Hannes',role:'Clubsprecher',img:'hannes.png',intro:'Hallo, ich bin Hannes, der Clubsprecher. Mir ist wichtig, dass Informationen verständlich weitergegeben werden, alle den gleichen Stand haben und der Köcheclub nach außen freundlich und verlässlich auftritt.'},
   detlef:{name:'Detlef',role:'Kassenwart',img:'detlef.png',intro:'Guten Tag, ich bin Detlef, der Kassenwart. Mir sind nachvollziehbare Abläufe, ein sorgfältiger Umgang mit Geld und klare Absprachen besonders wichtig.'}
+  ,alexander:{name:'Alexander',role:'Julias Sohn',img:'alexander.png',intro:'Hallo, ich bin Alexander, Julias Sohn. Ich finde gut, dass Mama anderen hilft. Mir ist aber auch wichtig, dass unsere gemeinsame Zeit nicht immer als Erstes ausfällt.'}
+  ,kathi:{name:'Kathi',role:'verlorenes Kind',img:'kathi.png',intro:'Ich heiße Kathi. Auf dem Weihnachtsmarkt habe ich meine Eltern aus den Augen verloren. Eine ruhige Stimme und ein sicherer Platz helfen mir jetzt am meisten.'}
+  ,marion:{name:'Marion',role:'Kathis Mutter',img:'marion.png',intro:'Ich bin Marion, Kathis Mutter. Als Kathi plötzlich weg war, hatte ich große Angst. Ich bin dankbar, wenn Helfende ruhig bleiben und ein Kind nur sicher an die richtige Bezugsperson übergeben.'}
+  ,leon:{name:'Leon',role:'Kathis Vater',img:'leon.png',intro:'Ich bin Leon, Kathis Vater. In einer unübersichtlichen Situation helfen klare Absprachen mehr als hektisches Suchen in alle Richtungen.'}
+  ,sabine:{name:'Sabine',role:'Reiseleiterin',img:'sabine.png',intro:'Guten Abend, ich bin Sabine und begleite eine Reisegruppe. Ich plane gern verlässlich – aber wenn etwas schiefläuft, brauche ich vor allem eine ehrliche Auskunft und eine praktikable Alternative.'}
 };
 
 const defaultChars=JSON.parse(JSON.stringify(chars));
@@ -227,7 +245,7 @@ const TelemetryCore={
   version:'1.0.0',
   read(){return safeParse(get('localStorage',TELEMETRY_KEY,'[]'),[])},
   write(rows){set('localStorage',TELEMETRY_KEY,JSON.stringify(rows.slice(-3000)))},
-  event(type,data={}){const rows=this.read();rows.push({id:`${Date.now()}-${Math.random().toString(16).slice(2)}`,type,at:new Date().toISOString(),name:state.name||'',module:state.module||'',step:state.step,...data});this.write(rows);window.KCSupabaseAdapter?.enqueue('telemetry_event',rows[rows.length-1],{participantName:state.name||'',summary:rows[rows.length-1]}).catch(()=>{})},
+  event(type,data={}){const rows=this.read();rows.push({id:`${Date.now()}-${Math.random().toString(16).slice(2)}`,type,at:new Date().toISOString(),name:state.name||'',module:state.module||'',step:state.step,...data});this.write(rows);if(type==='module_finish'){window.KCLearningProgressCore?.configure?.({part2:{requiredCount:Object.keys(modules).length,passPercent:100,catalogReady:true}},{role:'developer'});window.KCLearningProgressCore?.completeUnit?.('part2',state.module,{source:'academy'})}window.KCSupabaseAdapter?.enqueue('telemetry_event',rows[rows.length-1],{participantName:state.name||'',summary:rows[rows.length-1]}).catch(()=>{})},
   summary(){
     const rows=this.read();const answers=rows.filter(x=>x.type==='answer');const finishes=rows.filter(x=>x.type==='module_finish');const starts=rows.filter(x=>x.type==='module_start');
     const moduleIds=[...new Set([...Object.keys(state.completed),...starts.map(x=>x.module).filter(Boolean)])];
@@ -252,7 +270,7 @@ const SceneCore={
   normalize(id,m){
     const scenes=Array.isArray(m.scenes)?m.scenes:[];
     const questions=scenes.filter(s=>Boolean(s.question)).length;
-    const estimatedMinutes=Math.max(2,Math.ceil((scenes.length*55+questions*35)/60));
+    const estimatedMinutes=Number(m.estimatedMinutes)||Math.max(2,Math.ceil((scenes.length*55+questions*35)/60));
     return {...m,id,season:Number(m.season)||1,episode:Number(m.episode)||99,status:m.ready?'fertig':(m.status||'geplant'),sceneCount:scenes.length,questionCount:questions,estimatedMinutes,points:Number(m.points)||Math.max(1,questions)};
   },
   catalog(){return Object.entries(modules).map(([id,m])=>this.normalize(id,m)).sort((a,b)=>a.season-b.season||a.episode-b.episode)},
@@ -261,7 +279,17 @@ const SceneCore={
 };
 
 const modules={
-  reklamation:{season:1,episode:1,status:'fertig',points:6,title:'Reklamationsmanagement',subtitle:'Aus einer Reklamation einen zufriedenen Gast machen.',learning:'ruhig reagieren, die Wirkung verstehen, passende Lösungen finden und den KC Bilderrechner als Unterstützung kennen',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','frau_schmitt','lukas'],ready:true,scenes:[
+  aufbau:{season:1,episode:1,status:'fertig',points:6,title:'Der Aufbau',subtitle:'Viele Hände, schnelles Ende – der Tag, bevor der Markt beginnt.',learning:'gemeinsam anpacken, bei Wasser und Strom nicht improvisieren, Reihenfolgen umstellen, wenn etwas ausfällt, und Besorgungen bündeln statt fünfmal loszufahren',avatar:'hannes.png',cast:['hannes','julia','michael','eugen','gisela','kalle'],ready:true,scenes:[
+    {who:'Laura',key:'laura',text:n=>`Herzlich willkommen, ${n}. Bevor der erste Gast kommt, muss die Hütte stehen. Heute geht es um den Aufbautag: wie ihr gemeinsam anpackt, was ihr tut, wenn etwas schiefgeht – und wo Improvisieren aufhört.`,next:'Weiter'},
+    {who:'Hannes',key:'hannes',text:()=>`Viertel nach sieben, es ist noch dunkel. Ich schließe auf, mache Licht und stelle die Kaffeekanne an. Kurz darauf kommt Julia, dann trudeln nach und nach die anderen ein. Alle wollen mit anpacken – dann wird das heute auch was.`,next:'Weiter'},
+    {who:'Julia',key:'julia',text:()=>`Ich mache die Hütte auf und stehe im Wasser. Eine Leitung ist über die lange Standzeit undicht geworden. Das Restwasser läuft über den ganzen Boden, und genau hier sollte die Spülmaschine angeschlossen werden.`,question:'Was ist jetzt als Erstes richtig?',choices:[['Die Spülmaschine trotzdem anschließen, damit sie schon einmal läuft.','bad'],['Wasser abstellen, den nassen Bereich absperren, nichts Elektrisches anfassen und einen Fachmann holen.','good'],['Erst einmal aufwischen und dann weitersehen.','bad']],good:'Genau. Erst das Wasser abstellen und den Bereich sichern – nasser Boden heißt Rutschgefahr, und Wasser und Strom gehören nicht zusammen. Erst danach entscheidet ein Fachmann, ob die Leitung hält.',guest:'Ich war ehrlich froh, dass niemand einfach den Stecker reingesteckt hat. Nass und Strom – da hört bei mir der Spaß auf.',tip:`Ein nasser Boden wird sofort abgesperrt, nicht erst nach dem Aufwischen. Die meisten Stürze passieren, während noch jemand den Wischmopp holt.`},
+    {who:'Michael',key:'michael',text:()=>`Die Leitung ist zu, der Fachmann kommt. Aber heute läuft die Spülmaschine nicht mehr an – und wir brauchen trotzdem saubere Gläser und Tassen, sobald geöffnet wird.`,question:'Wie wird der Spülbetrieb für den Start geregelt?',choices:[['Die Gläser kurz mit klarem Wasser ausschwenken, das reicht für den Anfang.','bad'],['Vor dem Öffnen eine feste Ersatzlösung festlegen: genügend Wechselgeschirr, ein eingerichteter Spülplatz und eine klare Absprache, wer spült.','good'],['Mit dem vorhandenen Geschirr anfangen und schauen, wie weit wir kommen.','bad']],good:'Richtig. Ohne Maschine wird nicht improvisiert, sondern vorher geregelt: genug Wechselgeschirr, ein richtiger Spülplatz und ein Name dahinter.',guest:'Solange klar ist, wer spült und womit, ist mir das sogar lieber als eine Maschine, auf die sich alle verlassen und keiner schaut hin.',tip:`Geschirr ist kein Nebenschauplatz. Wer ohne geregelten Spülbetrieb öffnet, steht spätestens nach einer Stunde ohne saubere Tassen da.`},
+    {who:'Eugen',key:'eugen',text:()=>`Hömma, der Lkw mit den Krippen steht fest. Auf der Zufahrt zum Markt hat es einen Unfall gegeben, die Straße is dicht. Der Fahrer weiß selbst nich, wann er durchkommt.`,question:'Wie geht das Team damit um?',choices:[['Warten, bis der Lkw da ist – vorher lohnt sich das Anfangen nicht.','bad'],['Alles vorziehen, was ohne die Krippen geht, und einen festen Ansprechpartner für den Fahrer benennen.','good'],['Jemanden losschicken, der den Lkw an der Sperrung vorbeilotst.','bad']],good:'So is dat richtig. Die Reihenfolge wird umgestellt, und der Fahrer hat einen Namen und eine Nummer, statt sich durchzufragen.',guest:'Ich hab schon Aufbauten gesehen, wo alle drei Stunden rumstehen, weil einer wartet. Wat anderes vorziehen kostet nix.',tip:`Eine Sperrung umfährt man nicht auf eigene Faust. Wer einen Lkw irgendwo vorbeilotst, steht am Ende selbst im Weg – oder im Rettungsweg.`},
+    {who:'Gisela „Gisi“',key:'gisela',text:()=>`Sach ma, ihr sucht Werkzeug? Der Koffer liegt zu Hause, hab ich gehört. Und Mülltüten habt ihr auch keine mehr. Bei uns steht noch was rum – guckt doch erst mal rüber.`,question:'Was ist der schnellste Weg?',choices:[['Zurück nach Hause fahren und den Koffer holen.','bad'],['Im Team und beim Nachbarstand fragen, was da ist, und den Rest auf eine Liste – dann fährt einer einmal los.','good'],['Jeder besorgt sich selbst, was ihm gerade fehlt.','bad']],good:'Genau. Erst fragen, was ohnehin da ist, dann eine Liste – und eine Fahrt statt fünf.',guest:'So machen wir das hier unter den Ständen seit Jahren. Man muss nur fragen, das kostet nichts.',tip:`Kleinigkeiten kosten den Aufbau die meiste Zeit – nicht, weil sie fehlen, sondern weil jeder einzeln losfährt.`},
+    {who:'Kalle',key:'kalle',text:()=>`Also ich sag mal so: Wasserschaden, Stau und kein Werkzeug – und trotzdem steht die Hütte vor dem Dunkelwerden. Wenn das kein gutes Zeichen für den Markt ist.`,next:'Weiter'},
+    {who:'Hannes',key:'hannes',text:()=>`Am Abend ist alles an seinem Platz. Die Krippen stehen, der Vorplatz ist gefegt, das Wechselgeschirr ist bereit. Nur die Leitung ist bis morgen früh provisorisch abgedichtet – der Fachmann kommt vor der Generalprobe. Viele Hände, schnelles Ende.`,next:'Modul abschließen',tip:`Cliffhanger: Die Hütte steht – aber die Wasserleitung hält nur provisorisch. Vor der Generalprobe muss sie halten.`}
+  ]},
+  reklamation:{season:1,episode:2,status:'fertig',points:6,title:'Reklamationsmanagement',subtitle:'Aus einer Reklamation einen zufriedenen Gast machen.',learning:'ruhig reagieren, die Wirkung verstehen, passende Lösungen finden und den KC Bilderrechner als Unterstützung kennen',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','frau_schmitt','lukas'],ready:true,scenes:[
     {who:'Laura',key:'laura',text:n=>`Herzlich willkommen, ${n}. Heute lernst du, wie du Reklamationen ruhig, freundlich und lösungsorientiert behandelst.`,next:'Weiter'},
     {who:'Herr Becker',key:'herr_becker',text:()=>`Guten Abend. Mein gerade erhaltener Glühwein ist leider nur noch lauwarm.`,question:'Wie reagierst du am besten?',choices:[['Das kann eigentlich nicht sein.','bad'],['Einen Moment bitte. Ich kümmere mich sofort darum.','good'],['Dann müssen Sie ihn schneller trinken.','bad']],good:'Sehr gut. Du hörst zu, nimmst den Gast ernst und bietest eine Lösung an.',guest:'Vielen Dank. Der Mitarbeiter blieb ruhig und hat mir einen neuen heißen Glühwein angeboten. So einen freundlichen Service merkt man sich.'},
     {who:'Marc',key:'marc',text:()=>`Reklamationen gehören zum Alltag. Entscheidend ist, dass wir ruhig und professionell reagieren.`,tip:`Eine Reklamation ist keine Kritik an deiner Person. Erst zuhören, dann entschuldigen und eine passende Lösung anbieten.`,next:'Weiter'},
@@ -271,7 +299,7 @@ const modules={
     {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`Ich habe es heute sehr eilig und beim Überreichen ist Kartoffelcreme auf meinem Mantel gelandet.`,question:'Welche Reaktion wirkt professionell?',choices:[['Sofort entschuldigen, ruhig helfen und eine Lösung anbieten.','good'],['Erklären, dass der Gast selbst schuld ist.','bad'],['So tun, als sei nichts passiert.','bad']],good:'Genau. Nicht die Schuldfrage, sondern Hilfe und ein respektvoller Umgang stehen zuerst im Mittelpunkt.',guest:'Natürlich habe ich mich geärgert. Aber die ehrliche Entschuldigung und die schnelle Hilfe haben mir gezeigt, dass ich ernst genommen werde.'},
     {who:'Laura',key:'laura',text:n=>`${n}, das hast du gut gemacht. Du hast verstanden: zuhören, ernst nehmen, prüfen und eine faire Lösung finden.`,next:'Modul abschließen'}
   ]},
-  jugend:{season:1,episode:2,status:'fertig',points:3,title:'Jugendschutz',subtitle:'Freundlich kontrollieren und gesetzliche Verantwortung übernehmen.',learning:'gesetzliche Altersgrenzen einordnen, freundlich nach dem Ausweis fragen und bei fehlendem Nachweis sicher handeln',avatar:'lukas.png',cast:['laura','marc','lukas'],ready:true,scenes:[
+  jugend:{season:1,episode:3,status:'fertig',points:3,title:'Jugendschutz',subtitle:'Freundlich kontrollieren und gesetzliche Verantwortung übernehmen.',learning:'gesetzliche Altersgrenzen einordnen, freundlich nach dem Ausweis fragen und bei fehlendem Nachweis sicher handeln',avatar:'lukas.png',cast:['laura','marc','lukas'],ready:true,scenes:[
     {who:'Laura',key:'laura',text:n=>`Hallo ${n}. In dieser Folge geht es um den Jugendschutz. Wir schützen junge Menschen und halten eine gesetzliche Vorgabe ein.`,next:'Weiter'},
     {who:'Marc',key:'marc',text:()=>`Die Altersgrenzen stehen in Paragraph 9 des Jugendschutzgesetzes. Das ist keine Regel des Köcheclubs, sondern geltendes Recht.`,tip:`Frage klar und freundlich nach einem amtlichen Altersnachweis. Du musst dich dafür nicht entschuldigen.`,next:'Weiter'},
     {who:'Lukas',key:'lukas',text:()=>`Hallo. Ich hätte gern einen Glühwein mit Rum.`,question:'Lukas wirkt jung. Wie reagierst du richtig?',choices:[['Ich schenke sofort aus.','bad'],['Ich frage freundlich nach einem amtlichen Altersnachweis.','good'],['Ich lehne den Verkauf ohne Erklärung ab.','bad']],good:'Richtig. Eine freundliche Alterskontrolle ist sachlich, respektvoll und schützt alle Beteiligten.',guest:'Gestern musste ich tatsächlich meinen Personalausweis zeigen. Erst fand ich das ungewohnt. Aber wenn man darüber nachdenkt, ist es genau richtig.'},
@@ -279,149 +307,180 @@ const modules={
     {who:'Laura',key:'laura',text:n=>`${n}, warum ist Jugendschutz keine Sonderregel des Köcheclubs?`,question:'Welche Aussage stimmt?',choices:[['Die Altersgrenzen beruhen auf dem Jugendschutzgesetz.','good'],['Der Köcheclub legt sie jedes Jahr neu fest.','bad'],['Sie gelten nur bei großem Besucherandrang.','bad']],good:'Genau. Die gesetzlichen Altersgrenzen gelten unabhängig vom Köcheclub und müssen eingehalten werden.',guest:'Eine höfliche Kontrolle zeigt Verantwortung und schützt junge Menschen.'},
     {who:'Laura',key:'laura',text:n=>`${n}, sehr gut. Du weißt jetzt, wie du freundlich kontrollierst und sicher entscheidest.`,next:'Modul abschließen'}
   ]},
-  konflikt:{season:1,episode:3,status:'fertig',points:6,title:'Konfliktmanagement',subtitle:'Probleme ansprechen, Hintergründe verstehen und gemeinsam Lösungen finden.',learning:'Vorwürfe vermeiden, zuhören, Ich-Botschaften nutzen, Aufgaben fair verteilen und Absprachen treffen',avatar:'michael.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
+  konflikt:{season:1,episode:4,status:'fertig',points:6,title:'Konfliktmanagement',subtitle:'Probleme ansprechen, Hintergründe verstehen und gemeinsam Lösungen finden.',learning:'Vorwürfe vermeiden, zuhören, Ich-Botschaften nutzen, Aufgaben fair verteilen und Absprachen treffen',avatar:'michael.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
     {who:'Laura',key:'laura',text:n=>`Hallo ${n}. Konflikte entstehen oft nicht aus bösem Willen, sondern weil Informationen fehlen oder Belastungen unterschiedlich wahrgenommen werden.`,next:'Weiter'},
-    {who:'Michael',key:'michael',text:()=>`Sabrina, warum musstest du gestern ausgerechnet im dicksten Geschäft eine Zigarettenpause machen?`,question:'Wie kann Michael das Gespräch besser beginnen?',choices:[['Du lässt uns immer hängen.','bad'],['Gestern war viel los. Ich habe mich überfordert gefühlt. Was war bei dir los?','good'],['Darüber brauchen wir gar nicht mehr zu reden.','bad']],good:'Richtig. Eine Ich-Botschaft beschreibt die eigene Wahrnehmung und öffnet das Gespräch.',guest:'Mir ging es gestern nicht gut und ich brauchte kurz Luft. Danke, dass du nachfragst, statt sofort zu urteilen.'},
+    {who:'Michael',key:'michael',text:()=>`Sabrina, warum musstest du gestern ausgerechnet im dicksten Geschäft eine Zigarettenpause machen?`,question:'Wie kann Michael das Gespräch besser beginnen?',choices:[['Du lässt uns immer hängen.','bad'],['Gestern war viel los. Ich habe mich überfordert gefühlt. Was war bei dir los?','good'],['Darüber brauchen wir gar nicht mehr zu reden.','bad']],good:'Richtig. Eine Ich-Botschaft beschreibt die eigene Wahrnehmung und öffnet das Gespräch.',guest:'Mir ging es gestern nicht gut und ich brauchte kurz Luft. Danke, dass du nachfragst, statt sofort zu urteilen.',guestKey:'sabrina'},
     {who:'Sabrina',key:'sabrina',text:()=>`Michael, ich habe das Gefühl, dass ich fast immer spüle und aufräume. Ich möchte auch einmal vorne verkaufen.`,question:'Welche Lösung ist fair?',choices:[['Sabrina bleibt grundsätzlich hinten.','bad'],['In einer ruhigen Phase übt Sabrina vorne und Michael unterstützt sie.','good'],['Die Aufgaben werden gar nicht mehr verteilt.','bad']],good:'Genau. Lernen und faire Aufgabenverteilung stärken das Team.',guest:'Danke. Wenn ich die Chance bekomme, kann ich mich entwickeln und später flexibler helfen.'},
-    {who:'Michael',key:'michael',text:()=>`Gestern hast du in unserer Schicht sehr langsam gearbeitet.`,question:'Was fehlt in dieser Aussage?',choices:[['Eine offene Frage nach dem Grund.','good'],['Noch mehr Kritik.','bad'],['Eine Drohung.','bad']],good:'Richtig. Erst nachfragen, bevor man bewertet.',guest:'Mir ging es gestern nicht gut und ich fühlte mich krank. Heute bin ich wieder fit. Danke für dein Verständnis.'},
+    {who:'Michael',key:'michael',text:()=>`Gestern hast du in unserer Schicht sehr langsam gearbeitet.`,question:'Was fehlt in dieser Aussage?',choices:[['Eine offene Frage nach dem Grund.','good'],['Noch mehr Kritik.','bad'],['Eine Drohung.','bad']],good:'Richtig. Erst nachfragen, bevor man bewertet.',guest:'Mir ging es gestern nicht gut und ich fühlte mich krank. Heute bin ich wieder fit. Danke für dein Verständnis.',guestKey:'sabrina'},
     {who:'Sabrina',key:'sabrina',text:()=>`Michael, könntest du am Samstag meine Spätschicht übernehmen?`,question:'Michael kann nicht tauschen. Wie antwortet er konstruktiv?',choices:[['Nein. Ende der Diskussion.','bad'],['Leider kann ich nicht, weil ich die Kinder betreue. Lass uns gemeinsam nach einer anderen Lösung suchen.','good'],['Das ist nicht mein Problem.','bad']],good:'Richtig. Eine klare Begründung und die gemeinsame Suche nach Alternativen vermeiden Missverständnisse.',guest:'Das wusste ich nicht. Danke, dass du es erklärst und trotzdem mit mir nach einer Lösung suchst.'},
     {who:'Marc',key:'marc',text:()=>`Konflikte werden selten besser, wenn man sie sammelt und irgendwann explodiert.`,tip:`Sprich früh, ruhig und konkret. Beschreibe die Situation, höre die andere Sicht an und vereinbare einen nächsten Schritt.`,next:'Weiter'},
     {who:'Laura',key:'laura',text:n=>`${n}, du hast gesehen: Ein gutes Team fragt nach, hört zu und sucht Lösungen, statt Schuldige zu suchen.`,next:'Modul abschließen'}
   ]},
-  rechenfehler:{season:1,episode:4,status:'fertig',points:5,title:'Der Rechenfehler',subtitle:'Im größten Trubel fair, sicher und professionell bleiben.',learning:'Bestelländerungen sicher erfassen, Unterbrechungen beherrschen und Fehler transparent korrigieren',avatar:'michael.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
+  rechenfehler:{season:1,episode:5,status:'fertig',points:5,title:'Der Rechenfehler',subtitle:'Im größten Trubel fair, sicher und professionell bleiben.',learning:'Bestelländerungen sicher erfassen, Unterbrechungen beherrschen und Fehler transparent korrigieren',avatar:'michael.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
     {who:'Laura',key:'laura',text:n=>`${n}, es ist Hochbetrieb. Ein Gast bestellt mehrere Getränke, Essen und gibt Pfandgläser zurück. Dann ändert er seine Bestellung zweimal.`,next:'Weiter'},
     {who:'Michael',key:'michael',text:()=>`Ich versuche alles im Kopf zu behalten. Gleichzeitig fragt ein anderer Gast etwas und unterbricht mich.`,question:'Was hilft jetzt am meisten?',choices:[['Weiter im Kopf rechnen und hoffen, dass alles stimmt.','bad'],['Die Bestellung Schritt für Schritt im KC Bilderrechner erfassen und Änderungen dort korrigieren.','good'],['Den Gast bitten, später wiederzukommen.','bad']],good:'Richtig. Der KC Bilderrechner hält Änderungen, Pfand und Gesamtsumme nachvollziehbar fest.',guest:'So entsteht Sicherheit für Gast und Mitarbeiter, auch wenn es hektisch wird.'},
     {who:'Michael',key:'michael',text:()=>`Der Gast kommt zurück und sagt verärgert, ich hätte zu viel kassiert und wolle ihn betrügen.`,question:'Wie reagiert Michael professionell?',choices:[['Sofort widersprechen.','bad'],['Ruhig bleiben, die erfassten Positionen gemeinsam prüfen, sich bei einem Fehler entschuldigen und den Betrag korrigieren.','good'],['Die Verantwortung an Sabrina abgeben.','bad']],good:'Genau. Transparenz und eine schnelle Korrektur stellen Vertrauen wieder her.',guest:'Fehler können passieren. Entscheidend ist, dass offen und fair damit umgegangen wird.'},
     {who:'Marc',key:'marc',text:()=>`Der KC Bilderrechner nimmt uns das Denken nicht ab. Er hilft uns aber, auch bei Änderungen und Unterbrechungen sicher zu arbeiten.`,tip:`Erfasse jede Änderung sofort. Verlasse dich im Hochbetrieb nicht auf Kopfrechnen und Gedächtnis.`,next:'Modul abschließen'}
   ]},
-  gas:{season:1,episode:5,status:'fertig',points:4,title:'Gas alle – und jetzt?',subtitle:'Im Hochbetrieb ruhig bleiben, Aufgaben verteilen und vorbereitet handeln.',learning:'Krisen ruhig lösen, Verantwortung übernehmen und Vorräte vorbeugend prüfen',avatar:'michael.png',cast:['laura','marc','michael','sabrina','dr_brinkmann'],ready:true,scenes:[
+  gas:{season:1,episode:6,status:'fertig',points:4,title:'Gas alle – und jetzt?',subtitle:'Im Hochbetrieb ruhig bleiben, Aufgaben verteilen und vorbereitet handeln.',learning:'Krisen ruhig lösen, Verantwortung übernehmen und Vorräte vorbeugend prüfen',avatar:'michael.png',cast:['laura','marc','michael','sabrina','dr_brinkmann'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Die Gasflasche ist leer. Gleichzeitig wartet eine Schulklasse auf zwanzig vorbestellte Apfelpunsch.`,question:'Was ist jetzt der beste erste Schritt?',choices:[['Michael Vorwürfe machen.','bad'],['Ruhe bewahren, Aufgaben verteilen und sofort nach einer sicheren Ersatzlösung suchen.','good'],['Die Bestellung kommentarlos absagen.','bad']],good:'Richtig. Erst die Situation lösen, danach die Ursache gemeinsam klären.',guest:'Klare Aufgaben und Nachbarschaftshilfe können den Betrieb schnell wiederherstellen.'},
     {who:'Marc',key:'marc',text:()=>`Ein Nachbarstand leiht eine passende Ersatzflasche. Danach vereinbaren Michael und Sabrina eine gemeinsame Kontrolle zu Schichtbeginn.`,tip:`Gasvorrat, Ersatzflasche und Anschlüsse gehören auf eine kurze Startcheckliste.`,next:'Modul abschließen'}
   ]},
-  fundsache:{season:1,episode:6,status:'fertig',points:4,title:'Das verschwundene Erbstück',subtitle:'Fundsachen transparent und schichtübergreifend sicher behandeln.',learning:'Fundsachen sofort am festgelegten Ort ablegen und alle Beteiligten einweisen',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','michael','leo'],ready:true,scenes:[
+  fundsache:{season:1,episode:7,status:'fertig',points:4,title:'Das verschwundene Erbstück',subtitle:'Fundsachen transparent und schichtübergreifend sicher behandeln.',learning:'Fundsachen sofort am festgelegten Ort ablegen und alle Beteiligten einweisen',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','michael','leo'],ready:true,scenes:[
     {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`Ich vermisse mein Goldarmband. Es ist ein Erbstück meiner Mutter und ich glaube, ich habe es am Stand verloren.`,next:'Weiter'},
     {who:'Leo',key:'leo',text:()=>`Ich habe das Armband gefunden und aus Unsicherheit in meine Jackentasche gesteckt, damit es niemand mitnimmt.`,question:'Was ist künftig richtig?',choices:[['Fundsachen in der eigenen Tasche sichern.','bad'],['Sofort am festgelegten Fundsachenplatz ablegen und alle im Stand informieren.','good'],['Erst am nächsten Tag darüber sprechen.','bad']],good:'Richtig. Ein fester Ort schafft Transparenz – auch über Schichtwechsel hinweg.',guest:'Alle Mitglieder und Aushilfen müssen von Anfang an wissen, wo Fundsachen abgelegt werden.'},
     {who:'Marc',key:'marc',text:()=>`Leo hatte eine gute Absicht, aber ein persönlicher Aufbewahrungsort kann Missverständnisse verursachen.`,tip:`Weist auch neue Aushilfen direkt am ersten Tag in den Fundsachenplatz ein.`,next:'Modul abschließen'}
   ]},
-  mettwurst:{season:1,episode:7,status:'fertig',points:4,title:'Mettwurst klein schneiden',subtitle:'Mit einer kleinen Hilfe einen großen Unterschied machen.',learning:'besondere Bedürfnisse wahrnehmen, praktische Hilfsmittel nutzen und Arbeitsaufwand verringern',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','michael','sabrina','gisela','julia'],ready:true,scenes:[
+  mettwurst:{season:1,episode:8,status:'fertig',points:4,title:'Mettwurst klein schneiden',subtitle:'Mit einer kleinen Hilfe einen großen Unterschied machen.',learning:'besondere Bedürfnisse wahrnehmen, praktische Hilfsmittel nutzen und Arbeitsaufwand verringern',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','michael','sabrina','gisela','julia'],ready:true,scenes:[
     {who:'Herr Becker',key:'herr_becker',text:()=>`Ich habe eine Hand verbunden. Könnten Sie mir die Mettwurst bitte klein schneiden?`,question:'Wie reagiert das Team am besten?',choices:[['Die Bitte wegen der Schlange grundsätzlich ablehnen.','bad'],['Kurz Aufgaben tauschen und die Mettwurst hygienisch in mundgerechte Stücke schneiden.','good'],['Herrn Becker bitten, jemand anderen zu fragen.','bad']],good:'Richtig. Eine kleine, machbare Hilfe zeigt echte Gastfreundschaft.',guest:'Vielen Dank. Diese kleine Hilfe bedeutet mir heute sehr viel.'},
     {who:'Gisela',key:'gisela',text:()=>`Bei uns am Bratwurststand nutzen wir einen Bratwurstschneider. Vielleicht wäre das für das nächste Mal auch etwas für euch. Dann geht das schnell, sauber und gleichmäßig.`,next:'Weiter'},
     {who:'Julia',key:'julia',text:()=>`Das spart nicht nur Zeit. Die Gäste freuen sich über mundgerechte Stücke, und wir müssen hinterher weniger Messer und Besteckteile spülen.`,question:'Welchen zusätzlichen Vorteil nennt Julia?',choices:[['Der Bratwurstschneider ersetzt jede persönliche Hilfe.','bad'],['Es werden weniger Messer und Besteckteile benötigt und gespült.','good'],['Die Mettwurst muss nicht mehr warm gehalten werden.','bad']],good:'Genau. Ein passendes Hilfsmittel verbessert den Service und reduziert gleichzeitig den Arbeitsaufwand.',guest:'Kleine organisatorische Verbesserungen helfen Gästen und Team zugleich.'},
     {who:'Laura',key:'laura',text:()=>`Nicht jeder Gast braucht dasselbe. Gute Gastgeber erkennen besondere Situationen und prüfen, ob ein praktisches Hilfsmittel die Lösung dauerhaft erleichtert.`,next:'Modul abschließen'}
   ]},
-  probierschluck:{season:1,episode:8,status:'fertig',points:3,title:'Ein kleiner Probeschluck',subtitle:'Familien freundlich beraten und Spezialitäten erlebbar machen.',learning:'ehrlich beraten, kleine Probierangebote nutzen und ohne Druck verkaufen',avatar:'sabrina.png',cast:['laura','marc','sabrina'],ready:true,scenes:[
+  probierschluck:{season:1,episode:9,status:'fertig',points:3,title:'Ein kleiner Probeschluck',subtitle:'Familien freundlich beraten und Spezialitäten erlebbar machen.',learning:'ehrlich beraten, kleine Probierangebote nutzen und ohne Druck verkaufen',avatar:'sabrina.png',cast:['laura','marc','sabrina'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Eine Familie fragt nach Fanta oder Limonade. Das bieten wir nicht an. Ich biete den Kindern einen kleinen Probeschluck Kinder- oder Apfelpunsch an.`,question:'Warum ist das eine gute Lösung?',choices:[['Die Familie wird zum Kauf gedrängt.','bad'],['Die Kinder können selbst entscheiden und lernen eine passende Alternative kennen.','good'],['Softgetränke werden dadurch ersetzt.','bad']],good:'Richtig. Ein Probeschluck nimmt Unsicherheit, ohne Druck auszuüben.',guest:'Die Kinder finden den Punsch lecker, die Mutter ist zufrieden und die Familie bleibt gern am Stand.'},
     {who:'Marc',key:'marc',text:()=>`Ein kleiner Service kann Gäste überraschen und gleichzeitig Vertrauen in unsere eigenen Produkte zeigen.`,next:'Modul abschließen'}
   ]},
-  hund:{season:1,episode:9,status:'fertig',points:4,title:'Der unerwartete Besucher',subtitle:'Wenn ein Hund an die Reservemettwürste gelangt, zählt professionelles Handeln.',learning:'kontaminierte Lebensmittel sperren, Bereich reinigen und offen kommunizieren',avatar:'dr_brinkmann.png',cast:['laura','marc','michael','sabrina','dr_brinkmann'],ready:true,scenes:[
+  hund:{season:1,episode:10,status:'fertig',points:4,title:'Der unerwartete Besucher',subtitle:'Wenn ein Hund an die Reservemettwürste gelangt, zählt professionelles Handeln.',learning:'kontaminierte Lebensmittel sperren, Bereich reinigen und offen kommunizieren',avatar:'dr_brinkmann.png',cast:['laura','marc','michael','sabrina','dr_brinkmann'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Ein großer Hund ist unbemerkt in die Hütte gelangt und hat sich an der Reserveschüssel mit Mettwürsten bedient. Genau jetzt kommt Dr. Brinkmann vorbei.`,question:'Was muss sofort passieren?',choices:[['Die oberen Würste entfernen und den Rest weiterverwenden.','bad'],['Die gesamte betroffene Ware sperren, Arbeitsbereich sichern und reinigen.','good'],['Den Vorfall verheimlichen.','bad']],good:'Richtig. Verunreinigte Lebensmittel werden vollständig aus dem Verkauf genommen.',guest:'Ein Missgeschick kann passieren. Entscheidend ist, wie konsequent und transparent das Team reagiert.'},
     {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Ruhiges, ehrliches und fachlich richtiges Handeln schützt die Gäste und erhält Vertrauen.`,tip:`Sichert den Zugang zum Lebensmittelbereich so, dass Tiere nicht in die Hütte gelangen können.`,next:'Modul abschließen'}
   ]},
-  allergene:{season:1,episode:10,status:'fertig',points:4,title:'Allergene',subtitle:'Niemals raten – sicher nachsehen und Auskunft geben.',learning:'bei Allergenen niemals raten, Informationen sicher prüfen und fachlich korrekt Auskunft geben',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','leo','dr_brinkmann'],ready:true,scenes:[
+  allergene:{season:1,episode:11,status:'fertig',points:4,title:'Allergene',subtitle:'Niemals raten – sicher nachsehen und Auskunft geben.',learning:'bei Allergenen niemals raten, Informationen sicher prüfen und fachlich korrekt Auskunft geben',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','leo','dr_brinkmann'],ready:true,scenes:[
     {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`Ich habe eine Laktoseunverträglichkeit. Ist im Heringsstipp Laktose enthalten?`,question:'Leo kennt die Antwort nicht. Wie reagiert er richtig?',choices:[['Ich bin nur Praktikant, keine Ahnung.','bad'],['Einen Moment bitte. Ich prüfe die Allergeninformationen oder frage einen erfahrenen Kollegen.','good'],['Das wird schon gut gehen.','bad']],good:'Richtig. Bei Allergenen wird niemals geraten.',guest:'Eine verlässliche Auskunft gibt mir Sicherheit und zeigt, dass meine Frage ernst genommen wird.'},
     {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Auch erfahrene Mitarbeiter kennen nicht jede Rezeptur auswendig. Entscheidend ist, sicher nachzusehen und keine Vermutung als Auskunft weiterzugeben.`,tip:`Wenn du unsicher bist: Allergenliste prüfen, Artikelinformation aufrufen oder einen Kollegen fragen.`,next:'Modul abschließen'}
   ]},
-  hygiene:{season:1,episode:11,status:'fertig',points:5,title:'Hygiene am Stand',subtitle:'Eine anonyme Beschwerde führt zu einer unerwarteten Kontrolle.',learning:'bei Kontrollen ruhig kooperieren, Hygienerisiken erkennen und Verbesserungen konsequent umsetzen',avatar:'dr_brinkmann.png',cast:['laura','marc','dr_brinkmann','michael','sabrina'],ready:true,scenes:[
+  hygiene:{season:1,episode:12,status:'fertig',points:5,title:'Hygiene am Stand',subtitle:'Eine anonyme Beschwerde führt zu einer unerwarteten Kontrolle.',learning:'bei Kontrollen ruhig kooperieren, Hygienerisiken erkennen und Verbesserungen konsequent umsetzen',avatar:'dr_brinkmann.png',cast:['laura','marc','dr_brinkmann','michael','sabrina'],ready:true,scenes:[
     {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Guten Abend. Bei der Lebensmittelüberwachung ist eine anonyme Beschwerde über den Stand eingegangen. Ich möchte mir die Arbeitsabläufe ansehen.`,question:'Wie sollte Michael reagieren?',choices:[['Die Kontrolle sofort zurückweisen.','bad'],['Ruhig begrüßen, kooperieren und die Abläufe offen zeigen.','good'],['Schnell Dinge verstecken.','bad']],good:'Richtig. Ruhige Zusammenarbeit schafft Klarheit und Vertrauen.',guest:'Eine Kontrolle ist kein Angriff. Sie hilft, Risiken zu erkennen und sichere Abläufe zu bestätigen.'},
     {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Ich finde keine schwerwiegenden Mängel. Zwei Kleinigkeiten sollten Sie verbessern: freie Arbeitswege und eine klarere Trennung sauberer und benutzter Arbeitsmittel.`,tip:`Gute Hygiene zeigt sich besonders in klaren Routinen, die auch im größten Andrang funktionieren.`,next:'Modul abschließen'}
   ]},
-  vegetarisch:{season:1,episode:12,status:'fertig',points:3,title:'Vegetarische Gäste',subtitle:'Ehrlich beraten und auch über den eigenen Stand hinaus helfen.',learning:'Wünsche ernst nehmen, ehrlich beraten und passende Alternativen empfehlen',avatar:'frau_schmitt.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
+  vegetarisch:{season:1,episode:13,status:'fertig',points:3,title:'Vegetarische Gäste',subtitle:'Ehrlich beraten und auch über den eigenen Stand hinaus helfen.',learning:'Wünsche ernst nehmen, ehrlich beraten und passende Alternativen empfehlen',avatar:'frau_schmitt.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Ein Gast fragt nach einem vegetarischen Gericht. Kartoffelknirpse mit Dip möchte er nicht. Zwei Stände weiter werden vegetarische Burger angeboten.`,question:'Welche Reaktion ist gastfreundlich?',choices:[['Den Gast kurz abwimmeln.','bad'],['Ehrlich beraten und freundlich auf die passende Alternative am Nachbarstand hinweisen.','good'],['Ihm trotzdem Kartoffelknirpse verkaufen.','bad']],good:'Richtig. Gute Beratung hilft dem Gast auch dann, wenn die beste Lösung nicht am eigenen Stand liegt.',guest:'Der ehrliche Tipp war hilfreich. Später komme ich gern noch auf einen Punsch zurück.'},
     {who:'Marc',key:'marc',text:()=>`Der Weihnachtsmarkt lebt vom Miteinander. Ein zufriedener Besucher kommt gern wieder.`,next:'Modul abschließen'}
   ]},
-  wechselgeld:{season:1,episode:13,status:'fertig',points:4,title:'Kleingeld und Pfandrückgabe',subtitle:'Ruhig handeln, wenn Wechselgeld oder Pfandgeld knapp wird.',learning:'Wechselgeld früh prüfen, Gäste offen informieren und im Team eine faire Lösung organisieren',avatar:'michael.png',cast:['laura','marc','michael','sabrina','herr_becker'],ready:true,scenes:[
+  wechselgeld:{season:1,episode:14,status:'fertig',points:4,title:'Kleingeld und Pfandrückgabe',subtitle:'Ruhig handeln, wenn Wechselgeld oder Pfandgeld knapp wird.',learning:'Wechselgeld früh prüfen, Gäste offen informieren und im Team eine faire Lösung organisieren',avatar:'michael.png',cast:['laura','marc','michael','sabrina','herr_becker'],ready:true,scenes:[
     {who:'Herr Becker',key:'herr_becker',text:()=>`Ich möchte drei Pfandgläser zurückgeben. Michael bemerkt, dass gerade kaum Kleingeld in der Kasse liegt.`,question:'Wie sollte Michael reagieren?',choices:[['Die Rückgabe ablehnen und den Gast wegschicken.','bad'],['Ruhig informieren, den Wechselgeldbestand prüfen und gemeinsam eine sichere Lösung organisieren.','good'],['So tun, als hätte er den Gast nicht verstanden.','bad']],good:'Richtig. Offenheit und ein ruhiger Ablauf verhindern Streit.',guest:'Eine ehrliche Erklärung ist mir lieber als hektisches Improvisieren.'},
     {who:'Sabrina',key:'sabrina',text:()=>`Sabrina prüft die vereinbarte Wechselgeldreserve und stimmt sich mit Michael ab. So kann das Pfand korrekt zurückgegeben werden.`,tip:`Wechselgeld und Pfandreserve gehören auf die Checkliste zum Schichtbeginn und sollten zwischendurch kontrolliert werden.`,next:'Modul abschließen'}
   ]},
-  geldboerse:{season:1,episode:14,status:'fertig',points:4,title:'Die vergessene Geldbörse',subtitle:'Vertrauen, Regeln und Verantwortung fair abwägen.',learning:'Gäste respektvoll behandeln, keine Person bloßstellen und eine verantwortbare Lösung finden',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','michael','sabrina'],ready:true,scenes:[
+  geldboerse:{season:1,episode:15,status:'fertig',points:4,title:'Die vergessene Geldbörse',subtitle:'Vertrauen, Regeln und Verantwortung fair abwägen.',learning:'Gäste respektvoll behandeln, keine Person bloßstellen und eine verantwortbare Lösung finden',avatar:'frau_schmitt.png',cast:['laura','marc','frau_schmitt','michael','sabrina'],ready:true,scenes:[
     {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`Ich habe Sauerkrauteintopf und einen Glühwein bestellt. Jetzt bemerke ich, dass meine Geldbörse noch im Büro liegt.`,question:'Wie sollte Michael reagieren?',choices:[['Frau Schmitt vor den anderen Gästen bloßstellen.','bad'],['Ruhig bleiben, die Situation respektvoll klären und bei einer Ausnahme gemeinsam eine nachvollziehbare Lösung vereinbaren.','good'],['Ohne jede Absprache alles verschenken.','bad']],good:'Richtig. Vertrauen braucht Menschlichkeit und klare Absprachen.',guest:'Mir war die Situation sehr peinlich. Die ruhige und respektvolle Reaktion hat mir sehr geholfen.'},
     {who:'Marc',key:'marc',text:()=>`Nicht jede Situation lässt sich mit einer starren Antwort lösen. Wichtig sind Transparenz, eine klare Vereinbarung und eine faire Entscheidung.`,tip:`Ausnahmen sollten nachvollziehbar bleiben und nicht heimlich oder willkürlich erfolgen.`,next:'Modul abschließen'}
   ]},
-  leo:{season:1,episode:15,status:'fertig',points:5,title:'Leo kommt ins Team',subtitle:'Neue Helfer willkommen heißen und gut einarbeiten.',learning:'Voraussetzungen prüfen, neue Helfer persönlich begrüßen, Aufgaben erklären und niemanden allein lassen',avatar:'leo.png',cast:['laura','marc','leo','michael','sabrina'],ready:true,scenes:[
+  leo:{season:1,episode:16,status:'fertig',points:5,title:'Leo kommt ins Team',subtitle:'Neue Helfer willkommen heißen und gut einarbeiten.',learning:'Voraussetzungen prüfen, neue Helfer persönlich begrüßen, Aufgaben erklären und niemanden allein lassen',avatar:'leo.png',cast:['laura','marc','leo','michael','sabrina'],ready:true,scenes:[
     {who:'Leo',key:'leo',text:()=>`Ich bin Jungkoch und würde gern einmal zur Probe beim Köcheclub mitarbeiten. Meine gültige Belehrung nach Paragraph 43 Infektionsschutzgesetz habe ich dabei.`,question:'Was gehört zu einem guten Einstieg?',choices:[['Leo einfach in den Stand stellen und hoffen, dass er alles versteht.','bad'],['Voraussetzungen prüfen, ihn persönlich begrüßen und ihm Ablauf, Hygiene und Aufgaben erklären.','good'],['Ihn den ganzen Abend nur beobachten lassen.','bad']],good:'Richtig. Die ersten Minuten entscheiden oft, ob sich ein neuer Helfer willkommen fühlt.',guest:'Wenn mir jemand alles ruhig zeigt, kann ich sicherer mithelfen und Fragen stellen.'},
-    {who:'Sabrina',key:'sabrina',text:()=>`Michael schaut längere Zeit auf sein Handy. Sabrina merkt, dass Leo unsicher allein steht, und zeigt ihm Händewaschen, Arbeitsbereiche und die ersten Aufgaben.`,question:'Was ist jetzt besonders wichtig?',choices:[['Leo soll selbst herausfinden, was zu tun ist.','bad'],['Eine feste Ansprechperson kümmert sich um ihn und gibt ihm überschaubare Aufgaben.','good'],['Leo wird sofort im größten Andrang allein eingesetzt.','bad']],good:'Genau. Gute Einarbeitung schafft Sicherheit und bindet neue Menschen an das Team.',guest:'Eigentlich wollte ich nur einmal reinschnuppern. Jetzt merke ich, dass der Köcheclub mehr ist als nur Grünkohl verkaufen.'},
+    {who:'Sabrina',key:'sabrina',text:()=>`Michael schaut längere Zeit auf sein Handy. Sabrina merkt, dass Leo unsicher allein steht, und zeigt ihm Händewaschen, Arbeitsbereiche und die ersten Aufgaben.`,question:'Was ist jetzt besonders wichtig?',choices:[['Leo soll selbst herausfinden, was zu tun ist.','bad'],['Eine feste Ansprechperson kümmert sich um ihn und gibt ihm überschaubare Aufgaben.','good'],['Leo wird sofort im größten Andrang allein eingesetzt.','bad']],good:'Genau. Gute Einarbeitung schafft Sicherheit und bindet neue Menschen an das Team.',guest:'Eigentlich wollte ich nur einmal reinschnuppern. Jetzt merke ich, dass der Köcheclub mehr ist als nur Grünkohl verkaufen.',guestKey:'leo'},
     {who:'Marc',key:'marc',text:()=>`Neue Helfer bringen frische Ideen und neue Energie. Dafür müssen sie von Anfang an ernst genommen und gut eingewiesen werden.`,next:'Modul abschließen'}
   ]},
-  kind:{season:1,episode:16,status:'fertig',points:4,title:'Das verlorene Kind',subtitle:'Ruhig helfen, Verantwortung teilen und Sicherheit geben.',learning:'ein verlorenes Kind beruhigen, nicht allein lassen und Aufgaben im Team verteilen',avatar:'sabrina.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
+  kind:{season:1,episode:17,status:'fertig',points:4,title:'Das verlorene Kind',subtitle:'Ruhig helfen, Verantwortung teilen und Sicherheit geben.',learning:'ein verlorenes Kind beruhigen, nicht allein lassen und Aufgaben im Team verteilen',avatar:'sabrina.png',cast:['laura','marc','michael','sabrina'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Ein kleines Mädchen steht weinend am Stand. Es hat seine Mutter verloren.`,question:'Was ist jetzt besonders wichtig?',choices:[['Das Kind allein zur Marktleitung schicken.','bad'],['Das Kind beruhigen, niemals allein lassen und im Team Unterstützung organisieren.','good'],['Die Situation ignorieren, weil viel Betrieb ist.','bad']],good:'Richtig. Sicherheit und Ruhe haben Vorrang.',guest:'Eine Person bleibt beim Kind, die andere holt Unterstützung. So wird gemeinsam nach der Mutter gesucht.'},
     {who:'Laura',key:'laura',text:()=>`In einer emotionalen Situation helfen klare Aufgaben: eine Person bleibt beim Kind, eine weitere informiert die zuständige Stelle und sucht Unterstützung.`,next:'Modul abschließen'}
   ]},
-  nachbarstand:{season:1,episode:17,status:'fertig',points:5,title:'Der Nachbarstand',subtitle:'Beschwerden und Grenzen respektvoll klären.',learning:'Rückmeldungen annehmen, Nachbarschaft respektieren und bei wiederholten Gratiswünschen klare Regeln anwenden',avatar:'herr_koslowski.png',cast:['laura','marc','michael','sabrina','herr_koslowski'],ready:true,scenes:[
+  nachbarstand:{season:1,episode:18,status:'fertig',points:5,title:'Der Nachbarstand',subtitle:'Beschwerden und Grenzen respektvoll klären.',learning:'Rückmeldungen annehmen, Nachbarschaft respektieren und bei wiederholten Gratiswünschen klare Regeln anwenden',avatar:'herr_koslowski.png',cast:['laura','marc','michael','sabrina','herr_koslowski'],ready:true,scenes:[
     {who:'Herr Koslowski',key:'herr_koslowski',text:()=>`Als Betreiber der Nebenhütte erzähle ich Michael, dass Gäste sich gestern am Köcheclub-Stand unfreundlich behandelt fühlten.`,question:'Wie sollte Michael reagieren?',choices:[['Den Hinweis sofort als Lüge zurückweisen.','bad'],['Für den Hinweis danken, sachlich nachfragen und das Verhalten im Team prüfen.','good'],['Den Nachbarn vor seinen Gästen kritisieren.','bad']],good:'Richtig. Auch unangenehme Rückmeldungen können helfen, besser zu werden.',guest:'Ich wollte keinen Streit. Mir war wichtig, dass ihr von der Rückmeldung erfahrt.'},
     {who:'Sabrina',key:'sabrina',text:()=>`Der Nachbar kommt bei fast jedem Schichtwechsel vorbei und erwartet ein kostenloses Getränk.`,question:'Welche Reaktion ist fair?',choices:[['Jeder gibt heimlich weiter kostenlose Getränke aus.','bad'],['Freundlich auf die gemeinsamen Regeln verweisen und besondere Einladungen klar abstimmen.','good'],['Ihn laut vor allen Gästen beschuldigen.','bad']],good:'Richtig. Freundlichkeit und klare Grenzen gehören zusammen.',guest:'Klare Regeln sind für alle besser und vermeiden Missverständnisse.'},
     {who:'Marc',key:'marc',text:()=>`Gute Nachbarschaft lebt von Respekt, ehrlichen Gesprächen und verlässlichen Regeln.`,next:'Modul abschließen'}
   ]},
-  anlieferung:{season:1,episode:19,status:'fertig',points:5,title:'Autos im Weg – aber richtig!',subtitle:'Anliefern, entladen und Rettungswege freihalten.',learning:'Fahrzeuge nur kurz zum Be- und Entladen nutzen, Parkverbotszonen respektieren und Rettungswege freihalten',avatar:'eugen.png',cast:['laura','marc','eugen','michael','sabrina'],ready:true,scenes:[
+  anlieferung:{season:1,episode:20,status:'fertig',points:5,title:'Autos im Weg – aber richtig!',subtitle:'Anliefern, entladen und Rettungswege freihalten.',learning:'Fahrzeuge nur kurz zum Be- und Entladen nutzen, Parkverbotszonen respektieren und Rettungswege freihalten',avatar:'eugen.png',cast:['laura','marc','eugen','michael','sabrina'],ready:true,scenes:[
     {who:'Eugen',key:'eugen',text:()=>`Hömma, wat is dat denn hier? Die Autos vom Köcheclub stehen schon wieder mitten im Weg. Beim Anliefern dürft ihr kurz halten, aber danach müssen die Karren wech. Rettungswege bleiben frei, verstanden?`,question:'Was ist beim Be- und Entladen richtig?',choices:[['Das Fahrzeug den ganzen Tag vor dem Stand stehen lassen.','bad'],['Kurz be- oder entladen und das Fahrzeug anschließend sofort entfernen.','good'],['Den Rettungsweg blockieren, solange jemand am Fahrzeug bleibt.','bad']],good:'Richtig. Kurzes Be- und Entladen ist etwas anderes als dauerhaftes Parken.',guest:'Wenn die Wege frei bleiben, kommen Lieferanten, Einsatzkräfte und Besucher sicher durch.'},
     {who:'Marc',key:'marc',text:()=>`Klare Absprachen vor Schichtbeginn verhindern, dass Fahrzeuge im falschen Moment oder an der falschen Stelle stehen bleiben.`,tip:`Vor der Anlieferung festlegen: Wer fährt, wo wird kurz gehalten und wohin kommt das Fahrzeug danach?`,next:'Modul abschließen'}
   ]},
-  vorplatz:{season:1,episode:20,status:'fertig',points:5,title:'Der Vorplatz gehört dazu',subtitle:'Kippen, Scherben und Müll rechtzeitig beseitigen.',learning:'den Vorplatz regelmäßig kontrollieren, Gefahren sofort beseitigen und Verantwortung gemeinsam übernehmen',avatar:'gisela.png',cast:['laura','marc','eugen','gisela','michael','sabrina'],ready:true,scenes:[
+  vorplatz:{season:1,episode:21,status:'fertig',points:5,title:'Der Vorplatz gehört dazu',subtitle:'Kippen, Scherben und Müll rechtzeitig beseitigen.',learning:'den Vorplatz regelmäßig kontrollieren, Gefahren sofort beseitigen und Verantwortung gemeinsam übernehmen',avatar:'gisela.png',cast:['laura','marc','eugen','gisela','michael','sabrina'],ready:true,scenes:[
     {who:'Eugen',key:'eugen',text:()=>`Hömma, soll dat hier so aussehen? Kippen, kaputte Glasflaschen und Servietten direkt vor eurem Stand. Da muss einer ma eben mit dem Besen ran, bevor noch jemand reintritt.`,question:'Wie sollte das Team reagieren?',choices:[['Bis zum Marktende warten.','bad'],['Gefahren sofort beseitigen und den Vorplatz regelmäßig kontrollieren.','good'],['Nur den Bereich direkt hinter dem Tresen sauber halten.','bad']],good:'Richtig. Der Vorplatz gehört zum sicheren und gepflegten Standbetrieb.',guest:'Sauberkeit beginnt nicht erst hinter dem Tresen.'},
     {who:'Gisela',key:'gisela',text:()=>`Bei uns gegenüber schaut jede Stunde jemand kurz vor den Stand. Fünf Minuten reichen oft schon, damit sich gar nicht erst so viel ansammelt.`,tip:`Kurze, feste Kontrollrunden sind wirksamer als eine große Aufräumaktion am Ende.`,next:'Modul abschließen'}
   ]},
-  parkgenehmigung:{season:1,episode:21,status:'fertig',points:4,title:'Parkgenehmigung rechtzeitig klären',subtitle:'Wichtige Fahrzeuge legal und planbar einsetzen.',learning:'notwendige Fahrzeuge frühzeitig benennen und erforderliche Genehmigungen bei der Stadt beantragen',avatar:'eugen.png',cast:['laura','marc','eugen','michael'],ready:true,scenes:[
-    {who:'Eugen',key:'eugen',text:()=>`Wenn ein wichtiges Fahrzeug während des Marktes in der Nähe bleiben muss, reicht kein Zettel hinter der Scheibe. Dafür müsst ihr rechtzeitig eine Genehmigung bei der Stadt beantragen.`,question:'Wann sollte eine Parkgenehmigung geklärt werden?',choices:[['Erst wenn ein Verwarnzettel am Fahrzeug hängt.','bad'],['Frühzeitig vor dem Weihnachtsmarkt und nur für wirklich notwendige Fahrzeuge.','good'],['Gar nicht, weil Vereinsfahrzeuge immer frei parken dürfen.','bad']],good:'Richtig. Genehmigungen werden vorab geklärt und nicht im laufenden Betrieb improvisiert.',guest:'Planung verhindert Ärger und hält die Marktwege frei.'},
+  parkgenehmigung:{season:1,episode:22,status:'fertig',points:4,title:'Parkgenehmigung rechtzeitig klären',subtitle:'Wichtige Fahrzeuge legal und planbar einsetzen.',learning:'notwendige Fahrzeuge frühzeitig benennen und erforderliche Genehmigungen bei der Stadt beantragen',avatar:'eugen.png',cast:['laura','marc','eugen','michael'],ready:true,scenes:[
+    {who:'Eugen',key:'eugen',text:()=>`Hömma, wenn ein wichtiges Fahrzeug während des Marktes in der Nähe bleiben muss, dann reicht so'n Zettel hinter der Scheibe nich. Dafür müsst ihr rechtzeitig eine Genehmigung bei der Stadt beantragen. Dat regelt sich nich von selbst.`,question:'Wann sollte eine Parkgenehmigung geklärt werden?',choices:[['Erst wenn ein Verwarnzettel am Fahrzeug hängt.','bad'],['Frühzeitig vor dem Weihnachtsmarkt und nur für wirklich notwendige Fahrzeuge.','good'],['Gar nicht, weil Vereinsfahrzeuge immer frei parken dürfen.','bad']],good:'Richtig. Genehmigungen werden vorab geklärt und nicht im laufenden Betrieb improvisiert.',guest:'Planung verhindert Ärger und hält die Marktwege frei.'},
     {who:'Laura',key:'laura',text:()=>`Eine Genehmigung ist kein Freibrief. Auch genehmigte Fahrzeuge müssen so stehen, dass Sicherheit und Rettungswege gewährleistet bleiben.`,next:'Modul abschließen'}
   ]},
-  kalleblick:{season:1,episode:22,status:'fertig',points:4,title:'Kalle sieht, was Gäste sehen',subtitle:'Der Vorplatz prägt den ersten Eindruck.',learning:'die Perspektive der Gäste einnehmen und kleine Mängel früh erkennen',avatar:'kalle.png',cast:['laura','marc','kalle','eugen','gisela'],ready:true,scenes:[
+  kalleblick:{season:1,episode:23,status:'fertig',points:4,title:'Kalle sieht, was Gäste sehen',subtitle:'Der Vorplatz prägt den ersten Eindruck.',learning:'die Perspektive der Gäste einnehmen und kleine Mängel früh erkennen',avatar:'kalle.png',cast:['laura','marc','kalle','eugen','gisela'],ready:true,scenes:[
     {who:'Kalle',key:'kalle',text:()=>`Tach auch. Ich komm ja gern zu euch, aber heute musste ich erst um Kippen und Scherben herumsteigen. Dat Essen kann noch so gut sein – der erste Eindruck liegt nun mal vor der Hütte.`,question:'Warum ist Kalles Hinweis wertvoll?',choices:[['Weil Gäste oft Dinge wahrnehmen, die das Team im Stress übersieht.','good'],['Weil nur Stammgäste über Sauberkeit entscheiden dürfen.','bad'],['Weil der Vorplatz nichts mit dem Stand zu tun hat.','bad']],good:'Richtig. Die Sicht der Gäste hilft, blinde Flecken zu erkennen.',guest:'Ein ehrlicher Hinweis kann helfen, bevor sich weitere Gäste ärgern.'},
     {who:'Gisela',key:'gisela',text:()=>`Kalle sagt es zwar mit einem Spruch, aber er hat recht. Wir sollten Hinweise nicht persönlich nehmen, sondern prüfen und handeln.`,next:'Modul abschließen'}
   ]},
-  gemeinsam:{season:1,episode:23,status:'fertig',points:5,title:'Gemeinsam läuft’s rund',subtitle:'Kleine Aufgaben verteilen und als Marktgemeinschaft handeln.',learning:'Aufgaben teilen, Nachbarstände einbeziehen und gemeinsam für Ordnung und Sicherheit sorgen',avatar:'kalle.png',cast:['laura','marc','eugen','gisela','kalle','michael','sabrina'],ready:true,scenes:[
+  mantaplatte:{season:1,episode:24,status:'fertig',points:4,estimatedMinutes:4,title:'Kalle und die Manta-Platte',subtitle:'Warum auch Köchinnen und Köche nach Feierabend manchmal Appetit auf etwas ganz anderes haben.',learning:'Abwechslung im Teamalltag respektieren, humorvolle Bemerkungen freundlich einordnen und die eigene Arbeit trotzdem wertschätzen',avatar:'kalle.png',cast:['laura','marc','kalle','hannes'],ready:true,scenes:[
+    {who:'Laura',key:'laura',text:()=>`Es ist später Abend auf dem Weihnachtsmarkt. Der große Ansturm ist vorbei. Kalle lehnt gemütlich am Stand, hält seinen täglichen Glühwein in der Hand und beobachtet den Platz.`,next:'Weiter'},
+    {who:'Kalle',key:'kalle',text:()=>`Na, ihr seid ja Gourmets! Da verkauft ihr den ganzen Tag eure leckeren Gerichte – und abends holt ihr euch Currywurst mit Pommes. Eine richtige Manta-Platte! Ha, ha, ha!`,question:'Wie lässt sich Kalles Spruch am besten einordnen?',choices:[['Als freundlicher, humorvoller Hinweis – solange niemand abgewertet wird.','good'],['Als Beweis, dass das Team die eigenen Gerichte nicht mag.','bad'],['Als Grund, den Mitgliedern fremdes Essen zu verbieten.','bad']],good:'Richtig. Humor darf verbinden. Entscheidend ist, dass er respektvoll bleibt und niemanden bloßstellt.',guest:'Kalle neckt das Team, ohne die Arbeit oder das Essen des Köcheclubs schlechtzumachen.'},
+    {who:'Hannes',key:'hannes',text:()=>`Da hast du uns erwischt, Kalle. Natürlich essen wir unsere eigenen Gerichte gerne. Aber wenn man sie den ganzen Tag zubereitet und verkauft, freut man sich abends auch mal auf etwas anderes. Abwechslung muss schließlich sein.`,question:'Welche Aussage trifft den Kern der Situation?',choices:[['Wer auswärts isst, steht nicht hinter der eigenen Küche.','bad'],['Abwechslung nach einer langen Schicht ist normal und mindert die Wertschätzung der eigenen Gerichte nicht.','good'],['Clubmitglieder sollten nur essen, was am eigenen Stand angeboten wird.','bad']],good:'Genau. Appetit auf Abwechslung und Stolz auf die eigene Arbeit passen gut zusammen.'},
+    {who:'Kalle',key:'kalle',text:()=>`Du hast ja recht, Hannes. Ich esse schließlich auch nicht jeden Abend Bratkartoffeln mit Spiegelei. Manchmal gibt es auch eine Frikadelle mit ordentlich Senf dazu!`,next:'Weiter'},
+    {who:'Marc',key:'marc',text:()=>`Alle müssen lachen. Die Currywurst ist an diesem Abend kein Verrat an der eigenen Küche, sondern eine willkommene Abwechslung nach einem langen Arbeitstag.`,tip:'Gemeinsames Lachen stärkt ein Team, wenn der Humor freundlich bleibt und die Leistung anderer respektiert.',next:'Modul abschließen'}
+  ]},
+  rueckstellprobe:{season:1,episode:25,status:'fertig',points:6,estimatedMinutes:7,title:'Die fehlende Rückstellprobe',subtitle:'Dr. Brinkmann prüft die Dokumentation – und aus einem Versäumnis wird eine verlässliche Routine.',learning:'Rückstellproben vollständig entnehmen, eindeutig beschriften, sicher einfrieren und den Tagesabschluss mit einer Checkliste organisieren',avatar:'dr_brinkmann.png',cast:['laura','marc','dr_brinkmann','michael'],ready:true,scenes:[
+    {who:'Laura',key:'laura',text:n=>`${n}, heute geht es um eine kleine Probe mit großer Bedeutung. Dr. Brinkmann kommt unangekündigt zur Kontrolle an den Stand und bittet um die Rückstellprobe vom Vorabend.`,next:'Weiter'},
+    {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Guten Tag. Zeigen Sie mir bitte die Rückstellprobe des Grünkohls vom gestrigen Abend sowie den zugehörigen Eintrag im Rückstellprobenbuch.`,question:'Was sollte Michael jetzt als Erstes tun?',choices:[['Offen und wahrheitsgemäß erklären, was dokumentiert wurde und was fehlt.','good'],['Schnell eine neue Probe abfüllen und mit dem gestrigen Datum versehen.','bad'],['Behaupten, die Probe sei bereits entsorgt worden.','bad']],good:'Richtig. Bei einer Kontrolle zählen Ehrlichkeit, nachvollziehbare Unterlagen und die sofortige Klärung des Versäumnisses.'},
+    {who:'Michael',key:'michael',text:()=>`Herr Dr. Brinkmann, gestern war sehr viel Betrieb. Ich muss offen sagen: Die Probe vom Abend wurde nicht entnommen. Die übrigen Einträge sind vollständig.`,next:'Weiter'},
+    {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Danke für die ehrliche Antwort. Rückstellproben helfen, bei einer späteren Beschwerde die ausgegebene Speise untersuchen zu können. Deshalb müssen Entnahme, Beschriftung, Lagerung und Dokumentation als feste Routine zusammengehören.`,tip:'Die konkreten Vorgaben zu Menge, Aufbewahrungsdauer und Temperatur müssen immer nach dem für den Betrieb geltenden Hygienekonzept und den behördlichen Anforderungen festgelegt werden.',question:'Welche Dokumentation ist vollständig?',choices:[['Nur das Datum auf dem Behälter.','bad'],['Datum, Uhrzeit und Gericht auf dem Behälter sowie ein nachvollziehbarer Eintrag mit Unterschrift im Rückstellprobenbuch.','good'],['Ein mündlicher Hinweis an die nächste Schicht.','bad']],good:'Genau. Behälter und Rückstellprobenbuch müssen die Probe eindeutig und nachvollziehbar zuordnen.'},
+    {who:'Marc',key:'marc',text:()=>`Im hektischen Tagesgeschäft darf der Abschluss nicht vom Gedächtnis einer einzelnen Person abhängen. Eine kurze Checkliste macht sichtbar, was erledigt ist und wer die Verantwortung übernommen hat.`,next:'Checkliste öffnen'},
+    {who:'Michael',key:'michael',text:()=>`Ich richte ab heute einen festen Tagesabschluss ein. Erst wenn alle Punkte geprüft und bestätigt sind, ist die Schicht wirklich beendet.`,checklist:['Rückstellprobe entnommen','Behälter beschriftet','Datum eingetragen','Uhrzeit eingetragen','Gericht eingetragen','Probe sicher eingefroren','Eintrag im Rückstellprobenbuch','Eintrag unterschrieben','Kühl- und Gefriertemperaturen geprüft','Reinigungsplan kontrolliert','Müll ordnungsgemäß entsorgt','Fettabscheider kontrolliert','Spülmaschine gereinigt','HACCP-Einträge vollständig'],next:'Tagesabschluss bestätigen'},
+    {who:'Dr. Brinkmann',key:'dr_brinkmann',text:()=>`Sehr gut. Entscheidend ist nicht, einen Fehler zu verbergen, sondern seine Ursache zu verstehen und den Ablauf so zu verbessern, dass er nicht erneut passiert.`,question:'Welche Maßnahme verhindert das Versäumnis am zuverlässigsten?',choices:[['Eine verbindliche Tagesabschluss-Checkliste mit klarer Zuständigkeit und Bestätigung.','good'],['Eine Erinnerung nur dann, wenn wenig Betrieb ist.','bad'],['Die Aufgabe ohne Dokumentation an wechselnde Personen weitergeben.','bad']],good:'Richtig. Eine feste Zuständigkeit und eine bestätigte Checkliste machen den Abschluss verlässlich und nachvollziehbar.'},
+    {who:'Laura',key:'laura',text:n=>`${n}, du hast alle Punkte bestätigt. Der Tagesabschluss ist vollständig dokumentiert. So wird aus Aufmerksamkeit eine sichere Routine.`,next:'Modul abschließen'}
+  ]},
+  gemeinsam:{season:1,episode:26,status:'fertig',points:5,title:'Gemeinsam läuft’s rund',subtitle:'Kleine Aufgaben verteilen und als Marktgemeinschaft handeln.',learning:'Aufgaben teilen, Nachbarstände einbeziehen und gemeinsam für Ordnung und Sicherheit sorgen',avatar:'kalle.png',cast:['laura','marc','eugen','gisela','kalle','michael','sabrina'],ready:true,scenes:[
     {who:'Eugen',key:'eugen',text:()=>`Hömma, einer stellt die Fahrzeuge weg, einer fegt den Vorplatz und einer schaut nach den Lieferwegen. Dann is dat in zehn Minuten erledigt, statt dass alle nur schimpfen.`,question:'Was ist die beste Lösung?',choices:[['Eine Person macht immer alles allein.','bad'],['Aufgaben klar verteilen und sich gegenseitig unterstützen.','good'],['Warten, bis die Stadt alles erledigt.','bad']],good:'Richtig. Kleine, klar verteilte Aufgaben machen den Ablauf zuverlässig.'},
     {who:'Gisela',key:'gisela',text:()=>`Ich bringe euch zwei Müllsäcke rüber. Dafür sagt ihr uns Bescheid, wenn bei uns vor dem Stand etwas gefährlich wird. So hilft man sich auf dem Markt.` ,next:'Weiter'},
     {who:'Kalle',key:'kalle',text:()=>`Und ich pass auf, dass ihr nich wieder die halbe Straße zuparkt. Keine Sorge – ich sag dat schon laut genug.`,question:'Welche Haltung steckt hinter der Episode?',choices:[['Jeder Stand kümmert sich nur um sich selbst.','bad'],['Gute Zusammenarbeit verbindet klare Verantwortung mit gegenseitiger Hilfe.','good'],['Gäste sollen organisatorische Aufgaben übernehmen.','bad']],good:'Richtig. Verlässlichkeit und Nachbarschaftshilfe gehören zusammen.',guest:'Wenn alle mitdenken, bleibt der Weihnachtsmarkt sicher und freundlich.'},
     {who:'Marc',key:'marc',text:()=>`Organisation wirkt dann professionell, wenn Verantwortung klar ist und trotzdem jeder bereit bleibt, kurz mit anzupacken.`,tip:`Am Schichtbeginn zwei Minuten für Zuständigkeiten einplanen: Fahrzeuge, Vorplatz, Müll und Lieferwege.`,next:'Modul abschließen'}
   ]},
-  koslowski_geruch:{season:1,episode:24,status:'fertig',points:5,title:'Wenn die Ware nach Grünkohl riecht',subtitle:'Eine Beschwerde des Nachbarstands sachlich aufnehmen und gemeinsam lösen.',learning:'Nachbarschaftskonflikte früh ansprechen, Auswirkungen des eigenen Standbetriebs ernst nehmen und praktikable Lösungen vereinbaren',avatar:'herr_koslowski.png',cast:['laura','marc','herr_koslowski','michael','sabrina'],ready:true,scenes:[
+  koslowski_geruch:{season:1,episode:27,status:'fertig',points:5,title:'Wenn die Ware nach Grünkohl riecht',subtitle:'Eine Beschwerde des Nachbarstands sachlich aufnehmen und gemeinsam lösen.',learning:'Nachbarschaftskonflikte früh ansprechen, Auswirkungen des eigenen Standbetriebs ernst nehmen und praktikable Lösungen vereinbaren',avatar:'herr_koslowski.png',cast:['laura','marc','herr_koslowski','michael','sabrina'],ready:true,scenes:[
     {who:'Herr Koslowski',key:'herr_koslowski',text:()=>`Hömma Michael, ich muss euch ma watt sagen. Meine Mützen und Schals riechen inzwischen nach Grünkohl und Glühwein. Die Kundschaft merkt dat auch schon.`,question:'Wie sollte Michael zuerst reagieren?',choices:[['Die Beschwerde abweisen, weil Gerüche auf einem Weihnachtsmarkt normal sind.','bad'],['Für den Hinweis danken, ruhig nachfragen und die Ursache gemeinsam prüfen.','good'],['Herrn Koslowski sagen, er solle seinen Stand weiter wegstellen.','bad']],good:'Richtig. Wer den Hinweis ernst nimmt, verhindert, dass aus einem Problem ein dauerhafter Nachbarschaftskonflikt wird.',guest:'Mir geht es nicht ums Meckern. Ich möchte nur, dass wir eine vernünftige Lösung finden.'},
     {who:'Sabrina',key:'sabrina',text:()=>`Sabrina schlägt vor, die Topfdeckel konsequenter geschlossen zu halten, die Dampfentwicklung zu beobachten und die Lüftungsrichtung gemeinsam zu prüfen.`,question:'Welche Lösung ist besonders sinnvoll?',choices:[['Nichts verändern und hoffen, dass sich Herr Koslowski daran gewöhnt.','bad'],['Konkrete Maßnahmen testen und mit dem Nachbarstand vereinbaren, ob sie wirken.','good'],['Nur während einer Kontrolle die Deckel schließen.','bad']],good:'Genau. Gute Zusammenarbeit bedeutet, Maßnahmen zu vereinbaren und anschließend gemeinsam zu prüfen, ob sie helfen.',guest:'Wenn wir merken, dass es besser wird, ist für beide Stände viel gewonnen.'},
     {who:'Marc',key:'marc',text:()=>`Beschwerden von Nachbarständen sind keine persönlichen Angriffe. Sie zeigen, wo der eigene Betrieb andere beeinflusst.`,tip:`Früh sprechen, konkret prüfen, Lösung vereinbaren und später kurz nachfragen, ob die Verbesserung ausreicht.`,next:'Modul abschließen'}
   ]},
-  kinderbetreuung:{season:1,episode:25,status:'fertig',points:4,title:'Wenn die Kinderbetreuung ausfällt',subtitle:'Verantwortung und Hilfsbereitschaft miteinander verbinden.',learning:'Gefahren am Stand realistisch einschätzen, Grenzen freundlich erklären und gemeinsam eine sichere Lösung suchen',avatar:'julia.png',cast:['laura','marc','julia','michael'],ready:true,scenes:[
+  kinderbetreuung:{season:1,episode:28,status:'fertig',points:4,title:'Wenn die Kinderbetreuung ausfällt',subtitle:'Verantwortung und Hilfsbereitschaft miteinander verbinden.',learning:'Gefahren am Stand realistisch einschätzen, Grenzen freundlich erklären und gemeinsam eine sichere Lösung suchen',avatar:'julia.png',cast:['laura','marc','julia','michael'],ready:true,scenes:[
     {who:'Julia',key:'julia',text:()=>`Mein Kindermädchen für den zehnjährigen Alexander ist kurzfristig ausgefallen. Könnte er heute in der Nebenhütte auf dem Boden spielen, während ich ein paar Stunden am Stand helfe?`,next:'Weiter'},
     {who:'Michael',key:'michael',text:()=>`Ich verstehe deine Lage, aber am Stand und in der Nebenhütte gibt es heiße Flüssigkeiten, Gas, Messer, Lieferverkehr und keine durchgehende Aufsicht. Das wäre zu gefährlich.`,question:'Wie sollte Michael jetzt weiter reagieren?',choices:[['Julia ohne weitere Hilfe nach Hause schicken.','bad'],['Die Gefahr klar benennen und anschließend gemeinsam nach einer sicheren Betreuungsmöglichkeit suchen.','good'],['Alexander unbeaufsichtigt in der Nebenhütte spielen lassen.','bad']],good:'Richtig. Sicherheit hat Vorrang, aber eine Absage sollte möglichst mit einem lösungsorientierten Vorschlag verbunden werden.',guest:'Julia fühlt sich ernst genommen, obwohl ihr ursprünglicher Wunsch nicht möglich ist.'},
     {who:'Michael',key:'michael',text:()=>`Meine Frau hat heute frei. Ich rufe sie an und frage, ob Alexander während deiner Schicht bei ihr bleiben kann. Dann kannst du helfen und er ist zuverlässig betreut.`,tip:`Private Hilfe ist freiwillig und muss für alle Beteiligten passen. Entscheidend ist, dass Kinder nicht unbeaufsichtigt in einem Arbeits- oder Gefahrenbereich bleiben.`,next:'Weiter'},
     {who:'Laura',key:'laura',text:()=>`Verantwortung bedeutet, ein Risiko klar abzulehnen und trotzdem respektvoll nach einer machbaren Alternative zu suchen.`,next:'Modul abschließen'}
   ]},
-  wasserschlauch:{season:1,episode:26,status:'fertig',points:6,title:'Der geplatzte Wasserschlauch',subtitle:'In einer Notsituation ruhig handeln und wichtige Einrichtungen kennen.',learning:'Aushilfen vollständig einweisen, Wasser schnell abstellen, Notfallkontakte finden und Gefahrenbereiche sichern',avatar:'julia.png',cast:['julia','kalle','michael','marc'],ready:true,scenes:[
+  wasserschlauch:{season:1,episode:29,status:'fertig',points:6,title:'Der geplatzte Wasserschlauch',subtitle:'In einer Notsituation ruhig handeln und wichtige Einrichtungen kennen.',learning:'Aushilfen vollständig einweisen, Wasser schnell abstellen, Notfallkontakte finden und Gefahrenbereiche sichern',avatar:'julia.png',cast:['julia','kalle','michael','marc'],ready:true,scenes:[
     {who:'Julia',key:'julia',text:()=>`Michael ist kurz zur Toilette gegangen. Plötzlich platzt an der Spülmaschine ein Wasserschlauch. Wasser läuft über den Boden und ich weiß im ersten Moment nicht, was ich tun soll.`,question:'Was ist jetzt als Erstes wichtig?',choices:[['Den Stand verlassen und niemandem etwas sagen.','bad'],['Ruhe bewahren, andere warnen und versuchen, die Wasserzufuhr sicher zu stoppen.','good'],['Weiterarbeiten, bis Michael zurückkommt.','bad']],good:'Richtig. Personen warnen, Rutsch- und Stromgefahren beachten und die Wasserzufuhr so schnell wie möglich sicher stoppen.',guest:'Eine klare Einweisung hilft, auch unter Stress handlungsfähig zu bleiben.'},
     {who:'Kalle',key:'kalle',text:()=>`Julia, hinter der Ausgangstür hängen doch die wichtigen Telefonnummern. Da stehen Feuerwehr, Polizei, Gas, Wasserinstallateur und Elektriker.`,tip:`Notfallnummern müssen gut sichtbar, aktuell und für alle Helfer erreichbar sein.`,next:'Weiter'},
     {who:'Michael',key:'michael',text:()=>`Ich bin zurück und zeige Julia sofort den Absperrhahn. Wir stellen das Wasser ab, sichern den nassen Bereich und prüfen, ob elektrische Geräte gefährdet sind.`,question:'Was muss jede neue Aushilfe vor ihrer ersten Schicht kennen?',choices:[['Nur die Speisekarte.','bad'],['Erste-Hilfe-Kasten, Feuerlöscher, Gas-, Wasser- und Stromabschaltung, Fluchtwege und Notfallnummern.','good'],['Nur den eigenen Arbeitsplatz.','bad']],good:'Genau. Eine vollständige Einweisung ist ein wichtiger Teil der Arbeitssicherheit.',guest:'Julia weiß jetzt, wo sie im Notfall handeln und Hilfe holen kann.'},
     {who:'Marc',key:'marc',text:()=>`Neue Kolleginnen, Kollegen, Aushilfen und Praktikanten müssen vor der ersten Schicht eine kurze Notfalleinweisung erhalten.`,tip:()=>resolveSystemText('emergency_checklist'),next:'Modul abschließen'}
   ]},
-  freundliches_wort:{season:1,episode:28,status:'fertig',points:4,title:'Ein freundliches Wort',subtitle:'Hannes zeigt Leo, wie Gastfreundschaft schon mit der Begrüßung beginnt.',learning:'Gäste freundlich begrüßen, Blickkontakt halten, Ruhe ausstrahlen und Fehler nicht mit Unfreundlichkeit verwechseln',avatar:'hannes.png',cast:['hannes','leo','laura'],ready:true,scenes:[
+  freundliches_wort:{season:1,episode:31,status:'fertig',points:4,title:'Ein freundliches Wort',subtitle:'Hannes zeigt Leo, wie Gastfreundschaft schon mit der Begrüßung beginnt.',learning:'Gäste freundlich begrüßen, Blickkontakt halten, Ruhe ausstrahlen und Fehler nicht mit Unfreundlichkeit verwechseln',avatar:'hannes.png',cast:['hannes','leo','laura'],ready:true,scenes:[
     {who:'Leo',key:'leo',text:()=>`Ich bin heute etwas nervös. Ich möchte bloß nichts falsch machen.`,next:'Weiter'},
     {who:'Hannes',key:'hannes',text:()=>`Weißt du, woran sich unsere Gäste später erinnern? Nicht daran, ob du zuerst die linke oder die rechte Taste gedrückt hast. Sondern daran, ob sie freundlich empfangen wurden.`,question:'Was ist beim ersten Kontakt besonders wichtig?',choices:[['Möglichst schnell sprechen.','bad'],['Freundlich begrüßen, Blickkontakt halten und Ruhe ausstrahlen.','good'],['Jeden Gast sofort auf mögliche Fehler hinweisen.','bad']],good:'Richtig. Ein freundlicher erster Kontakt schafft Vertrauen.',guest:'Ein ehrliches Lächeln und ein ruhiger Gruß nehmen vielen Gästen sofort die Unsicherheit.'},
     {who:'Laura',key:'laura',text:()=>`Leo begrüßt ein älteres Ehepaar freundlich: Schön, dass Sie da sind. Was darf ich Ihnen anbieten? Beide lächeln sofort zurück.`,next:'Weiter'},
     {who:'Hannes',key:'hannes',text:()=>`Siehst du? Genau so entsteht Gastfreundschaft. Und jetzt gönne ich mir erst einmal einen Kaffee. Ohne Kaffee bin ich morgens nur halb so freundlich.`,tip:`Ein freundliches Wort kostet nichts und bleibt Gästen oft länger im Gedächtnis als ein kleiner Bedienfehler.`,next:'Modul abschließen'}
   ]},
-  zwei_euro:{season:1,episode:29,status:'fertig',points:4,title:'Die zwei Euro',subtitle:'Detlef zeigt, warum ein ruhiger Kassenabschluss wichtig ist.',learning:'sorgfältig zählen, Abweichungen ruhig prüfen, niemanden vorschnell beschuldigen und gemeinsam nach der Ursache suchen',avatar:'detlef.png',cast:['detlef','leo','marc','laura'],ready:true,scenes:[
+  zwei_euro:{season:1,episode:32,status:'fertig',points:4,title:'Die zwei Euro',subtitle:'Detlef zeigt, warum ein ruhiger Kassenabschluss wichtig ist.',learning:'sorgfältig zählen, Abweichungen ruhig prüfen, niemanden vorschnell beschuldigen und gemeinsam nach der Ursache suchen',avatar:'detlef.png',cast:['detlef','leo','marc','laura'],ready:true,scenes:[
     {who:'Leo',key:'leo',text:()=>`Detlef, du zählst aber wirklich jeden Cent.`,next:'Weiter'},
     {who:'Detlef',key:'detlef',text:()=>`Bei Geld lohnt sich Genauigkeit. Moment ... zwei Euro fehlen.`,question:'Wie sollte das Team jetzt reagieren?',choices:[['Sofort jemanden verantwortlich machen.','bad'],['In Ruhe noch einmal zählen und gemeinsam nach einer einfachen Erklärung suchen.','good'],['Die Abweichung ignorieren, weil es nur zwei Euro sind.','bad']],good:'Genau. Erst prüfen, dann bewerten.',guest:'Ruhe und ein klarer Ablauf verhindern unnötige Verdächtigungen.'},
     {who:'Laura',key:'laura',text:()=>`Unter dem Pfandglas liegt eine Zwei-Euro-Münze. Alle müssen schmunzeln.`,next:'Weiter'},
     {who:'Detlef',key:'detlef',text:()=>`Da ist sie ja. Die wollte wohl noch bis zum Schluss dabei bleiben. Genau deshalb kontrollieren wir sorgfältig und ohne Hektik.`,tip:`Bei einer Abweichung zuerst Bestände, Ablageflächen, Pfandgefäße und Wechselgeld gemeinsam prüfen.`,next:'Modul abschließen'}
   ]},
-  bereitschaft:{season:1,episode:30,status:'fertig',points:5,title:'Gut geplant ist halb gewonnen',subtitle:'Laura organisiert bei einem kurzfristigen Ausfall den Bereitschaftsdienst.',learning:'Dienstplan, Bereitschaft und aktuelle Telefonnummern nutzen, Ausfälle ruhig auffangen und Informationen zuverlässig weitergeben',avatar:'hannes.png',cast:['laura','michael','hannes'],ready:true,scenes:[
+  bereitschaft:{season:1,episode:33,status:'fertig',points:5,title:'Gut geplant ist halb gewonnen',subtitle:'Laura organisiert bei einem kurzfristigen Ausfall den Bereitschaftsdienst.',learning:'Dienstplan, Bereitschaft und aktuelle Telefonnummern nutzen, Ausfälle ruhig auffangen und Informationen zuverlässig weitergeben',avatar:'hannes.png',cast:['laura','michael','hannes'],ready:true,scenes:[
     {who:'Laura',key:'laura',text:()=>`Kurz vor dem Spätdienst schreibt Michael in die Clubgruppe, dass er sich krank fühlt und heute nicht kommen kann. Für den Abend wird großer Andrang erwartet.`,question:'Was ist jetzt die beste erste Reaktion?',choices:[['Michael Vorwürfe machen.','bad'],['Den Dienstplan prüfen und den eingetragenen Bereitschaftsdienst anrufen.','good'],['Den Stand ohne Ersatz öffnen.','bad']],good:'Richtig. Gute Planung schafft eine klare Reserve für kurzfristige Ausfälle.',guest:'Der Bereitschaftskollege ist erreichbar und kann rechtzeitig einspringen.'},
     {who:'Laura',key:'laura',text:()=>`An der Pinnwand finde ich den aktuellen Dienstplan mit Bereitschaft und Telefonnummer. Der Kollege sagt sofort zu und ist in zwanzig Minuten da.`,next:'Weiter'},
     {who:'Hannes',key:'hannes',text:()=>`Danke für die Information. Genau dafür planen wir unsere Bereitschaften. Gut, dass alles geregelt ist.`,question:'Was gehört zu einem verlässlichen Bereitschaftssystem?',choices:[['Nur ein Name ohne Telefonnummer.','bad'],['Aktueller Dienstplan, erreichbare Telefonnummern und klare Information bei Änderungen.','good'],['Eine spontane Suche erst nach Dienstbeginn.','bad']],good:'Genau. Nur aktuelle und zugängliche Informationen helfen im Ernstfall.',guest:'Die Gäste merken von dem kurzfristigen Ausfall nichts.'},
     {who:'Marc',key:'marc',text:()=>`Eine gute Planung inklusive Reserve ist eine Voraussetzung für einen funktionierenden Dienst und einen verlässlichen Weihnachtsmarkt.`,tip:`Prüft regelmäßig, ob Bereitschaftsdienste und Telefonnummern noch aktuell sind.`,next:'Modul abschließen'}
   ]},
-  barzahlung:{season:1,episode:31,status:'fertig',points:4,title:'Bitte nur Barzahlung',subtitle:'Ein klarer Hinweis vermeidet unangenehme Situationen beim Bezahlen.',learning:'Zahlungsmöglichkeiten früh und sichtbar kommunizieren und in einer unangenehmen Situation freundlich bleiben',avatar:'kalle.png',cast:['michael','kalle','herr_becker','marc','laura'],ready:true,scenes:[
+  barzahlung:{season:1,episode:34,status:'fertig',points:4,title:'Bitte nur Barzahlung',subtitle:'Ein klarer Hinweis vermeidet unangenehme Situationen beim Bezahlen.',learning:'Zahlungsmöglichkeiten früh und sichtbar kommunizieren und in einer unangenehmen Situation freundlich bleiben',avatar:'kalle.png',cast:['michael','kalle','herr_becker','marc','laura'],ready:true,scenes:[
     {who:'Herr Becker',key:'herr_becker',text:()=>`Ich möchte vier Portionen Grünkohl mit Mettwurst zum Mitnehmen und halte Michael meine Kreditkarte hin.`,next:'Weiter'},
     {who:'Michael',key:'michael',text:()=>`Es tut mir leid. Beim Köcheclub ist ausschließlich Barzahlung möglich.`,question:'Wie lässt sich diese Situation künftig vermeiden?',choices:[['Erst beim Bezahlen darauf hinweisen.','bad'],['Vor der Bestellung gut sichtbar auf Nur Barzahlung hinweisen.','good'],['Nur Stammgäste informieren.','bad']],good:'Richtig. Klare Informationen verhindern Missverständnisse.',guest:'Der Gast hat kein Bargeld dabei und die Situation ist ihm unangenehm.'},
     {who:'Kalle',key:'kalle',text:()=>`Ich kenne Herrn Becker und übernehme die Rechnung. Beim nächsten Treffen gleichen wir das wieder aus.`,next:'Weiter'},
     {who:'Marc',key:'marc',text:()=>`Der hilfreiche Zufall löst die Situation. Besser ist aber ein gut sichtbarer Aushang: Bitte beachten – bei uns ist nur Barzahlung möglich.`,tip:`Der Hinweis gehört dorthin, wo Gäste sich anstellen oder bestellen, nicht erst an die Kasse.`,next:'Modul abschließen'}
   ]},
-  panne:{season:1,episode:32,status:'fertig',points:5,title:'Gemeinsam finden wir eine Lösung',subtitle:'Eine Autopanne kurz vor dem Schichtwechsel fordert Flexibilität und Teamgeist.',learning:'bei kurzfristiger Verspätung sofort informieren, vorhandene Teamressourcen respektvoll ansprechen und eine zeitlich begrenzte Übergangslösung vereinbaren',avatar:'michael.png',cast:['michael','sabrina','hannes','laura','marc'],ready:true,scenes:[
+  panne:{season:1,episode:35,status:'fertig',points:5,title:'Gemeinsam finden wir eine Lösung',subtitle:'Eine Autopanne kurz vor dem Schichtwechsel fordert Flexibilität und Teamgeist.',learning:'bei kurzfristiger Verspätung sofort informieren, vorhandene Teamressourcen respektvoll ansprechen und eine zeitlich begrenzte Übergangslösung vereinbaren',avatar:'michael.png',cast:['michael','sabrina','hannes','laura','marc'],ready:true,scenes:[
     {who:'Sabrina',key:'sabrina',text:()=>`Es ist 14 Uhr 55. Michael muss heute pünktlich gehen, weil er einen wichtigen Arzttermin hat. Marius, der um 15 Uhr übernehmen sollte, ruft an: Sein Wagen hat eine Panne und er schafft es nicht rechtzeitig.`,question:'Was ist jetzt der wichtigste erste Schritt?',choices:[['Michael sagt seinen Arzttermin ab.','bad'],['Die Situation ruhig klären und prüfen, wer am Stand vorübergehend länger bleiben kann.','good'],['Den Stand sofort schließen.','bad']],good:'Richtig. Zuerst wird ruhig geprüft, welche sichere und faire Übergangslösung im vorhandenen Team möglich ist.',guest:'Marius hat frühzeitig angerufen. Dadurch bleibt noch Zeit, gemeinsam zu reagieren.'},
     {who:'Michael',key:'michael',text:()=>`Ein weiterer Kollege arbeitet bereits mit uns am Stand und hätte ebenfalls um 15 Uhr Feierabend. Ich frage ihn: Ich weiß, dein Dienst wäre jetzt eigentlich zu Ende. Wäre es für dich möglich, heute ausnahmsweise bis 17 Uhr zu bleiben? Dann übernimmt der Bereitschaftsdienst.`,question:'Wie sollte eine solche Bitte gestellt werden?',choices:[['Als selbstverständliche Anweisung ohne Nachfrage.','bad'],['Respektvoll, freiwillig und mit einer klaren zeitlichen Begrenzung.','good'],['Erst nach dem eigentlichen Feierabend.','bad']],good:'Genau. Zusätzliche Hilfe wird wertschätzend erfragt, nicht vorausgesetzt.',guest:'Der Kollege überlegt kurz und erklärt sich bereit, bis 17 Uhr länger zu bleiben.'},
     {who:'Sabrina',key:'sabrina',text:()=>`Damit ist der Stand weiter gut besetzt. Michael kann seinen Arzttermin wahrnehmen, und ab 17 Uhr übernimmt wie geplant der Bereitschaftsdienst.`,next:'Weiter'},
     {who:'Hannes',key:'hannes',text:()=>`Ein guter Dienstplan gibt Orientierung. Ein gutes Team findet auch dann eine faire Lösung, wenn etwas Unvorhergesehenes passiert.`,question:'Warum konnte die Situation gut gelöst werden?',choices:[['Weil Michael seinen Termin abgesagt hat.','bad'],['Weil offen kommuniziert, freiwillige Hilfe erfragt und die Übergabe klar begrenzt wurde.','good'],['Weil Marius trotz der Panne rechtzeitig kam.','bad']],good:'Richtig. Offene Kommunikation und freiwillige Unterstützung schaffen eine verlässliche Übergangslösung.',guest:'Niemand wird beschuldigt oder unter Druck gesetzt. Die Aufgabe wird gemeinsam und zeitlich klar geregelt.'},
     {who:'Laura',key:'laura',text:()=>`Wer merkt, dass er sich verspätet oder ausfällt, sollte das Team sofort informieren. So bleibt genügend Zeit, gemeinsam eine gute Lösung zu finden.`,tip:`Zusätzliche Arbeitszeit immer freiwillig, respektvoll und mit klarer Dauer vereinbaren. Danach die Änderung an die zuständigen Personen weitergeben.`,next:'Modul abschließen'}
   ]},
-  finale:{season:1,episode:33,status:'fertig',points:4,title:'Ein Weihnachtsmarkt verbindet',subtitle:'Herr Becker und Frau Schmitt entdecken gemeinsame Interessen.',learning:'erkennen, wie Gastfreundschaft, Atmosphäre und menschliche Begegnungen den Weihnachtsmarkt prägen',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','frau_schmitt','michael','sabrina'],ready:true,scenes:[
+  verbandskasten:{season:1,episode:36,status:'fertig',points:6,estimatedMinutes:7,title:'Frau Schmitt, das Pflaster und der neue Verbandskasten',subtitle:'Ein Schnitt durch eine Glasscherbe zeigt, warum Erste Hilfe vorbereitet sein muss.',learning:'bei Verletzungen Eigenschutz beachten, Erste Hilfe leisten, den Verbandskasten schnell finden und bei ernsten Verletzungen unverzüglich den Rettungsdienst alarmieren',avatar:'frau_schmitt.png',cast:['frau_schmitt','herr_becker','sabrina','michael','detlef','marc'],ready:true,scenes:[
+    {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`An einem gut besuchten Abend bestelle ich einen Eierlikörpunsch ohne Sahne, weil ich eine Laktoseintoleranz habe. Sabrina bestätigt freundlich, dass das möglich ist. Kurz darauf stößt mich ein anderer Gast versehentlich an. Das Glas fällt zu Boden und zerbricht.`,question:'Was ist nach dem Zerbrechen des Glases zuerst wichtig?',choices:[['Die Scherben sofort mit bloßen Händen aufheben.','bad'],['Den Bereich sichern, Gäste warnen und geeignete Hilfsmittel zum Aufnehmen der Scherben verwenden.','good'],['Die Scherben bis zum Ende des Abends liegen lassen.','bad']],good:'Richtig. Zuerst wird der Gefahrenbereich gesichert. Glasscherben werden niemals mit bloßen Händen aufgenommen.',guest:'Eine klare Warnung schützt Gäste und Team vor weiteren Verletzungen.'},
+    {who:'Herr Becker',key:'herr_becker',text:()=>`Ich möchte helfen und beginne, die Scherben mit bloßen Händen aufzuheben. Dabei schneidet eine scharfe Scherbe tief in meinen Daumen. Die Wunde beginnt stark zu bluten.`,question:'Wie sollte das Team jetzt reagieren?',choices:[['Eigenschutz beachten, Hilfe holen, die Blutung mit geeignetem Verbandmaterial versorgen und die Schwere der Verletzung beurteilen.','good'],['Nur ein beliebiges Pflaster aufkleben und sofort weiterarbeiten.','bad'],['Die Wunde ignorieren, solange Herr Becker stehen kann.','bad']],good:'Genau. Ersthelfende schützen sich selbst, versorgen die Blutung fachgerecht und holen bei Bedarf unverzüglich professionelle Hilfe.'},
+    {who:'Sabrina',key:'sabrina',text:()=>`Ich suche in mehreren Schubladen nach Pflastern. Michael erinnert sich, dass sie im vergangenen Jahr zwischen den Handtüchern lagen. Dort sind sie aber nicht mehr. Erst in einer anderen Schublade finden wir noch geeignetes Verbandmaterial.`,question:'Welches organisatorische Problem wird hier sichtbar?',choices:[['Verbandmaterial wird nur selten benötigt und braucht deshalb keinen festen Platz.','bad'],['Der Aufbewahrungsort ist nicht eindeutig, nicht allen bekannt und offenbar nicht regelmäßig kontrolliert worden.','good'],['Nur die Standverantwortung darf wissen, wo Erste-Hilfe-Material liegt.','bad']],good:'Richtig. Notfallausrüstung braucht einen festen, gekennzeichneten und allen bekannten Platz.'},
+    {who:'Detlef',key:'detlef',text:()=>`Am Ende des Abends notiere ich die Anschaffung eines vollständigen Verbandskastens. Schon wenige Tage später hängt er gut sichtbar und schnell erreichbar im Stand.`,question:'Was gehört zusätzlich zur Anschaffung?',choices:[['Regelmäßige Kontrolle von Inhalt, Vollständigkeit und Verwendbarkeit sowie eine Einweisung des Teams.','good'],['Der Kasten bleibt verschlossen und nur eine Person erhält den Schlüssel.','bad'],['Eine Kontrolle ist erst nach einem Unfall notwendig.','bad']],good:'Richtig. Ein Verbandskasten hilft nur, wenn er erreichbar, vollständig, verwendbar und allen bekannt ist.'},
+    {who:'Marc',key:'marc',text:()=>`Ein Erste-Hilfe-Kasten gehört aus Sicherheitsgründen in jeden Stand. Er muss schnell erreichbar sein und jeder muss wissen, wo er hängt. Bei starker Blutung, einer tiefen Wunde, Kreislaufproblemen oder anderen ernsten Verletzungen gilt: Sofort professionelle Hilfe über den Notruf 112 alarmieren und keine Zeit verlieren.`,tip:`Notfallausrüstung zu Schichtbeginn kurz prüfen: Standort frei zugänglich, Kennzeichnung sichtbar, Inhalt vollständig und Verfallsdaten kontrolliert.`,next:'Modul abschließen'}
+  ]},
+  papiertuete:{season:1,episode:37,status:'fertig',points:6,estimatedMinutes:6,title:'Die brennende Papiertüte',subtitle:'Ein kleiner Entstehungsbrand zeigt, wie wichtig Einweisung, Abstand und der Notruf 112 sind.',learning:'Brand früh melden, Menschen warnen, Fluchtwege freihalten, einen Entstehungsbrand nur ohne Selbstgefährdung bekämpfen und bei wachsender Gefahr sofort 112 wählen',avatar:'gisela.png',cast:['gisela','herr_koslowski','kalle','michael','marc'],ready:true,scenes:[
+    {who:'Gisela',key:'gisela',text:()=>`Es ist ein lebhafter Abend. Hinter der Nachbarbude entdecke ich eine kleine Flamme. Offenbar hat eine noch glimmende Zigarettenkippe eine trockene Papiertüte entzündet. Ich rufe sofort laut: Feuer!`,question:'Was bewirkt Giselas lauter Warnruf?',choices:[['Andere werden früh gewarnt und können Abstand halten beziehungsweise Hilfe organisieren.','good'],['Der Brand wird dadurch automatisch gelöscht.','bad'],['Nur die Gäste werden unruhig, deshalb sollte man schweigen.','bad']],good:'Richtig. Frühes Warnen schützt Menschen und setzt die notwendige Hilfe in Gang.'},
+    {who:'Henn Koslowski',key:'herr_koslowski',text:()=>`Ich achte darauf, dass niemand zu nah an die Flammen kommt und der Weg für Helfende frei bleibt. Kalle ruft Michael hinzu.`,question:'Warum ist das Absichern des Bereichs wichtig?',choices:[['Damit niemand durch Feuer, Rauch oder hektische Bewegungen zusätzlich gefährdet wird.','good'],['Damit möglichst viele Menschen beim Löschen zusehen können.','bad'],['Damit der Standbetrieb unverändert weiterlaufen kann.','bad']],good:'Genau. Menschenrettung und Eigenschutz haben Vorrang vor Sachwerten.'},
+    {who:'Michael',key:'michael',text:()=>`Ich weiß, wo der Feuerlöscher hängt, hole ihn und prüfe auf dem Weg, ob ich den kleinen Brand gefahrlos bekämpfen kann. Ich beachte die Bedienhinweise des Löschers, halte einen sicheren Rückweg frei und lösche den Entstehungsbrand mit kurzen, gezielten Stößen.`,question:'Wann ist ein eigener Löschversuch vertretbar?',choices:[['Nur bei einem kleinen Entstehungsbrand, wenn der Löscher geeignet ist, ein sicherer Rückweg besteht und keine Selbstgefährdung entsteht.','good'],['Bei jedem Brand, unabhängig von Rauch und Ausbreitung.','bad'],['Nur wenn vorher alle Gäste zugestimmt haben.','bad']],good:'Richtig. Ein Löschversuch darf niemals die eigene Sicherheit gefährden.'},
+    {who:'Marc',key:'marc',text:()=>`Zum Glück ist das Feuer nach wenigen Sekunden aus. Jeder im Team muss wissen, wo der Feuerlöscher hängt und wie die grundlegende Alarmierung funktioniert. Wird ein Feuer größer, entsteht starker Rauch oder sind Menschen gefährdet, gilt immer: Bereich verlassen, andere warnen, Feuerwehr über 112 alarmieren und sich selbst nicht in Gefahr bringen.`,question:'Was ist bei wachsendem Feuer oder Gefahr für Menschen richtig?',choices:[['Weiterlöschen, bis der Feuerlöscher vollständig leer ist.','bad'],['Sofort warnen, sicheren Bereich aufsuchen, 112 alarmieren und den Anweisungen der Einsatzkräfte folgen.','good'],['Zuerst Fotos für die Dokumentation machen.','bad']],good:'Richtig. Alarmierung, Evakuierung und Eigenschutz haben Vorrang.'},
+    {who:'Kalle',key:'kalle',text:()=>`Na, dann hoffen wir mal, dass unser Feuerlöscher jetzt möglichst lange Pause hat. Am schönsten ist es schließlich, wenn er nur zur Sicherheit an der Wand hängt und nie gebraucht wird.`,tip:`Feuerlöscher, Fluchtwege und Notrufhinweise müssen sichtbar und frei zugänglich bleiben. Benutzte oder beschädigte Löscher unverzüglich fachgerecht prüfen beziehungsweise ersetzen lassen.`,next:'Modul abschließen'}
+  ]},
+  finale:{season:1,episode:38,status:'fertig',points:4,title:'Ein Weihnachtsmarkt verbindet',subtitle:'Herr Becker und Frau Schmitt entdecken gemeinsame Interessen.',learning:'erkennen, wie Gastfreundschaft, Atmosphäre und menschliche Begegnungen den Weihnachtsmarkt prägen',avatar:'herr_becker.png',cast:['laura','marc','herr_becker','frau_schmitt','michael','sabrina'],ready:true,scenes:[
     {who:'Herr Becker',key:'herr_becker',text:()=>`Am letzten Abend stehe ich bei leichtem Schneefall mit einer Feuerzangenbowle am Stehtisch. Frau Schmitt fragt, ob neben mir noch Platz ist.`,next:'Weiter'},
     {who:'Frau Schmitt',key:'frau_schmitt',text:()=>`Wir kommen ins Gespräch und entdecken viele gemeinsame Interessen. Zwischen Weihnachtslichtern und Wunderkerzen verabreden wir uns zu einem weiteren Treffen.`,question:'Welche Botschaft steckt in dieser Geschichte?',choices:[['Am Stand zählt nur der schnelle Verkauf.','bad'],['Gastfreundschaft schafft Begegnungen und kann Menschen miteinander verbinden.','good'],['Gäste sollten möglichst nicht miteinander sprechen.','bad']],good:'Richtig. Ein menschlicher Weihnachtsmarkt lebt von echten Begegnungen.',guest:'Manchmal beginnt etwas Schönes mit einem freundlichen Gespräch am Stehtisch.'},
     {who:'Sabrina',key:'sabrina',text:()=>`Sabrina sagt leise zu Michael: Der Köcheclub bewirtet nicht nur Gäste. Manchmal bringt er auch Menschen zusammen.`,next:'Weiter'},
@@ -429,12 +488,122 @@ const modules={
   ]}
 };
 
+/* BEFUND 02.09.2026 (Betreiber): "Ich habe neue Episoden nach neuen Drehbuechern einbauen
+   lassen, das gefaellt mir aber nicht. Die alten fast 40 Folgen waren besser."
+
+   Hier stand Object.assign(modules, ...). Weil die neuen Folgen dieselben Schluessel benutzen
+   (reklamation, jugend, konflikt ...), hat das die 35 alten Folgen bei jedem Start
+   ueberschrieben - sie standen also die ganze Zeit unveraendert in dieser Datei, nur sah sie
+   niemand mehr. Deshalb passte auch der Fragenkatalog zu nichts mehr: er gehoert zu den alten.
+   Vergleich der beiden Fassungen: 35 alte Folgen mit 2 bis 8 Szenen, je nach Stoff, gegen
+   37 neue mit fast durchweg exakt 7 Szenen und immer genau 3 Fragen.
+
+   Jetzt gilt: die alten Folgen bleiben stehen. Aus der neuen Staffel kommen nur die Folgen
+   dazu, deren TITEL es hier noch nicht gibt - und zwar unter einem eigenen Schluessel, damit
+   nichts mehr ueberschrieben wird. Aus 35 + 16 werden 51 Folgen.
+   Entschieden wird ueber den Titel, nicht ueber eine Liste von Hand: kaeme spaeter eine
+   weitere Folge dazu, waere sie automatisch dabei. */
+if(window.KCStaffel1ImmersionV2?.modules){
+  /* Abgeloest: die klassische Fassung deckt diesen Stoff jetzt unter einem anderen Titel ab.
+     "Der Aufbau" (02.09.2026, nach dem Drehbuch des Betreibers) erzaehlt denselben Aufbautag
+     wie "Viele Haende, ein Ziel" - nur im Stil der klassischen Folgen und mit vier eigenen
+     Entscheidungen statt drei. Zwei Eroeffnungsfolgen nebeneinander wuerden niemandem sagen,
+     welche zuerst dran ist. Die neue bleibt im Drehbuch liegen; wird der Titel hier
+     herausgenommen, ist sie beim naechsten Start wieder dabei. */
+  const abgeloest=new Set(['Viele Hände, ein Ziel']);
+  const klassisch=new Set([...Object.values(modules).map(m=>String(m.title||'').trim()),...abgeloest]);
+  const belegt=new Set(Object.keys(modules));
+  const hoechsteFolge=Math.max(0,...Object.values(modules).map(m=>Number(m.episode)||0));
+  const schluessel=(titel,ersatz)=>{
+    const roh=String(titel||ersatz).toLowerCase()
+      .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+      .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
+    let k=roh||ersatz;let n=2;
+    while(belegt.has(k)){k=`${roh}_${n++}`}
+    belegt.add(k);return k;
+  };
+  let nummer=hoechsteFolge;
+  Object.entries(window.KCStaffel1ImmersionV2.modules).forEach(([altSchluessel,folge])=>{
+    const titel=String(folge.title||'').trim();
+    if(klassisch.has(titel))return;           // gleicher Titel: die alte Fassung behalten
+    /* Die Szenen der neuen Staffel bekommen eine Herkunftsmarke. Die beiden Fassungen
+       schreiben woertliche Rede unterschiedlich: die neue setzt sie in „…“ und laesst
+       Erzaehlung ohne Anfuehrungszeichen, die klassische kennt keine Anfuehrungszeichen,
+       weil der ganze Text die Rede der Figur ist. Ohne diese Marke muesste die Aufteilung
+       raten - und haette bei "Am fruehen Morgen stehst du mit Eugen am Rand vom Markt"
+       Eugen ueber sich selbst in der dritten Person reden lassen. */
+    const szenen=(folge.scenes||[]).map(sz=>Object.assign(Object.create(Object.getPrototypeOf(sz)||Object.prototype),sz,{__neueStaffel:true}));
+    modules[schluessel(titel,altSchluessel)]={...folge,scenes:szenen,episode:++nummer};
+  });
+  if(get('localStorage','kcAcademyImmersionOrderV2')!=='1'){state.episodeView='episodes';saved.episodeView='episodes';set('localStorage','kcAcademyImmersionOrderV2','1');saveBrowsePrefs()}
+}
+
+const academySearchText=scene=>{try{return[scene.who,typeof scene.text==='function'?scene.text('Teilnehmer'):scene.text,scene.question,(scene.choices||[]).map(choice=>choice[0]).join(' '),scene.good,scene.guest].filter(Boolean).join(' ')}catch{return[scene.who,scene.question,scene.good,scene.guest].filter(Boolean).join(' ')}};
+window.KCFuturaGlobalSearchItems=[...Object.entries(modules).map(([id,item])=>({kind:'academy',module:id,part:'Teil 2',section:`Folge ${item.episode||''}`,chapter:item.episode||0,title:item.title,text:`${item.subtitle||''} ${item.learning||''} ${(item.cast||[]).join(' ')} ${(item.scenes||[]).map(academySearchText).join(' ')}`,tip:(item.scenes||[]).map(scene=>scene.tip||'').filter(Boolean).join(' ')})),...Object.entries(chars).map(([id,item])=>({kind:'academy',module:'',part:'Teil 2',section:'Figuren und Avatare',chapter:0,title:item.name||id,text:`${item.role||''} ${item.intro||''} Avatar Figur Begleitung`,tip:''}))];
+try{localStorage.setItem('kcFuturaSearchCatalogPart2',JSON.stringify(window.KCFuturaGlobalSearchItems))}catch{}
 const episodeOverrides=safeParse(get('localStorage',EPISODE_OVERRIDE_KEY,'{}'),{});
 function applyEpisodeOverrides(){Object.entries(episodeOverrides).forEach(([moduleId,scenes])=>{const m=modules[moduleId];if(!m||!Array.isArray(scenes))return;scenes.forEach((ov,i)=>{if(!ov||!m.scenes[i])return;const sc=m.scenes[i];if(typeof ov.text==='string')sc.text=()=>ov.text;if(typeof ov.question==='string')sc.question=ov.question||undefined;if(Array.isArray(ov.choices))sc.choices=ov.choices;if(typeof ov.tip==='string')sc.tip=ov.tip||undefined;if(typeof ov.good==='string')sc.good=ov.good||undefined;if(typeof ov.guest==='string')sc.guest=ov.guest||undefined;if(typeof ov.key==='string'&&chars[ov.key]){sc.key=ov.key;sc.who=chars[ov.key].name}})})}
 applyEpisodeOverrides();
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function saveSettings(){const payload={coach:state.coach,address:state.address,voice:state.voice,speechRate:state.speechRate,theme:state.theme,subtitles:state.subtitles,sound:state.sound,volume:state.volume,shuffleAnswers:state.shuffleAnswers,countdownEnabled:state.countdownEnabled,autoContinue:state.autoContinue,skipIntroductions:state.skipIntroductions,openLast:state.openLast,fontScale:state.fontScale,reduceMotion:state.reduceMotion,voiceProvider:state.voiceProvider,quizMode:state.quizMode,rememberView:state.rememberView,episodeView:state.episodeView};set('localStorage','kcAcademySettings',JSON.stringify(payload));window.KCSupabaseAdapter?.uploadSnapshot?.('settings',payload,{participantName:state.name||''}).catch(()=>{})}
-function formalize(t){if(state.address!=='sie')return t;const pairs=[[/\bdu\b/gi,'Sie'],[/\bdich\b/gi,'Sie'],[/\bdir\b/gi,'Ihnen'],[/\bdein(e|en|em|er|es)?\b/gi,m=>({deine:'Ihre',deinen:'Ihren',deinem:'Ihrem',deiner:'Ihrer',deines:'Ihres',dein:'Ihr'})[m.toLowerCase()]||m],[/\bkannst\b/gi,'können'],[/\bhast\b/gi,'haben'],[/\bbist\b/gi,'sind'],[/\bmöchtest\b/gi,'möchten'],[/\bstartest\b/gi,'starten'],[/\bhörst\b/gi,'hören'],[/\bnimmst\b/gi,'nehmen'],[/\bbietest\b/gi,'bieten'],[/\bfindest\b/gi,'finden'],[/\barbeitest\b/gi,'arbeiten'],[/\blernst\b/gi,'lernen'],[/\bgib\b/gi,'geben Sie'],[/\bwähle\b/gi,'wählen Sie']];let out=t;for(const [a,b] of pairs)out=out.replace(a,b);return out}
+/* Der Umschalter von "du" auf "Sie".
+   BEFUND 02.09.2026: er ersetzte zuerst "du" durch "Sie" und danach einzelne Verbformen aus
+   einer kurzen Liste. Alles, was nicht auf der Liste stand, wurde zu Unsinn - aus
+   "Wie reagierst du am besten?" wurde "Wie reagierst Sie am besten?". Aufgefallen ist das,
+   als die alten Folgen zurueckkamen: die sind voll von der zweiten Person.
+   Jetzt in dieser Reihenfolge:
+     1. unregelmaessige Verben zusammen mit "du" (bist du -> sind Sie)
+     2. die allgemeine Regel: "<stamm>st du" -> "<stamm>en Sie", in beiden Wortstellungen
+     3. Befehlsformen (Nimm -> Nehmen Sie)
+     4. erst ganz zum Schluss die uebrigen du/dich/dir/dein
+   Schritt 4 zuletzt ist der Kern: solange "du" noch dasteht, ist das Verb daneben erkennbar. */
+const UNREGELMAESSIG={bist:'sind',hast:'haben',wirst:'werden',kannst:'können',willst:'wollen',
+  musst:'müssen',sollst:'sollen',darfst:'dürfen',weißt:'wissen',weisst:'wissen',siehst:'sehen',
+  nimmst:'nehmen',gibst:'geben',isst:'essen',liest:'lesen',hältst:'halten',haeltst:'halten',
+  läufst:'laufen',fährst:'fahren',sprichst:'sprechen',hilfst:'helfen',triffst:'treffen',
+  empfiehlst:'empfehlen',trittst:'treten',vergisst:'vergessen',lässt:'lassen',laesst:'lassen',
+  tust:'tun',magst:'mögen',möchtest:'möchten',stehst:'stehen',gehst:'gehen',bleibst:'bleiben'};
+const BEFEHLSFORMEN={nimm:'Nehmen Sie',gib:'Geben Sie',wähle:'Wählen Sie',waehle:'Wählen Sie',
+  prüfe:'Prüfen Sie',pruefe:'Prüfen Sie',öffne:'Öffnen Sie',oeffne:'Öffnen Sie',
+  starte:'Starten Sie',führe:'Führen Sie',fuehre:'Führen Sie',frage:'Fragen Sie',
+  sage:'Sagen Sie',höre:'Hören Sie',hoere:'Hören Sie',achte:'Achten Sie',denke:'Denken Sie',
+  bleibe:'Bleiben Sie',bleib:'Bleiben Sie',melde:'Melden Sie',hole:'Holen Sie',
+  erkläre:'Erklären Sie',erklaere:'Erklären Sie',entschuldige:'Entschuldigen Sie',
+  kontrolliere:'Kontrollieren Sie',beachte:'Beachten Sie',überlege:'Überlegen Sie'};
+function grossWieVorlage(wort,vorlage){
+  return /^[A-ZÄÖÜ]/.test(vorlage)?wort.charAt(0).toUpperCase()+wort.slice(1):wort;
+}
+function formalize(t){
+  if(state.address!=='sie')return String(t??'');
+  let out=String(t??'');
+  // 1. unregelmaessige Verben, in beiden Wortstellungen
+  for(const [form,sieForm] of Object.entries(UNREGELMAESSIG)){
+    out=out.replace(new RegExp(`\\\\b${form}\\\\s+du\\\\b`,'gi'),(m)=>grossWieVorlage(sieForm,m)+' Sie');
+    out=out.replace(new RegExp(`\\\\bdu\\\\s+${form}\\\\b`,'gi'),(m)=>grossWieVorlage('Sie',m)+' '+sieForm);
+  }
+  // 2. die allgemeine Regel fuer regelmaessige Verben
+  out=out.replace(/\b([a-zäöüß]{2,})est\s+du\b/gi,(m,stamm)=>grossWieVorlage(stamm+'en',m)+' Sie');
+  out=out.replace(/\bdu\s+([a-zäöüß]{2,})est\b/gi,(m,stamm)=>grossWieVorlage('Sie',m)+' '+stamm+'en');
+  out=out.replace(/\b([a-zäöüß]{2,})st\s+du\b/gi,(m,stamm)=>grossWieVorlage(stamm+'en',m)+' Sie');
+  out=out.replace(/\bdu\s+([a-zäöüß]{2,})st\b/gi,(m,stamm)=>grossWieVorlage('Sie',m)+' '+stamm+'en');
+  // 3. Befehlsformen am Satzanfang
+  for(const [form,sieForm] of Object.entries(BEFEHLSFORMEN)){
+    out=out.replace(new RegExp(`(^|[.!?]\\\\s+|„)${form}\\\\b`,'g'),(m,vor)=>vor+sieForm);
+  }
+  // 4. was jetzt noch an du-Formen uebrig ist
+  const rest=[[/\bdich\b/gi,'Sie'],[/\bdir\b/gi,'Ihnen'],
+    [/\bdein(e|en|em|er|es)?\b/gi,m=>grossWieVorlage(({deine:'Ihre',deinen:'Ihren',deinem:'Ihrem',deiner:'Ihrer',deines:'Ihres',dein:'Ihr'})[m.toLowerCase()]||m,m)],
+    [/\beuer(e|en|em|er|es)?\b/gi,m=>grossWieVorlage(({eure:'Ihre',euren:'Ihren',eurem:'Ihrem',eurer:'Ihrer',eures:'Ihres',euer:'Ihr'})[m.toLowerCase()]||m,m)],
+    [/\bdu\b/gi,'Sie'],
+    // einzeln stehende Verbformen ohne "du" daneben
+    [/\bkannst\b/gi,'können'],[/\bhast\b/gi,'haben'],[/\bbist\b/gi,'sind'],[/\bstehst\b/gi,'stehen'],
+    [/\bmöchtest\b/gi,'möchten'],[/\bstartest\b/gi,'starten'],[/\bhörst\b/gi,'hören'],
+    [/\bnimmst\b/gi,'nehmen'],[/\bbietest\b/gi,'bieten'],[/\bfindest\b/gi,'finden'],
+    [/\barbeitest\b/gi,'arbeiten'],[/\blernst\b/gi,'lernen'],[/\bsiehst\b/gi,'sehen'],
+    [/\bwirst\b/gi,'werden'],[/\bsollst\b/gi,'sollen'],[/\bmusst\b/gi,'müssen'],[/\bdarfst\b/gi,'dürfen']];
+  for(const [a,b] of rest)out=out.replace(a,b);
+  return out;
+}
 function text(t){return formalize(typeof t==='function'?t(state.name):t)}
 function coach(){return chars[state.coach]}
 function availableVoices(){return speechSynthesis?.getVoices?.().filter(v=>v.lang?.toLowerCase().startsWith('de'))||[]}
@@ -442,18 +611,40 @@ function ttsText(t){return String(t).replace(/KC FUTURA Academy/gi,'KC FUTURA Ä
 
 const voiceProfiles={
   laura:{gender:'female',rate:.92,pitch:1.06,volume:1},
+  /* Nachgetragen am 02.09.2026: diese fuenf Figuren hatten KEIN Stimmprofil. Sie fielen
+     stillschweigend auf das Profil des Coaches zurueck - Kathi, das verlorene Kind, sprach
+     also mit Lauras Stimme. Kein Fehler auf dem Bildschirm, nur eine falsche Stimme.
+     age:'child' waehlt in pickVoice() eine helle Stimme und hebt die Tonhoehe an. Die
+     Geraetestimme des Browsers hat keine echten Kinderstimmen; ueber das KC Voice Studio
+     kann Kathi eine echte Kinderstimme des externen Anbieters bekommen. */
+  /* 02.09.2026, zweiter Durchgang (Betreiber): "Kathi noch mehr eine Kinderstimme eines
+     kleinen Maedchens." Hoehere Tonhoehe und schnelleres Sprechen - Kinder reden schneller.
+     1.72 ist die obere Grenze: darueber wird die Geraetestimme blechern statt kindlich. */
+  kathi:{gender:'female',rate:1.10,pitch:1.72,volume:1,age:'child'},
+  alexander:{gender:'male',rate:1.00,pitch:1.34,volume:1,age:'child'},
+  marion:{gender:'female',rate:.93,pitch:1.02,volume:1,age:'adult'},
+  leon:{gender:'male',rate:.90,pitch:.86,volume:1,age:'adult'},
+  sabine:{gender:'female',rate:.95,pitch:.98,volume:1,age:'adult'},
   marc:{gender:'male',rate:.91,pitch:.92,volume:1,age:'adult'},
   herr_becker:{gender:'male',rate:.76,pitch:.62,volume:1,age:'senior'},
   frau_schmitt:{gender:'female',rate:.90,pitch:1.00,volume:1},
-  lukas:{gender:'male',rate:.98,pitch:1.08,volume:1},
+  /* 02.09.2026, zweiter Durchgang (Betreiber): "Lukas braucht eine andere Stimme, wie ein
+     Student." Deutlich heller und schneller als vorher - jung und forsch, aber noch klar
+     ueber Marc und Michael abgesetzt, damit man die drei Maenner auseinanderhaelt. */
+  lukas:{gender:'male',rate:1.06,pitch:1.24,volume:1},
   michael:{gender:'male',rate:.92,pitch:.86,volume:1},
   sabrina:{gender:'female',rate:.96,pitch:1.08,volume:1},
   leo:{gender:'male',rate:.90,pitch:1.02,volume:1},
   dr_brinkmann:{gender:'male',rate:.84,pitch:.82,volume:1},
   julia:{gender:'female',rate:.95,pitch:1.04,volume:1},
   herr_koslowski:{gender:'male',rate:.88,pitch:.78,volume:1},
-  eugen:{gender:'male',rate:.84,pitch:.70,volume:1},
-  gisela:{gender:'female',rate:.93,pitch:.92,volume:1},
+  /* 02.09.2026, zweiter Durchgang (Betreiber): "Eugen noch dunkler wie ein Ruhrpott-
+     Meckerkopf, Gisi mehr wie eine neugierige Wurstverkaeuferin." Eugen tiefer UND
+     langsamer - das Brummige kommt aus beidem. Unter .55 wird die Stimme auf Windows
+     kehlig und unverstaendlich, deshalb .60 als Untergrenze. Gisi umgekehrt heller und
+     lebhafter als vorher, damit sie neugierig klingt und nicht muede. */
+  eugen:{gender:'male',rate:.80,pitch:.60,volume:1},
+  gisela:{gender:'female',rate:1.02,pitch:1.12,volume:1},
   kalle:{gender:'male',rate:.87,pitch:.76,volume:1},
   hannes:{gender:'male',rate:.84,pitch:.88,volume:1,age:'senior'},
   detlef:{gender:'male',rate:.82,pitch:.78,volume:1,age:'senior'}
@@ -502,7 +693,12 @@ async function autoRegenerateDialog(dialogKey){
 
 async function ensureSpeechReady(){
   if(!('speechSynthesis' in window))return false;
-  try{speechSynthesis.cancel();speechSynthesis.resume()}catch{}
+  /* 02.09.2026: Hier stand frueher ein zweites speechSynthesis.cancel(). Es lief vor JEDEM
+     gesprochenen Satz - zusaetzlich zu dem in VoiceCore.stop(). Chrome verschluckt nach
+     einem Abbruch den Anfang der naechsten Ausgabe; zwei Abbrueche kurz hintereinander
+     machen es schlimmer. Abgebrochen wird jetzt nur noch an einer Stelle, in stop(), und
+     nur dann, wenn wirklich etwas laeuft. */
+  try{speechSynthesis.resume()}catch{}
   if(availableVoices().length)return true;
   await new Promise(resolve=>{
     let done=false;const finish=()=>{if(done)return;done=true;resolve()};
@@ -528,10 +724,18 @@ const VoiceCore={
     const femaleHints=/female|frau|anna|katja|petra|helena|google deutsch|vicki|amala|seraphina/i;
     const maleHints=/male|mann|stefan|markus|hans|conrad|martin|daniel|killian|yannick/i;
     const seniorHints=/senior|older|alt|grossvater|grandpa|hans|conrad|martin/i;
+    // Helle Stimmen fuer Kinderrollen. Eine echte Kinderstimme hat der Browser nicht - die
+    // Tonhoehe im Profil macht den Rest. Eine wirklich kindliche Stimme kommt nur ueber den
+    // externen Anbieter im KC Voice Studio.
+    const kindHints=/kind|child|kid|junior|hell|light|anna|katja|petra|seraphina|vicki|amala/i;
     let preferred=voices.filter(v=>profile.gender==='female'?femaleHints.test(v.name):maleHints.test(v.name));
     if(profile.age==='senior'){
       const senior=preferred.filter(v=>seniorHints.test(v.name));
       if(senior.length)preferred=senior;
+    }
+    if(profile.age==='child'){
+      const hell=(preferred.length?preferred:voices).filter(v=>kindHints.test(v.name));
+      if(hell.length)preferred=hell;
     }
     const pool=preferred.length?preferred:voices;
     if(characterKey===state.coach){
@@ -545,14 +749,30 @@ const VoiceCore={
       const different=pool.filter(v=>v.name!==this.lastCoachVoiceName);
       if(different.length)usable=different;
     }
-    const order=['laura','marc','frau_schmitt','lukas','michael','sabrina','leo','herr_becker','dr_brinkmann','julia','herr_koslowski','eugen','gisela','kalle','hannes','detlef'];
+    // Die Liste verteilt die vorhandenen Geraetestimmen reihum. Wer hier FEHLTE, bekam
+    // indexOf() === -1 und damit alle dieselbe Stimme (Index 0). Genau das war bei den fuenf
+    // nachgetragenen Figuren der Fall.
+    const order=['laura','marc','frau_schmitt','lukas','michael','sabrina','leo','herr_becker','dr_brinkmann','julia','herr_koslowski','eugen','gisela','kalle','hannes','detlef','kathi','alexander','marion','leon','sabine'];
     const idx=Math.max(0,order.indexOf(characterKey));
     return usable[idx%usable.length]||voices[idx%voices.length]||voices[0];
   },
+  lastCancelAt:0,
+  keepAliveTimer:null,
   stop(){
     this.token++;
     if(this.activeTimer){clearTimeout(this.activeTimer);this.activeTimer=null}
-    try{speechSynthesis?.cancel()}catch{}
+    if(this.keepAliveTimer){clearInterval(this.keepAliveTimer);this.keepAliveTimer=null}
+    /* 02.09.2026: cancel() nur noch, wenn tatsaechlich etwas laeuft oder wartet. Ein
+       cancel() auf eine stille Sprachausgabe bringt Chrome in einen Zustand, in dem der
+       naechste Satz abgehackt beginnt - genau das Stottern, das der Betreiber hoert.
+       Der Zeitstempel steuert weiter unten, wie lange bis zum naechsten speak() gewartet
+       werden muss: nach einem echten Abbruch braucht die Ausgabe laenger Anlauf. */
+    try{
+      if(speechSynthesis&&(speechSynthesis.speaking||speechSynthesis.pending)){
+        speechSynthesis.cancel();
+        this.lastCancelAt=Date.now();
+      }
+    }catch{}
     if(this.activeAudio){try{this.activeAudio.pause();this.activeAudio.currentTime=0}catch{}this.activeAudio=null}
     if(this.activeObjectUrl){try{URL.revokeObjectURL(this.activeObjectUrl)}catch{}this.activeObjectUrl=null}
     if(this.activeResolve){const r=this.activeResolve;this.activeResolve=null;r({stopped:true})}
@@ -588,10 +808,24 @@ const VoiceCore={
       const finish=result=>{
         if(settled)return;settled=true;
         if(startWatch)clearTimeout(startWatch);
+        if(this.keepAliveTimer){clearInterval(this.keepAliveTimer);this.keepAliveTimer=null}
         highlight?.classList.remove('reading');
         if(this.activeResolve===resolve)this.activeResolve=null;
         setVoiceMonitor(result?.error?'error':(state.sound?'ready':'off'),result?.error?'Tonfehler':(state.sound?'Ton bereit':'Ton aus'));
         if(token===this.token)resolve(result||{done:true});
+      };
+      /* 02.09.2026: Chrome beendet eine laufende Sprachausgabe nach etwa 15 Sekunden von
+         selbst - laengere Szenentexte brechen dann mitten im Satz ab. Ein regelmaessiges
+         resume() haelt die Ausgabe wach. Laeuft nur, solange wirklich gesprochen wird, und
+         wird in finish() und stop() wieder abgeraeumt. */
+      const startKeepAlive=()=>{
+        if(this.keepAliveTimer)clearInterval(this.keepAliveTimer);
+        this.keepAliveTimer=setInterval(()=>{
+          if(settled||token!==this.token||state.paused||!speechSynthesis.speaking){
+            clearInterval(this.keepAliveTimer);this.keepAliveTimer=null;return;
+          }
+          try{speechSynthesis.resume()}catch{}
+        },9000);
       };
       const launch=()=>{
         if(token!==this.token||state.paused){finish({stopped:true});return}
@@ -600,7 +834,7 @@ const VoiceCore={
         u.lang='de-DE';u.rate=Math.max(.6,Math.min(1.3,profile.rate*state.speechRate));u.pitch=profile.pitch;u.volume=Math.max(.1,Math.min(1,profile.volume*(state.volume/10)));
         const v=this.pickVoice(key);if(v)u.voice=v;
         this.activeUtterance=u;started=false;
-        u.onstart=()=>{started=true;if(startWatch)clearTimeout(startWatch);if(token===this.token&&!state.paused){highlight?.classList.add('reading');setVoiceMonitor('speaking',`${chars[key]?.name||'Stimme'} spricht`)}};
+        u.onstart=()=>{started=true;if(startWatch)clearTimeout(startWatch);startKeepAlive();if(token===this.token&&!state.paused){highlight?.classList.add('reading');setVoiceMonitor('speaking',`${chars[key]?.name||'Stimme'} spricht`)}};
         u.onend=()=>finish({done:true});
         u.onerror=()=>{if(!started&&retries<1){retries++;setTimeout(launch,180)}else finish({error:true})};
         try{speechSynthesis.speak(u)}catch{if(retries<1){retries++;setTimeout(launch,220)}else finish({error:true});return}
@@ -608,7 +842,14 @@ const VoiceCore={
         setTimeout(()=>{if(!settled&&token===this.token&&!state.paused&&(speechSynthesis.speaking||speechSynthesis.pending)){started=true;highlight?.classList.add('reading');setVoiceMonitor('speaking',`${chars[key]?.name||'Stimme'} spricht`)}},180);
         startWatch=setTimeout(()=>{if(settled||token!==this.token||state.paused)return;try{speechSynthesis.resume()}catch{};if(speechSynthesis.speaking||speechSynthesis.pending){started=true;highlight?.classList.add('reading');setVoiceMonitor('speaking',`${chars[key]?.name||'Stimme'} spricht`);return}if(retries<1){retries++;launch()}else finish({error:true})},2600);
       };
-      this.activeTimer=setTimeout(()=>{this.activeTimer=null;launch()},SPEECH_LEAD_MS);
+      /* 02.09.2026: Der Anlauf war fest auf 180 ms. Nach einem echten Abbruch reicht das in
+         Chrome nicht - der Anfang wird verschluckt. Jetzt richtet sich die Wartezeit danach,
+         ob gerade wirklich abgebrochen wurde: nach einem Abbruch bis zu SPEECH_LEAD_MS ab
+         dem Abbruch, sonst nur ein kurzer Moment. Unterm Strich startet die Sprache in Ruhe
+         sogar schneller als vorher und nach einem Abbruch spaeter - also sauber. */
+      const seitAbbruch=Date.now()-(this.lastCancelAt||0);
+      const anlauf=seitAbbruch<SPEECH_LEAD_MS?Math.max(SPEECH_MIN_LEAD_MS,SPEECH_LEAD_MS-seitAbbruch):SPEECH_MIN_LEAD_MS;
+      this.activeTimer=setTimeout(()=>{this.activeTimer=null;launch()},anlauf);
     });
   }
 };
@@ -616,14 +857,37 @@ function stopSpeech(){VoiceCore.stop()}
 function speak(raw,opts={}){const key=opts.audioKey||'';const meta={key,label:key||'Gesprochener Text',group:key.startsWith('character:')?'Figurenvorstellungen':key.startsWith('coach:')?'Begrüßung und Coachtexte':key.startsWith('module:')?'Episoden und Szenen':'Weitere gesprochene Texte',speaker:opts.characterKey?chars[opts.characterKey]?.name||opts.characterKey:''};return VoiceCore.speak(window.KCSpokenTextCore?.resolve?.(raw,meta)||raw,opts)}
 async function runQuizCountdown(){
   const host=document.querySelector('#quizCountdown');if(!host||!state.countdownEnabled)return;
-  for(const n of [3,2,1]){if(state.view!=='scene'||state.paused)return;host.innerHTML=`<span>${n}</span>${n===1?`<small>${settingLabel('Jetzt Antwort wählen!','Jetzt Antwort wählen!')}</small>`:''}`;host.classList.add('show');await new Promise(r=>setTimeout(r,520));host.classList.remove('show');await new Promise(r=>setTimeout(r,70))}
-  host.textContent='';
+  for(const n of [3,2,1]){if(state.view!=='scene'||state.paused)return;host.innerHTML=`<span>${n}</span>`;host.classList.remove('ready');host.classList.add('show');await new Promise(r=>setTimeout(r,1000));host.classList.remove('show');await new Promise(r=>setTimeout(r,140))}
+  if(state.view!=='scene'||state.paused)return;host.innerHTML=`<small>${settingLabel('Jetzt Antwort wählen!','Jetzt Antwort wählen!')}</small>`;host.classList.add('ready');await new Promise(r=>setTimeout(r,850));host.classList.remove('ready');host.textContent='';
 }
 async function speakChoices(question,choiceButtons){
   await speak(question,{highlight:document.querySelector('.question-title'),characterKey:state.coach});
-  for(const btn of choiceButtons){if(state.view!=='scene'||state.paused)return;await speak(btn.textContent,{highlight:btn,characterKey:state.coach})}
+  for(const [index,btn] of choiceButtons.entries()){if(state.view!=='scene'||state.paused)return;const letter=String.fromCharCode(65+index);await speak(`Antwort ${letter}: ${btn.dataset.speech||btn.textContent}`,{highlight:btn,characterKey:state.coach})}
   if(state.quizShorten)return;
   await runQuizCountdown();
+}
+
+/* BEFUND 02.09.2026, nach dem Rueckbau der alten Folgen: hier wird entschieden, was
+   woertliche Rede der Figur ist (dann spricht die Figur mit ihrer eigenen Stimme) und was
+   Erzaehlung ist (dann liest der Coach vor). Erkannt wird die Rede an den Anfuehrungszeichen
+   „…“. Die NEUEN Folgen schreiben es so. Die ALTEN nicht: dort steht die Rede der Figur ohne
+   Anfuehrungszeichen, weil das Feld who bereits sagt, wer spricht. Folge: nach dem Rueckbau
+   las der Coach jede Szene vor, auch Herrn Beckers Beschwerde.
+   Deshalb: hat eine Szene keine Anfuehrungszeichen UND spricht dort nicht der Coach selbst,
+   ist der ganze Text die Rede dieser Figur. */
+function splitSceneText(raw,szene){
+  const value=String(raw||'').trim();const quotes=[...value.matchAll(/„([^“]+)“/g)].map(match=>match[1].trim()).filter(Boolean);
+  if(!quotes.length){
+    const ausKlassischerFassung=szene&&!szene.__neueStaffel;
+    const eigeneFigur=szene&&szene.key&&szene.key!==state.coach&&szene.key!=='laura'&&szene.key!=='marc';
+    return (ausKlassischerFassung&&eigeneFigur)?{dialogue:value,description:''}:{dialogue:'',description:value};
+  }
+  /* Bei "„Dafuer", sagt Eugen, „brauchen wir mehr als guten Willen." stand vorher
+     »„Dafuer“ „brauchen wir mehr als guten Willen.“« auf dem Schirm - zwei Anfuehrungspaare
+     mitten im Satz. Es ist EIN Satz, also auch ein Anfuehrungspaar. */
+  const dialogue=`„${quotes.join(' ')}“`;
+  const description=value.replace(/„[^“]+“/g,' ').replace(/\s+/g,' ').trim();
+  return {dialogue,description};
 }
 
 
@@ -631,6 +895,31 @@ function moduleStats(m){const x=SceneCore.normalize('',m);return {scenes:x.scene
 
 function setProgress(cur,total,txt){bar.style.width=`${total?Math.round(cur/total*100):0}%`;label.textContent=txt}
 function settingLabel(du,sie){return state.address==='sie'?sie:du}
+/* Nachgetragen am 02.09.2026: die festen Texte in den Fenstern der Ersteinrichtung und des
+   Wiederherstellungscodes duzten weiter, auch wenn "Sie" gewaehlt war. Gefunden beim
+   vollstaendigen Durchlauf mit der Anrede Sie. Diese Fenster stehen zwischen der Wahl und
+   dem ersten Lerninhalt - genau dort faellt eine falsche Anrede zuerst auf.
+   Die Fenster der Ersteinrichtung lesen die Anrede aus ihren eigenen Schaltern, weil
+   state.address zu diesem Zeitpunkt noch den alten Wert hat. */
+function anredeAusFenster(){
+  const gewaehlt=document.querySelector('input[name="firstRunAddress"]:checked')?.value;
+  return (gewaehlt||state.address)==='sie';
+}
+function applyAcademyAddressUi(){
+  const f=anredeAusFenster(),setz=(id,sie,du)=>{const e=document.getElementById(id);if(e)e.textContent=f?sie:du};
+  setz('firstRunLead','Danach erkennt die Academy Sie auf diesem Gerät automatisch und Laura oder Marc begrüßt Sie direkt.',
+    'Danach erkennt die Academy dich auf diesem Gerät automatisch und Laura oder Marc begrüßt dich direkt.');
+  setz('firstRunCoachLegend','Wer soll Sie begrüßen?','Wer soll dich begrüßen?');
+  setz('participantCodeTitle','Ihr persönlicher Wiederherstellungscode','Dein persönlicher Wiederherstellungscode');
+  setz('participantCodeHint','Bewahren Sie diesen Code sicher auf. Damit können Sie Ihren Lernstand später auf einem anderen Gerät übernehmen.',
+    'Bewahre diesen Code sicher auf. Damit kannst du deinen Lernstand später auf einem anderen Gerät übernehmen.');
+  setz('participantChoiceHint','Wählen Sie „Das bin ich“, um Ihren vorhandenen Lernstand mit dem Wiederherstellungscode zu übernehmen. Sonst verwenden Sie bitte einen anderen Vornamen.',
+    'Wähle „Das bin ich“, um deinen vorhandenen Lernstand mit dem Wiederherstellungscode zu übernehmen. Sonst verwende bitte einen anderen Vornamen.');
+  // Beim Namensfeld nur die Beschriftung austauschen, das Eingabefeld darin bleibt stehen.
+  const nl=document.getElementById('firstRunNameLabel');
+  if(nl&&nl.firstChild&&nl.firstChild.nodeType===3)nl.firstChild.textContent=f?'Ihr Vorname *':'Dein Vorname *';
+}
+document.addEventListener('change',(e)=>{if(e.target?.name==='firstRunAddress')applyAcademyAddressUi()});
 function setView(view){state.view=view;backBtn.disabled=view==='welcome';sceneProgress.hidden=view!=='scene';updateSceneProgress()}
 function updateSceneProgress(){
   if(state.view!=='scene'||!state.module){sceneProgress.hidden=true;sceneProgress.innerHTML='';return}
@@ -674,16 +963,23 @@ function currentSpeakerKey(){
 function showPauseOverlay(){
   document.querySelector('#pauseOverlay')?.remove();
   const el=document.createElement('div');el.id='pauseOverlay';el.className='pause-overlay';
-  el.innerHTML=`<div><div class="pause-icon">⏸</div><h2>Academy pausiert</h2><p>${settingLabel('Klicke auf „Fortsetzen“, wenn du bereit bist.','Klicken Sie auf „Fortsetzen“, wenn Sie bereit sind.')}</p><button id="resumeOverlay" class="primary">▶ Fortsetzen</button></div>`;
+  /* 02.09.2026, dritter Fund: Hier stand eine DRITTE Liste - fest verdrahtet mit genau zwei
+     Spielen, Tic-Tac-Toe und Einarmiger Bandit. Wer in der Academy auf Pause drueckte, sah
+     also nur zwei von dreizehn Spielen, und der Rechtsklick zum Freischalten fehlte hier ganz.
+     Die Liste kommt jetzt aus derselben Quelle wie Uebersicht und Pausenmenue; damit gibt es
+     nur noch eine Stelle, an der Spiele gepflegt werden. */
+  const spielewelt=window.KCSpielewelt?window.KCSpielewelt.kachelHtml():'';
+  el.innerHTML=`<div><div class="pause-icon">⏸</div><h2>Pause</h2><button id="resumeOverlay" class="primary pause-resume-direct">▶ Fortsetzen</button>${spielewelt}<p>${settingLabel('Klicke auf „Fortsetzen“, wenn du bereit bist.','Klicken Sie auf „Fortsetzen“, wenn Sie bereit sind.')}</p></div>`;
   document.body.appendChild(el);document.querySelector('#resumeOverlay').onclick=togglePause;
+  window.KCSpielewelt?.kachelVerdrahten?.(el);
 }
 function goBack(){stopSpeech();if(state.view==='personal')welcome();else if(state.view==='home')welcome();else if(state.view==='overview')home();else if(state.view==='scene'){if(state.step>0){state.step--;showScene()}else overview(state.module)}else if(state.view==='finish')home()}
 
 async function checkParticipantName(name){try{return await window.KCSupabaseAdapter?.findParticipantNames?.(name)||[]}catch(e){console.warn('Dublettenprüfung nicht verfügbar',e);return []}}
-function openParticipantChoice(name,matches=[]){pendingParticipantName=name;const modal=document.querySelector('#participantChoiceModal'),count=document.querySelector('#participantDuplicateCount');count.textContent=matches.length?`Den Namen „${name}“ gibt es bereits. Bist du das?`:`Der Name „${name}“ ist noch frei.`;document.querySelector('#participantRecoveryArea').hidden=true;document.querySelector('#participantChoiceError').textContent='';modal.hidden=false;document.body.classList.add('modal-open')}
+function openParticipantChoice(name,matches=[]){pendingParticipantName=name;const modal=document.querySelector('#participantChoiceModal'),count=document.querySelector('#participantDuplicateCount');count.textContent=matches.length?settingLabel(`Den Namen „${name}“ gibt es bereits. Bist du das?`,`Den Namen „${name}“ gibt es bereits. Sind Sie das?`):`Der Name „${name}“ ist noch frei.`;applyAcademyAddressUi();document.querySelector('#participantRecoveryArea').hidden=true;document.querySelector('#participantChoiceError').textContent='';modal.hidden=false;document.body.classList.add('modal-open')}
 function closeParticipantChoice(){document.querySelector('#participantChoiceModal').hidden=true;document.body.classList.remove('modal-open')}
 function chooseDifferentParticipantName(){closeParticipantChoice();const modal=document.querySelector('#firstRunModal');modal.hidden=false;document.body.classList.add('modal-open');const input=document.querySelector('#firstRunName');input.value='';document.querySelector('#firstRunHint').textContent='Bitte einen anderen Vornamen eingeben.';document.querySelector('#firstRunContinue').disabled=true;setTimeout(()=>input.focus(),30)}
-async function createNewParticipant(){const code=participantCode(),profile={id:crypto.randomUUID(),displayName:pendingParticipantName,recoveryCode:code,createdAt:new Date().toISOString(),installationId:window.KCSupabaseAdapter?.diagnostics?.().installationId||''};saveParticipantProfile(profile);closeParticipantChoice();const modal=document.querySelector('#participantCodeModal');document.querySelector('#participantCodeValue').textContent=code;modal.hidden=false;document.body.classList.add('modal-open');await window.KCSupabaseAdapter?.registerParticipant?.(profile,await sha256Text(code)).catch(()=>{})}
+async function createNewParticipant(){const code=participantCode(),profile={id:crypto.randomUUID(),displayName:pendingParticipantName,recoveryCode:code,createdAt:new Date().toISOString(),installationId:window.KCSupabaseAdapter?.diagnostics?.().installationId||''};saveParticipantProfile(profile);closeParticipantChoice();const modal=document.querySelector('#participantCodeModal');document.querySelector('#participantCodeValue').textContent=code;applyAcademyAddressUi();modal.hidden=false;document.body.classList.add('modal-open');await window.KCSupabaseAdapter?.registerParticipant?.(profile,await sha256Text(code)).catch(()=>{})}
 function showRecoveryEntry(){document.querySelector('#participantRecoveryArea').hidden=false;document.querySelector('#participantRecoveryCode').focus()}
 async function claimExistingParticipant(){const code=document.querySelector('#participantRecoveryCode').value.trim().toUpperCase();if(!code){document.querySelector('#participantChoiceError').textContent='Bitte Wiederherstellungscode eingeben.';return}try{const result=await window.KCSupabaseAdapter?.claimParticipant?.(pendingParticipantName,await sha256Text(code));if(!result?.id)throw new Error('Name oder Wiederherstellungscode nicht gefunden.');saveParticipantProfile({id:result.id,displayName:result.display_name||pendingParticipantName,recoveryCode:code,createdAt:result.created_at||new Date().toISOString(),installationId:window.KCSupabaseAdapter?.diagnostics?.().installationId||''});closeParticipantChoice();showPersonalWelcome()}catch(e){document.querySelector('#participantChoiceError').textContent=e.message||'Lernstand konnte nicht übernommen werden.'}}
 function closeParticipantCode(){document.querySelector('#participantCodeModal').hidden=true;document.body.classList.remove('modal-open');showPersonalWelcome()}
@@ -691,7 +987,7 @@ async function beginParticipant(name){const clean=String(name||'').trim();if(par
 
 function openFirstRun(){
   const modal=document.querySelector('#firstRunModal');if(!modal||participantProfile?.displayName)return;
-  modal.hidden=false;document.body.classList.add('modal-open');
+  modal.hidden=false;document.body.classList.add('modal-open');applyAcademyAddressUi();
   const input=document.querySelector('#firstRunName'),btn=document.querySelector('#firstRunContinue'),hint=document.querySelector('#firstRunHint');
   const refresh=()=>{const ok=input.value.trim().length>=MIN_NAME_LENGTH;btn.disabled=!ok;btn.classList.toggle('pulse',ok);hint.textContent=ok?'Alles bereit – die Einrichtung kann abgeschlossen werden.':'Bitte zuerst den Vornamen eingeben.';hint.classList.toggle('ready',ok)};
   input.oninput=refresh;input.onkeydown=e=>{if(e.key==='Enter'&&!btn.disabled)btn.click()};
@@ -704,6 +1000,11 @@ function openFirstRun(){
     btn.disabled=true;btn.textContent='Name und Version werden geprüft …';
     if(saved.autoUpdateCheck)await window.KCVersionUpdateCore?.checkUpdate?.({silent:true});
     modal.hidden=true;document.body.classList.remove('modal-open');state.name=name;set('sessionStorage','kcAcademyName',name);
+    /* Die Willkommensseite wurde beim Start gezeichnet - also mit den Voreinstellungen.
+       Ohne dieses Neuzeichnen stand sie hinter dem Codefenster weiter auf "Du", Laura und
+       leerem Namensfeld, obwohl gerade Sie, Marc und der Name gewaehlt worden waren. */
+    try{welcome()}catch(e){}
+    applyAcademyAddressUi();
     await beginParticipant(name);
     btn.textContent='Einrichtung abschließen';
   };
@@ -724,7 +1025,7 @@ function welcome(){if(participantProfile?.displayName){state.name=participantPro
   input.oninput=refresh;input.onkeydown=e=>{if(e.key==='Enter'&&refresh())start()};enter.onclick=start;refresh();
   document.querySelectorAll('[data-coach]').forEach(b=>b.onclick=()=>{state.name=input.value.trim();state.coach=b.dataset.coach;saveSettings();welcome()});
   document.querySelectorAll('input[name="address"]').forEach(r=>r.onchange=()=>{state.address=r.value;saveSettings();welcome()});
-  document.querySelector('#voiceSelect').onchange=e=>{state.voice=e.target.value;saveSettings()};const vp=document.querySelector('#voicePreview');if(vp)vp.onclick=()=>speak(`Hallo ${state.name||''}. Ich bin ${coach().name}, dein Hauptcoach in der KC FUTURA Academy.`,{characterKey:state.coach});
+  document.querySelector('#voiceSelect').onchange=e=>{state.voice=e.target.value;saveSettings()};const vp=document.querySelector('#voicePreview');if(vp)vp.onclick=()=>speak(settingLabel(`Hallo ${state.name||''}. Ich bin ${coach().name}, dein Hauptcoach in der KC FUTURA Academy.`,`Hallo ${state.name||''}. Ich bin ${coach().name}, Ihr Hauptcoach in der KC FUTURA Academy.`),{characterKey:state.coach});
   document.querySelector('#subtitleToggle').onchange=e=>{state.subtitles=e.target.checked;saveSettings()};
   document.querySelector('#soundToggle').onchange=e=>{state.sound=e.target.checked;soundBtn.textContent=state.sound?'🔊':'🔇';saveSettings();if(!state.sound)stopSpeech()};
 }
@@ -766,8 +1067,18 @@ function home(){
     cards=Object.entries(CATEGORY_DEFS).filter(([k])=>groups[k]?.length).map(([k,d])=>{const locked=Boolean(state.categoryLocks[k]);return `<section class="category-group ${locked?'is-locked':''}" data-category="${k}"><div class="category-head"><button type="button" class="category-toggle" data-category-toggle="${k}" aria-expanded="true" title="Kategorie ein- oder ausklappen"><span class="category-arrow">▼</span><strong>${d.icon} ${d.label}</strong><small>${groups[k].length} ${groups[k].length===1?'Folge':'Folgen'}</small></button><button type="button" class="category-lock" data-category-lock="${k}" title="Kategorie ${locked?'entsperren':'offen halten'}">${locked?'🔒':'🔓'}</button></div><div class="category-content cards compact-cards">${groups[k].map(cardHtml).join('')}</div></section>`}).join('');
   }else cards=`<div class="cards compact-cards">${filtered.map(cardHtml).join('')}</div>`;
   const activeFilterCount=[f.search.trim()!=='',f.category!=='all',f.figure!=='all',f.status!=='all',f.duration!=='all'].filter(Boolean).length;
+  const part2Bonus=window.KCLearningProgressCore?.eligible?.('part2')?`<aside class="academy-reward"><div><span class="eyebrow">Belohnung freigeschaltet</span><h3>KC Würfelküche</h3><p>Du hast Teil 2 erfolgreich abgeschlossen. Spiele jetzt eine kurze Runde mit Marc, Laura und Mitgliedern des Köcheclubs.</p></div><button id="openDiceKitchen" class="primary pulse" type="button">Würfelküche spielen</button></aside>`:'';
   const filterActive=key=>key==='search'?f.search.trim()!=='' : f[key]!=='all';
   screen.innerHTML=`<section class="panel academy-home compact-home"><div class="home-intro"><div><h2>${settingLabel('Hallo','Guten Tag')} ${esc(state.name)}</h2><p>${settingLabel('Lerne unsere Figuren kennen und wähle danach eine Folge aus.','Lernen Sie unsere Figuren kennen und wählen Sie danach eine Folge aus.')}</p><button id="repeatPersonalWelcome" class="mini-action">↻ Begrüßung wiederholen</button></div><div class="browse-controls"><div class="view-toggle" role="group" aria-label="Ansicht"><button data-view="episodes" class="${state.episodeView==='episodes'?'active':''}">Folgen</button><button data-view="categories" class="${state.episodeView==='categories'?'active':''}">Kategorien</button></div><button id="filterToggle" class="filter-toggle ${activeFilterCount?'has-active':''}" aria-expanded="${state.filterOpen}">🔎 Filter <span>${activeFilterCount} / 5</span></button></div></div><div id="filterPanel" class="filter-panel" ${state.filterOpen?'':'hidden'}><label class="${filterActive('search')?'filter-active':''}">Suche<input id="filterSearch" value="${esc(f.search)}" placeholder="Folge oder Thema"></label><label class="${filterActive('category')?'filter-active':''}">Kategorie<select id="filterCategory"><option value="all">Alle Kategorien</option>${Object.entries(CATEGORY_DEFS).map(([k,d])=>`<option value="${k}" ${f.category===k?'selected':''}>${d.label}</option>`).join('')}</select></label><label class="${filterActive('figure')?'filter-active':''}">Figur<select id="filterFigure"><option value="all">Alle Figuren</option>${Object.entries(chars).map(([k,c])=>`<option value="${k}" ${f.figure===k?'selected':''}>${c.name}</option>`).join('')}</select></label><label class="${filterActive('status')?'filter-active':''}">Status<select id="filterStatus"><option value="all">Alle</option><option value="open" ${f.status==='open'?'selected':''}>Noch offen</option><option value="completed" ${f.status==='completed'?'selected':''}>Abgeschlossen</option><option value="ready" ${f.status==='ready'?'selected':''}>Spielbar</option></select></label><label class="${filterActive('duration')?'filter-active':''}">Dauer<select id="filterDuration"><option value="all">Alle</option><option value="short" ${f.duration==='short'?'selected':''}>bis 5 Min.</option><option value="medium" ${f.duration==='medium'?'selected':''}>5–10 Min.</option><option value="long" ${f.duration==='long'?'selected':''}>über 10 Min.</option></select></label><button id="filterReset" class="secondary">Zurücksetzen</button></div><section class="character-collapsible ${charOpen?'is-open':'is-closed'}"><div class="character-section-head"><button id="toggleCharacters" class="section-toggle" aria-expanded="${charOpen}"><span>${charOpen?'▼':'▶'}</span> Figuren kennenlernen</button><button id="lockCharacters" class="section-lock" title="Figurenbereich ${state.figuresLocked?'entsperren':'sperren'}">${state.figuresLocked?'🔒':'🔓'}</button></div><p class="fiction-note">Alle dargestellten Figuren sind frei erfunden und stellen keine lebenden Personen dar. Tippe oder klicke eine Figur an, um ihre Vorstellung zu hören.</p><div id="characterArea" ${charOpen?'':'hidden'}><div class="characters character-strip">${Object.entries(chars).map(([k,c])=>`<button class="character" data-character="${k}" title="Vorstellung von ${esc(c.name)} abspielen"><img src="${AV+c.img}" alt="${c.name}"><b>${c.name}</b><span>${c.role}</span><em>▶ Vorstellung</em></button>`).join('')}</div><div id="characterIntro" class="character-intro"><p>${settingLabel('Wähle eine Figur aus.','Wählen Sie eine Figur aus.')}</p></div></div></section><div class="episode-results-head"><b>${filtered.length} Folgen angezeigt</b>${f.search||f.category!=='all'||f.figure!=='all'||f.status!=='all'||f.duration!=='all'?'<span>Filter aktiv</span>':''}</div>${cards||'<div class="empty-results">Keine Folge passt zu den gewählten Filtern.</div>'}</section>`;
+  if(part2Bonus)screen.querySelector('.academy-home')?.insertAdjacentHTML('afterbegin',part2Bonus);
+  /* 02.09.2026 (Betreiber): "Die komplette Spieleakademie ist gar nicht drin in der Uebersicht."
+     Die Kachel kommt aus shared/unified-header.js, damit Academy und Startseite dieselbe
+     Liste zeigen und nicht zwei Stellen gepflegt werden muessen. */
+  if(window.KCSpielewelt){
+    screen.querySelector('.academy-home')?.insertAdjacentHTML('beforeend',window.KCSpielewelt.kachelHtml());
+    window.KCSpielewelt.kachelVerdrahten(screen);
+  }
+  document.querySelector('#openDiceKitchen')?.addEventListener('click',()=>location.href='../games/dice-kitchen/index.html');
   document.querySelector('#repeatPersonalWelcome')?.addEventListener('click',showPersonalWelcome);
   const rerender=()=>home();
   screen.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.episodeView=b.dataset.view;saveBrowsePrefs();rerender()});
@@ -786,45 +1097,129 @@ function home(){
   const target=state.pendingModule;state.pendingModule=null;if(target&&modules[target]?.ready)setTimeout(()=>overview(target),0)
 }
 
-function overview(id){const m=modules[id];if(!m?.ready)return;stopSpeech();setView('overview');state.module=id;state.step=0;state.score=0;state.total=0;state.countedQuestions=new Set();setProgress(0,m.scenes.length,m.title);screen.innerHTML=`<section class="panel overview-shell"><h2>${m.title}</h2><p class="lead">${m.subtitle}</p><p><b>${settingLabel('In dieser Folge begegnen dir:','In dieser Folge begegnen Ihnen:')}</b></p><p class="fiction-note">Alle dargestellten Figuren sind frei erfunden und stellen keine lebenden Personen dar.</p><div class="cast-intro">${m.cast.map(k=>{const c=chars[k];return `<div class="cast-person"><img src="${AV+c.img}" alt="${c.name}"><b>${c.name}</b><small>${c.role}</small></div>`}).join('')}</div><div class="overview-facts"><div><b>${settingLabel('Das lernst du','Das lernen Sie')}</b><br>${m.learning||'ruhig reagieren, Wirkung verstehen und passende Lösungen finden'}</div><div><b>Dauer</b><br>${moduleStats(m).duration}</div><div><b>Umfang</b><br>${moduleStats(m).scope}</div></div><div class="actions"><button id="start" class="primary pulse">Jetzt starten</button><button id="back" class="secondary">Zur Academy</button></div></section>`;document.querySelector('#start').onclick=()=>{state.moduleStartedAt=Date.now();TelemetryCore.event('module_start',{module:id});showScene()};document.querySelector('#back').onclick=home;speak(`${m.title}. ${m.subtitle}. Das Modul dauert ungefähr ${moduleStats(m).estimatedMinutes} Minuten. Wenn du bereit bist, starte jetzt.`,{characterKey:state.coach,audioKey:`module:${id}:overview:${state.coach}`})}
+function overview(id){const m=modules[id];if(!m?.ready)return;stopSpeech();setView('overview');state.module=id;state.step=0;state.score=0;state.total=0;state.countedQuestions=new Set();setProgress(0,m.scenes.length,m.title);screen.innerHTML=`<section class="panel overview-shell"><h2>${m.title}</h2><p class="lead">${m.subtitle}</p><p><b>${settingLabel('In dieser Folge begegnen dir:','In dieser Folge begegnen Ihnen:')}</b></p><p class="fiction-note">Alle dargestellten Figuren sind frei erfunden und stellen keine lebenden Personen dar.</p><div class="cast-intro">${m.cast.map(k=>{const c=chars[k];return `<div class="cast-person"><img src="${AV+c.img}" alt="${c.name}"><b>${c.name}</b><small>${c.role}</small></div>`}).join('')}</div><div class="overview-facts"><div><b>${settingLabel('Das lernst du','Das lernen Sie')}</b><br>${m.learning||'ruhig reagieren, Wirkung verstehen und passende Lösungen finden'}</div><div><b>Dauer</b><br>${moduleStats(m).duration}</div><div><b>Umfang</b><br>${moduleStats(m).scope}</div></div><div class="actions"><button id="start" class="primary pulse">Jetzt starten</button><button id="back" class="secondary">Zur Academy</button></div></section>`;document.querySelector('#start').onclick=()=>{state.moduleStartedAt=Date.now();TelemetryCore.event('module_start',{module:id});showScene()};document.querySelector('#back').onclick=home;speak(`${m.title}. ${m.subtitle}. Das Modul dauert ungefähr ${moduleStats(m).estimatedMinutes} Minuten. ${settingLabel('Wenn du bereit bist, starte jetzt.','Wenn Sie bereit sind, starten Sie jetzt.')}`,{characterKey:state.coach,audioKey:`module:${id}:overview:${state.coach}`})}
 
 function shuffledChoices(scene){
-  const source=(scene.choices||[]).map((x,i)=>({x,i}));
+  /* BEFUND 02.09.2026: hier wurde die Frage der Szene durch eine Frage aus
+     shared/adaptive-quiz-catalog.js ersetzt - und weil die neuen Folgen die Schluessel der
+     alten belegt hatten, kam dabei die Frage einer fremden Folge heraus. Auf dem Bildschirm:
+     Eugen klopft gegen den schweren Tisch, gefragt wurde nach dem Reklamationsknopf.
+
+     Seit die alten Folgen zurueck sind, passt der Katalog wieder - an 50 von 50 Stellen,
+     nachgerechnet. Er wird deshalb wieder benutzt: er bringt die Schwierigkeitsstufen
+     (Anfang / Fortgeschritten / Experte) mit, die es in der Szene selbst nicht gibt.
+
+     ABER mit Sicherung: der Katalog fuehrt zu jedem Eintrag mit, WER in dieser Szene spricht.
+     Nur wenn das mit der Szene uebereinstimmt, darf seine Frage gezeigt werden. Passt es
+     nicht, bleibt es bei der Frage der Szene. So kann derselbe Fehler nicht noch einmal
+     stillschweigend zurueckkommen - eine falsch zugeordnete Frage faellt dann einfach weg,
+     statt auf der Leinwand zu stehen. */
+  const qid=`academy:${state.module}:${state.step}`;
+  const eigeneFrage=(typeof scene.question==='function'?scene.question():scene.question)||'';
+  const resolved=window.KCAdaptiveQuizCore?.resolveScene(qid,scene,state.quizHistory||[],state.quizDifficultyMode)||{choices:scene.choices||[],level:'beginner'};
+  const eintrag=window.KCAdaptiveQuizCore?.catalogEntry?.(qid);
+  const sprecherPasst=!eintrag?.meta?.speaker||String(eintrag.meta.speaker).trim()===String(scene.who||'').trim();
+  const katalogBrauchbar=sprecherPasst&&resolved.question&&Array.isArray(resolved.choices)&&resolved.choices.length>=2;
+  if(!katalogBrauchbar&&eintrag?.meta?.speaker&&!sprecherPasst){
+    console.warn(`[KC] Katalogfrage ${qid} gehoert zu "${eintrag.meta.speaker}", die Szene spricht "${scene.who}" - es bleibt bei der Frage der Szene.`);
+  }
+  scene.__activeDifficulty=resolved.level;
+  scene.__activeQuestion=katalogBrauchbar?resolved.question:eigeneFrage;
+  scene.__activeChoices=katalogBrauchbar?resolved.choices:(scene.choices||[]);
+  const source=(scene.__activeChoices||scene.choices||[]).map((x,i)=>({x,i}));
   if(!state.shuffleAnswers)return source.map(v=>v.x);
   for(let i=source.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[source[i],source[j]]=[source[j],source[i]]}
   return source.map(v=>v.x);
 }
 
+function checklistHtml(items=[]){return `<fieldset class="episode-checklist"><legend>Interaktiver Tagesabschluss</legend><p>Bestätige jeden erledigten Punkt. Erst danach kannst du den Tagesabschluss abschließen.</p><div>${items.map((item,i)=>`<label><input type="checkbox" data-check-item="${i}"><span>${esc(item)}</span></label>`).join('')}</div><small id="checklistStatus">0 von ${items.length} Punkten bestätigt</small></fieldset>`}
+
 function showScene(){const m=modules[state.module],s=m.scenes[state.step];if(!s)return finish();stopSpeech();setView('scene');setProgress(state.step,m.scenes.length,`${m.title} · Szene ${state.step+1} von ${m.scenes.length}`);let t=text(s.text(state.name));
-  if(s.tip){const tipText=text(s.tip).trim();if(t.trim().endsWith(tipText))t=t.trim().slice(0,-tipText.length).trim()} const c=coach();screen.innerHTML=`<section class="panel scene-panel"><div class="scene-grid"><img class="scene-portrait" src="${AV+chars[s.key].img}" alt="${s.who}"><div class="scene-center"><div class="speaker">${s.who}</div>${state.subtitles?`<div class="speech" id="sceneSpeech">${esc(t)}</div>`:''}${s.reklamationMedia?`<div class="reklamation-media-stack"><figure class="reklamation-media"><img src="assets/training/reklamation_button.png" alt="Reklamationsbutton unter dem Warenkorb"><span class="pulse-target" style="left:64.5%;top:42%;width:24%;height:25%"></span><figcaption>Der Button „Reklamation“ unter dem Warenkorb</figcaption></figure><figure class="reklamation-media"><img src="assets/training/reklamation_dialog.png" alt="Geöffnetes Reklamationsfenster"><span class="glow-target" style="left:1%;top:14%;width:97%;height:24%"></span><span class="glow-target" style="left:1%;top:39%;width:97%;height:20%"></span><span class="glow-target" style="left:38%;top:75%;width:60%;height:8%"></span><span class="glow-target" style="left:9%;top:87%;width:89%;height:8%"></span><figcaption>Artikel, Grund, Belegstatus und Speichern werden klar geführt</figcaption></figure></div>`:(s.media?`<figure class="training-media"><img src="${s.media}" alt="${esc(s.mediaAlt||'Schulungsbild')}"></figure>`:'')}${s.question?`<div class="question-row"><h3 class="question-title">${text(s.question)}</h3><button id="shortenQuiz" class="shorten-btn" type="button">⚡ Verkürzen</button></div><div class="choices-wrap"><div class="choices">${shuffledChoices(s).map(x=>`<button class="choice" data-kind="${x[1]}">${esc(text(x[0]))}</button>`).join('')}</div><div id="quizCountdown" class="quiz-countdown billiard-countdown" aria-live="polite"></div></div>`:`<div class="actions"><button id="next" class="primary pulse">${text(s.next||'Weiter')}</button></div>`}</div><aside id="coachResponse" class="coach-response"><div class="coach-response-head"><img src="${AV+c.img}" alt="${c.name}"><div><b>${c.name}</b><small>${c.role}</small></div></div><div class="placeholder">${s.question?settingLabel('Höre dir zuerst alle Antworten an und wähle dann.','Hören Sie sich zuerst alle Antworten an und wählen Sie dann.'):settingLabel('Höre in Ruhe zu.','Hören Sie in Ruhe zu.')}</div></aside></div></section>`;
+  if(s.tip){const tipText=text(s.tip).trim();if(t.trim().endsWith(tipText))t=t.trim().slice(0,-tipText.length).trim()}
+  const c=coach(),parts=splitSceneText(t,s),displayChoices=s.question?shuffledChoices(s):[],displayQuestion=s.question?text(s.__activeQuestion||s.question):'';
+  const spokenDialogue=parts.dialogue;
+  const visibleDialogue=parts.dialogue;
+  screen.innerHTML=`<section class="panel scene-panel"><div class="scene-grid"><img class="scene-portrait" src="${AV+chars[s.key].img}" alt="${s.who}"><div class="scene-center"><div class="speaker">${s.who}</div>${state.subtitles&&visibleDialogue?`<div class="speech" id="sceneSpeech">${esc(visibleDialogue)}</div>`:''}${s.reklamationMedia?`<div class="reklamation-media-stack"><figure class="reklamation-media"><img src="assets/training/reklamation_button.png" alt="Reklamationsbutton unter dem Warenkorb"><span class="pulse-target" style="left:64.5%;top:42%;width:24%;height:25%"></span><figcaption>Der Button „Reklamation“ unter dem Warenkorb</figcaption></figure><figure class="reklamation-media"><img src="assets/training/reklamation_dialog.png" alt="Geöffnetes Reklamationsfenster"><span class="glow-target" style="left:1%;top:14%;width:97%;height:24%"></span><span class="glow-target" style="left:1%;top:39%;width:97%;height:20%"></span><span class="glow-target" style="left:38%;top:75%;width:60%;height:8%"></span><span class="glow-target" style="left:9%;top:87%;width:89%;height:8%"></span><figcaption>Artikel, Grund, Belegstatus und Speichern werden klar geführt</figcaption></figure></div>`:(s.media?`<figure class="training-media"><img src="${s.media}" alt="${esc(s.mediaAlt||'Schulungsbild')}"></figure>`:'')}${s.checklist?checklistHtml(s.checklist):''}${s.question?`<div class="question-row"><h3 class="question-title">${esc(displayQuestion)}</h3><button id="shortenQuiz" class="shorten-btn" type="button">⚡ Verkürzen</button></div><div class="choices-wrap"><div class="choices">${displayChoices.map((x,i)=>`<button class="choice" data-kind="${x[1]}" data-speech="${esc(text(x[0]))}"><span class="choice-letter">${String.fromCharCode(65+i)}</span>${esc(text(x[0]))}</button>`).join('')}</div><div id="quizCountdown" class="quiz-countdown billiard-countdown" aria-live="polite"></div></div>`:`<div class="actions"><button id="next" class="primary pulse">${text(s.next||'Weiter')}</button></div>`}</div><aside id="coachResponse" class="coach-response"><div class="coach-response-head"><img src="${AV+c.img}" alt="${c.name}"><div><b>${c.name}</b><small>${c.role}</small></div></div><div class="scene-explanation"><b>Was gerade passiert</b><p id="sceneDescription">${esc(parts.description||settingLabel('Keine zusätzliche Szenenerklärung nötig.','Keine zusätzliche Szenenerklärung nötig.'))}</p><div class="scene-explanation-actions"><button id="readSceneDescription" class="secondary" type="button">🔊 Szene vorlesen</button><button id="skipSceneDescription" class="ghost-dark" type="button">Überspringen</button></div></div><div class="placeholder">${settingLabel('Wähle, ob du die Szenenerklärung hören möchtest.','Wählen Sie, ob Sie die Szenenerklärung hören möchten.')}</div></aside></div></section>`;
   const sceneSpeech=document.querySelector('#sceneSpeech');
-  const runTip=async()=>{if(!s.tip||state.paused)return;const aside=document.querySelector('#coachResponse');if(!aside)return;aside.innerHTML=`<div class="coach-response-head"><img src="${AV+chars[s.key].img}" alt="${s.who}"><div><b>${s.who}</b><small>Extra-Tipp</small></div></div><div class="extra-tip active"><span class="tip-bulb" aria-hidden="true">💡</span><div><b>Extra-Tipp</b><p id="extraTipText">${esc(text(s.tip))}</p></div></div>`;await speak(s.tip,{highlight:document.querySelector('#extraTipText'),characterKey:s.key,audioKey:`module:${state.module}:scene:${state.step}:tip`});aside.querySelector('.extra-tip')?.classList.remove('active')};
-  if(s.question){const qid=`${state.module}:${state.step}`;if(!state.countedQuestions.has(qid)){state.total++;state.countedQuestions.add(qid)}const buttons=[...screen.querySelectorAll('.choice')];let quizEnabled=false;const enableQuiz=()=>{if(quizEnabled||state.paused||state.view!=='scene')return;quizEnabled=true;buttons.forEach(b=>{b.disabled=false;b.onclick=()=>answer(b,s)});const box=document.querySelector('#coachResponse .placeholder');if(box)box.textContent=settingLabel('Wähle jetzt deine Antwort.','Wählen Sie jetzt Ihre Antwort.')};buttons.forEach(b=>b.disabled=true);const shortenBtn=document.querySelector('#shortenQuiz');state.quizShorten=state.quizMode==='short';if(state.quizShorten){shortenBtn?.classList.add('active');shortenBtn&&(shortenBtn.textContent='⚡ Verkürzt');stopSpeech();enableQuiz()}if(shortenBtn)shortenBtn.onclick=()=>{state.quizShorten=true;shortenBtn.classList.add('active');shortenBtn.textContent='⚡ Verkürzt';stopSpeech();document.querySelector('#quizCountdown')?.classList.remove('show','ready');enableQuiz()};speak(t,{highlight:sceneSpeech,characterKey:s.key,audioKey:`module:${state.module}:scene:${state.step}:main`}).then(runTip).then(()=>{if(state.paused||quizEnabled)return;return speakChoices(text(s.question),buttons)}).then(()=>{if(state.paused)return;enableQuiz()})}
-  else{speak(t,{highlight:sceneSpeech,characterKey:s.key,audioKey:`module:${state.module}:scene:${state.step}:main`}).then(runTip).then(()=>{if(state.paused)return;const next=document.querySelector('#next');if(next)next.disabled=false;if(state.autoContinue&&state.view==='scene')setTimeout(()=>{if(state.view==='scene'&&!state.paused)advance()},650)});const next=document.querySelector('#next');if(next){next.disabled=Boolean(s.tip);next.onclick=advance}}
+  if(s.checklist){
+    const checks=[...screen.querySelectorAll('[data-check-item]')],next=document.querySelector('#next'),status=document.querySelector('#checklistStatus');
+    const refreshChecklist=()=>{const done=checks.filter(x=>x.checked).length;if(status)status.textContent=`${done} von ${checks.length} Punkten bestätigt`;if(next)next.disabled=done!==checks.length;screen.querySelector('.episode-checklist')?.classList.toggle('complete',done===checks.length)};
+    checks.forEach(x=>x.onchange=refreshChecklist);refreshChecklist();
+  }
+  const runTip=async()=>{if(!s.tip||state.paused)return;const aside=document.querySelector('#coachResponse');if(!aside)return;aside.insertAdjacentHTML('beforeend',`<div class="extra-tip active"><span class="tip-bulb" aria-hidden="true">💡</span><div><b>Extra-Tipp</b><p id="extraTipText">${esc(text(s.tip))}</p></div></div>`);await speak(s.tip,{highlight:document.querySelector('#extraTipText'),characterKey:state.coach,audioKey:`module:${state.module}:scene:${state.step}:tip`});aside.querySelector('.extra-tip')?.classList.remove('active')};
+  const playCharacter=()=>spokenDialogue?speak(spokenDialogue,{highlight:sceneSpeech,characterKey:s.key,audioKey:`module:${state.module}:scene:${state.step}:dialogue`}):Promise.resolve();
+  let sequenceStarted=false,quizEnabled=false;const buttons=[...screen.querySelectorAll('.choice')];buttons.forEach(b=>b.disabled=true);
+  const enableQuiz=()=>{if(quizEnabled||state.paused||state.view!=='scene')return;quizEnabled=true;buttons.forEach(b=>{b.disabled=false;b.classList.add('jetzt-waehlbar');b.onclick=()=>answer(b,s)});const box=document.querySelector('#coachResponse .placeholder');if(box)box.textContent=settingLabel('Wähle jetzt deine Antwort.','Wählen Sie jetzt Ihre Antwort.')};
+  const continueSequence=async()=>{if(sequenceStarted)return;sequenceStarted=true;
+    /* 02.09.2026: Das Leuchten wandert weiter. Solange die Szenenerklaerung ansteht, sind
+       "Szene vorlesen" und "Ueberspringen" das Einzige, was man druecken kann - sie leuchten.
+       Sobald es weitergeht, werden sie gesperrt UND ruhig, und der Weiter-Knopf uebernimmt. */
+    document.querySelectorAll('.scene-explanation-actions button').forEach(b=>{b.disabled=true;b.classList.remove('jetzt-dran')});
+    await playCharacter();await runTip();if(state.paused||state.view!=='scene')return;if(s.question){if(!state.quizShorten)await speakChoices(displayQuestion,buttons);enableQuiz()}else{const next=document.querySelector('#next');if(next&&!s.checklist)next.disabled=false;if(state.autoContinue&&!s.checklist&&state.view==='scene')setTimeout(()=>{if(state.view==='scene'&&!state.paused)advance()},650)}};
+  const readScene=document.querySelector('#readSceneDescription'),skipScene=document.querySelector('#skipSceneDescription');
+  /* Diese beiden sind beim Betreten der Szene die einzigen bedienbaren Knoepfe. Vorher sahen
+     sie genauso grau aus wie der gesperrte Weiter-Knopf - man sah nicht, wo es weitergeht. */
+  [readScene,skipScene].forEach(b=>b&&b.classList.add('jetzt-dran'));
+  if(readScene)readScene.onclick=async()=>{readScene.classList.add('active');if(parts.description)await speak(parts.description,{highlight:document.querySelector('#sceneDescription'),characterKey:state.coach,audioKey:`module:${state.module}:scene:${state.step}:description`});await continueSequence()};
+  if(skipScene)skipScene.onclick=()=>{stopSpeech();continueSequence()};
+  if(s.question){const qid=`${state.module}:${state.step}`;if(!state.countedQuestions.has(qid)){state.total++;state.countedQuestions.add(qid)}const shortenBtn=document.querySelector('#shortenQuiz');state.quizShorten=state.quizMode==='short';if(state.quizShorten){shortenBtn?.classList.add('active');if(shortenBtn)shortenBtn.textContent='⚡ Verkürzt'}if(shortenBtn)shortenBtn.onclick=()=>{state.quizShorten=true;shortenBtn.classList.add('active');shortenBtn.textContent='⚡ Verkürzt';stopSpeech();document.querySelector('#quizCountdown')?.classList.remove('show','ready');sequenceStarted=true;document.querySelectorAll('.scene-explanation-actions button').forEach(b=>{b.disabled=true;b.classList.remove('jetzt-dran')});enableQuiz()}}
+  else{const next=document.querySelector('#next');if(next){next.disabled=true;next.onclick=advance}}
 }
 
-function feedbackLabel(s){if(s.who==='Frau Schmitt')return 'Frau Schmitt meint:';if(s.who==='Herr Becker')return 'Herr Becker sagt:';if(s.who==='Lukas')return 'Lukas erzählt:';return `${s.who} sagt:`}
+/* 02.09.2026 (Betreiber): "Bei Sabrinas Zigarettenpause ist der Schluss verdreht. Die andere
+   Person muss erklaeren, dass sie mal Luft brauchte."
+   Die Reaktion nach einer Frage wurde IMMER der Figur zugeordnet, die die Szene spricht -
+   Bild, Name und Stimme. In den Szenen, wo jemand angesprochen WIRD und darauf antwortet,
+   erklaerte sich damit der Vorwurfende selbst. Ein Feld guestKey sagt jetzt, wer reagiert;
+   fehlt es, bleibt alles wie vorher bei der sprechenden Figur. */
+function reagierendeFigur(s){const k=s.guestKey&&chars[s.guestKey]?s.guestKey:s.key;return {key:k,figur:chars[k]}}
+function feedbackLabel(s){const name=reagierendeFigur(s).figur?.name||s.who;
+  if(name==='Frau Schmitt')return 'Frau Schmitt meint:';if(name==='Herr Becker')return 'Herr Becker sagt:';if(name==='Lukas')return 'Lukas erzählt:';return `${name} sagt:`}
 async function answer(btn,s){
   if(state.paused)return;
   const activeModule=state.module,activeStep=state.step;
   const buttons=[...screen.querySelectorAll('.choice')];buttons.forEach(b=>b.disabled=true);
-  const good=btn.dataset.kind==='good';btn.classList.add(good?'correct':'wrong');
+  const good=btn.dataset.kind==='good';state.quizHistory=window.KCAdaptiveQuizCore?.record(state.quizHistory||[],{correct:good,level:s.__activeDifficulty||'beginner',questionId:`academy:${state.module}:${state.step}`})||state.quizHistory;saveSettings();btn.classList.add(good?'correct':'wrong');
   const correctBtn=buttons.find(b=>b.dataset.kind==='good');if(!good&&correctBtn)correctBtn.classList.add('correct','solution');
   if(good)state.score++;TelemetryCore.event('answer',{correct:good,question:text(s.question),selected:btn.textContent});
   const msg=text(good?s.good:'Das war noch nicht die beste Lösung. Die richtige Antwort ist grün markiert.');const c=coach();const box=document.querySelector('#coachResponse');
-  box.innerHTML=`<div class="coach-response-head"><img src="${AV+c.img}" alt="${c.name}"><div><b>${c.name}</b><small>${c.role}</small></div></div><div class="feedback${good?'':' bad'}"><span class="badge">${good?'👍 ✅':'💡'}</span> <b>${good?'Richtig!':'Die richtige Lösung:'}</b><br><span id="solutionText">${esc(msg)}</span>${s.guest?`<div class="guest-view"><img src="${AV+chars[s.key].img}" alt=""><div><b>${feedbackLabel(s)}</b><br><span id="guestText">${esc(text(s.guest))}</span></div></div>`:''}<div class="actions"><button id="continue" class="primary pulse" disabled>Weiter</button></div></div>`;
+  box.innerHTML=`<div class="coach-response-head"><img src="${AV+c.img}" alt="${c.name}"><div><b>${c.name}</b><small>${c.role}</small></div></div><div class="feedback${good?'':' bad'}"><span class="badge">${good?'👍 ✅':'💡'}</span> <b>${good?'Richtig!':'Die richtige Lösung:'}</b><br><span id="solutionText">${esc(msg)}</span>${s.guest?`<div class="guest-view"><img src="${AV+reagierendeFigur(s).figur.img}" alt=""><div><b>${feedbackLabel(s)}</b><br><span id="guestText">${esc(text(s.guest))}</span></div></div>`:''}<div class="actions"><button id="continue" class="primary pulse" disabled>Weiter</button></div></div>`;
   await speak(msg,{highlight:document.querySelector('#solutionText'),characterKey:state.coach});
-  if(s.guest)await speak(s.guest,{highlight:document.querySelector('#guestText'),characterKey:s.key,audioKey:`module:${state.module}:scene:${state.step}:guest`});
+  if(s.guest)await speak(s.guest,{highlight:document.querySelector('#guestText'),characterKey:reagierendeFigur(s).key,audioKey:`module:${state.module}:scene:${state.step}:guest`});
   if(state.view!=='scene'||state.module!==activeModule||state.step!==activeStep)return;
   const cont=document.querySelector('#continue');if(!cont)return;cont.disabled=false;cont.onclick=advance;
 }
 function advance(){state.step++;showScene()}
-function finish(){const m=modules[state.module];stopSpeech();setView('finish');const durationMs=state.moduleStartedAt?Date.now()-state.moduleStartedAt:0;TelemetryCore.event('module_finish',{score:state.score,total:state.total,durationMs});state.completed[state.module]={date:new Date().toISOString(),score:state.score,total:state.total,durationMs,points:Math.max(1,state.score)};set('localStorage','kcAcademyCompleted',JSON.stringify(state.completed));window.KCSupabaseAdapter?.uploadSnapshot?.('progress',{completed:state.completed,lastModule:state.module},{participantName:state.name||''}).catch(()=>{});setProgress(1,1,'Modul abgeschlossen');screen.innerHTML=`<section class="panel hero"><div class="badge">🏅</div><h2>${m.title} abgeschlossen</h2><p class="lead"><b>${esc(state.name)}, ${settingLabel('das hast du gut gemacht.','das haben Sie gut gemacht.')}</b></p><p class="lead">${settingLabel(`Du hast ${state.score} von ${state.total} Entscheidungen richtig gelöst.`,`Sie haben ${state.score} von ${state.total} Entscheidungen richtig gelöst.`)}</p><div class="actions"><button id="academy" class="primary pulse">Zur Academy</button><button id="again" class="secondary">Modul wiederholen</button></div><p class="lead"><b>„Jedes Jahr machen wir den Weihnachtsmarkt ein bisschen besser – und menschlicher.“</b></p></section>`;speak(`${state.name}, herzlichen Glückwunsch. Du hast das Modul ${m.title} abgeschlossen.`,{characterKey:state.coach});document.querySelector('#academy').onclick=home;document.querySelector('#again').onclick=()=>overview(state.module)}
+function finish(){const m=modules[state.module];stopSpeech();setView('finish');const durationMs=state.moduleStartedAt?Date.now()-state.moduleStartedAt:0;TelemetryCore.event('module_finish',{score:state.score,total:state.total,durationMs});
+const vorherFortschritt=window.KCMerksatz?.fortschritt?.();
+state.completed[state.module]={date:new Date().toISOString(),score:state.score,total:state.total,durationMs,points:Math.max(1,state.score)};set('localStorage','kcAcademyCompleted',JSON.stringify(state.completed));/* Die Zahl der abgeschlossenen Folgen zusaetzlich schlicht ablegen: kcAcademyCompleted liegt verschluesselt in der IndexedDB und ist von der Startseite und der Kassenschulung aus nicht lesbar. Hier steht nur eine Zahl - keine Namen, keine Ergebnisse. */try{localStorage.setItem('kcAcademyFolgenAnzahl',String(Object.keys(state.completed).length))}catch(e){}window.KCSupabaseAdapter?.uploadSnapshot?.('progress',{completed:state.completed,lastModule:state.module},{participantName:state.name||''}).catch(()=>{});setProgress(1,1,'Modul abgeschlossen');
+/* 02.09.2026 (Betreiber): "Nach jeder Leistung: Nach dieser Leistung wurde fuer Sie das Spiel
+   X freigeschaltet." Die Folge ist an dieser Stelle schon in state.completed eingetragen,
+   also zaehlt sie mit. Nur wenn genau diese Folge eine Schwelle erreicht, wird angesagt. */
+let spielHinweis='',spielSatz='';
+try{
+  const anzahl=Object.keys(state.completed).length;
+  const spiel=window.KCSpielewelt?.fuerFolgenzahl?.(anzahl);
+  if(spiel){
+    spielHinweis=`<p class="lead freigeschaltet">🎉 ${settingLabel('Nach dieser Leistung wurde für dich das Spiel','Nach dieser Leistung wurde für Sie das Spiel')} <b>${esc(spiel.title)}</b> ${settingLabel('freigeschaltet.','freigeschaltet.')}<br><small>${settingLabel('Du findest es über die Pause-Taste oben in der Leiste.','Sie finden es über die Pause-Taste oben in der Leiste.')}</small></p>`;
+    spielSatz=settingLabel(` Und nach dieser Leistung wurde für dich das Spiel ${spiel.title} freigeschaltet.`,` Und nach dieser Leistung wurde für Sie das Spiel ${spiel.title} freigeschaltet.`);
+  }
+}catch(e){}
+let merksatzHinweis='';
+if(window.KCMerksatz){
+  const nachherFortschritt=window.KCMerksatz.fortschritt();
+  if(nachherFortschritt.anzahlFrei>vorherFortschritt.anzahlFrei){
+    const neuePosition=nachherFortschritt.anzeige.findIndex((z,i)=>z.sichtbar&&!vorherFortschritt.anzeige[i].sichtbar);
+    const neuerBuchstabe=neuePosition>=0?nachherFortschritt.anzeige[neuePosition].zeichen:'';
+    merksatzHinweis=`<p class="lead">Und du erhältst einen weiteren Buchstaben${neuerBuchstabe?` – <b>„${neuerBuchstabe}"</b>`:''} für deinen Lösungssatz.</p>`;
+  }
+}
+screen.innerHTML=`<section class="panel hero"><div class="badge">🏅</div><h2>${m.title} abgeschlossen</h2><p class="lead"><b>${esc(state.name)}, ${settingLabel('das hast du gut gemacht.','das haben Sie gut gemacht.')}</b></p><p class="lead">${settingLabel(`Du hast ${state.score} von ${state.total} Entscheidungen richtig gelöst.`,`Sie haben ${state.score} von ${state.total} Entscheidungen richtig gelöst.`)}</p>${merksatzHinweis}${spielHinweis}<div class="actions"><button id="academy" class="primary pulse">Zur Academy</button><button id="again" class="secondary">Modul wiederholen</button></div><p class="lead"><b>„Jedes Jahr machen wir den Weihnachtsmarkt ein bisschen besser – und menschlicher.“</b></p></section>`;speak(settingLabel(`${state.name}, herzlichen Glückwunsch. Du hast das Modul ${m.title} abgeschlossen.`,`${state.name}, herzlichen Glückwunsch. Sie haben das Modul ${m.title} abgeschlossen.`)+spielSatz,{characterKey:state.coach});document.querySelector('#academy').onclick=home;document.querySelector('#again').onclick=()=>overview(state.module)}
 
 function buildDialogRegistry(){
   const rows=[];
   Object.entries(chars).forEach(([key,c])=>rows.push({key:`character:${key}:intro`,character:key,label:'Figurenvorstellung',text:text(c.intro)}));
-  Object.entries(modules).forEach(([moduleId,m])=>{if(!m.scenes)return;m.scenes.forEach((sc,i)=>{rows.push({key:`module:${moduleId}:scene:${i}:main`,character:sc.key,label:`${m.title} · Szene ${i+1}`,text:text(sc.text(state.name||'Teilnehmer'))});if(sc.guest)rows.push({key:`module:${moduleId}:scene:${i}:guest`,character:sc.key,label:`${m.title} · Szene ${i+1} · Reaktion`,text:text(sc.guest)})})});
+  Object.entries(modules).forEach(([moduleId,m])=>{if(!m.scenes)return;m.scenes.forEach((sc,i)=>{rows.push({key:`module:${moduleId}:scene:${i}:main`,character:sc.key,label:`${m.title} · Szene ${i+1}`,text:text(sc.text(state.name||'Teilnehmer'))});if(sc.guest)rows.push({key:`module:${moduleId}:scene:${i}:guest`,character:reagierendeFigur(sc).key,label:`${m.title} · Szene ${i+1} · Reaktion`,text:text(sc.guest)})})});
   return rows;
 }
 let recorderState={mediaRecorder:null,chunks:[],blob:null,url:null,stream:null,dialogKey:''};
@@ -858,6 +1253,8 @@ window.addEventListener('kc-configuration-apply-all',e=>{const c=e.detail?.confi
 window.addEventListener('kc-configuration-changed',e=>{const d=e.detail||{};window.dispatchEvent(new CustomEvent('kc-core-configuration-updated',{detail:d}));});
 
 function openEpisodeEditor(){if(!state.adminUnlocked){openAdminPin();return}stopSpeech();document.querySelector('#episodeEditorModal').hidden=false;document.body.classList.add('modal-open');renderEpisodeEditor();renderSystemTextEditor();renderAdminDocs();renderAdminSystem();renderAdminLearningReport();window.KCDatabaseSecurityCore?.render?.(document.querySelector('#databaseSecurityAdmin'));window.KCUniversalDatabaseConnectorCore?.render?.(document.querySelector('#universalDatabaseNetworkAdmin'));window.KCFuturaConfigurationCore?.render?.(document.querySelector('#systemConfigurationAdmin'));bindAdminTabs()}
+window.KCFuturaProtectedArea={open:openEpisodeEditor};
+window.addEventListener('kc:open-protected-area',openEpisodeEditor);
 
 function bindAdminTabs(){document.querySelectorAll('.admin-tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.admin-tab').forEach(x=>x.classList.toggle('active',x===btn));document.querySelectorAll('.admin-pane').forEach(x=>x.classList.toggle('active',x.dataset.adminPane===btn.dataset.adminTab))});const a=document.querySelector('#adminOpenSettings'),v=document.querySelector('#adminOpenVoice');if(a)a.onclick=()=>openSettings();if(v)v.onclick=()=>{openSettings();document.querySelector('[data-tab="voice"]')?.click()}}
 function renderAdminDocs(){const host=document.querySelector('#adminDocsContent');if(!host)return;host.innerHTML='<article><b>Pflichtenheft</b><small>Architektur und Funktionsumfang</small></article><article><b>Studio-Handbuch</b><small>UI- und Core-Regeln</small></article><article><b>TÜV-Handbuch</b><small>Prüf- und Freigabegates</small></article><article><b>Roadmap</b><small>Folgen und Entwicklungsstand</small></article><button id="adminOpenDocs" class="primary">Projektunterlagen öffnen</button>';document.querySelector('#adminOpenDocs').onclick=openDocs}
@@ -889,8 +1286,50 @@ function openDiagnostics(){renderDiagnostics();document.querySelector('#diagnost
 function closeDiagnostics(){document.querySelector('#diagnosticsModal').hidden=true;document.body.classList.remove('modal-open')}
 
 function closeEpisodeEditor(){document.querySelector('#episodeEditorModal').hidden=true;document.body.classList.remove('modal-open')}
-function renderEpisodeEditor(){const list=document.querySelector('#episodeEditorList');if(!adminModuleKey)adminModuleKey=SceneCore.catalog()[0]?.id||'';list.innerHTML=SceneCore.catalog().map(m=>`<button class="episode-editor-module ${m.id===adminModuleKey?'selected':''}" data-admin-module="${m.id}"><b>Folge ${m.episode}: ${esc(m.title)}</b><small>${m.sceneCount} Szenen · ${m.ready?'spielbar':'vorbereitet'}</small></button>`).join('');list.querySelectorAll('[data-admin-module]').forEach(b=>b.onclick=()=>{adminModuleKey=b.dataset.adminModule;adminSceneIndex=0;renderEpisodeEditor()});const m=modules[adminModuleKey],sceneList=document.querySelector('#episodeEditorScenes'),editor=document.querySelector('#episodeEditorForm');if(!m){editor.innerHTML='';return}sceneList.innerHTML=(m.scenes||[]).map((sc,i)=>`<button class="episode-editor-scene ${i===adminSceneIndex?'selected':''}" data-admin-scene="${i}">Szene ${i+1}: ${esc(sc.who||'Ohne Sprecher')}</button>`).join('')||'<p>Für diese Folge sind noch keine Szenen angelegt.</p>';sceneList.querySelectorAll('[data-admin-scene]').forEach(b=>b.onclick=()=>{adminSceneIndex=Number(b.dataset.adminScene);renderEpisodeEditor()});const sc=m.scenes?.[adminSceneIndex];if(!sc){editor.innerHTML='<p>Keine Szene zur Bearbeitung vorhanden.</p>';return}const choices=(sc.choices||[]).map(x=>`${x[1]}|${x[0]}`).join('\n');editor.innerHTML=`<h3>${esc(m.title)} · Szene ${adminSceneIndex+1}</h3><label>Sprecher<select id="adminSpeaker">${Object.entries(chars).map(([k,c])=>`<option value="${k}" ${k===sc.key?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Gesprochener Text<textarea id="adminText" rows="5">${esc(text(sc.text(state.name||'Teilnehmer')))}</textarea></label><label>Frage<textarea id="adminQuestion" rows="2">${esc(sc.question||'')}</textarea></label><label>Antworten (eine Zeile je Antwort: good|Text oder bad|Text)<textarea id="adminChoices" rows="5">${esc(choices)}</textarea></label><label>Richtige Rückmeldung<textarea id="adminGood" rows="2">${esc(sc.good||'')}</textarea></label><label>Reaktion der Figur<textarea id="adminGuest" rows="3">${esc(sc.guest||'')}</textarea></label><label>Extra-Tipp<textarea id="adminTip" rows="3">${esc(sc.tip||'')}</textarea></label><div class="actions"><button id="adminPreview" class="secondary">▶ Szene testen</button><button id="adminSave" class="primary">Änderungen speichern</button><button id="adminReset" class="ghost-dark">Szene zurücksetzen</button></div>`;document.querySelector('#adminPreview').onclick=()=>speak(document.querySelector('#adminText').value,{characterKey:document.querySelector('#adminSpeaker').value});document.querySelector('#adminSave').onclick=saveEpisodeScene;document.querySelector('#adminReset').onclick=resetEpisodeScene}
-function saveEpisodeScene(){const m=modules[adminModuleKey],sc=m?.scenes?.[adminSceneIndex];if(!sc)return;const key=document.querySelector('#adminSpeaker').value;const ov={key,text:document.querySelector('#adminText').value.trim(),question:document.querySelector('#adminQuestion').value.trim(),good:document.querySelector('#adminGood').value.trim(),guest:document.querySelector('#adminGuest').value.trim(),tip:document.querySelector('#adminTip').value.trim(),choices:document.querySelector('#adminChoices').value.split(/\n+/).map(x=>{const p=x.indexOf('|');return p<0?null:[x.slice(p+1).trim(),x.slice(0,p).trim()==='good'?'good':'bad']}).filter(Boolean)};episodeOverrides[adminModuleKey]??=[];episodeOverrides[adminModuleKey][adminSceneIndex]=ov;set('localStorage',EPISODE_OVERRIDE_KEY,JSON.stringify(episodeOverrides));sc.key=key;sc.who=chars[key].name;sc.text=()=>ov.text;sc.question=ov.question||undefined;sc.good=ov.good||undefined;sc.guest=ov.guest||undefined;sc.tip=ov.tip||undefined;sc.choices=ov.choices.length?ov.choices:undefined;document.querySelector('#episodeEditorStatus').textContent='Gespeichert. Die zugehörige Stimme ist bis zur Neuerzeugung als veraltet markiert.';autoRegenerateDialog(`module:${adminModuleKey}:scene:${adminSceneIndex}:main`);if(ov.guest)autoRegenerateDialog(`module:${adminModuleKey}:scene:${adminSceneIndex}:guest`);renderEpisodeEditor()}
+function renderEpisodeEditor(){
+ const catalog=window.KCAdaptiveQuizCore?.getCatalog?.()||{};
+ const catalogKeys=Object.keys(catalog),catalogVariants=catalogKeys.reduce((n,k)=>n+['beginner','advanced','expert'].filter(l=>catalog[k]?.[l]?.question&&Array.isArray(catalog[k]?.[l]?.answers)).length,0),catalogAnswers=catalogKeys.reduce((n,k)=>n+['beginner','advanced','expert'].reduce((m,l)=>m+(catalog[k]?.[l]?.answers?.length||0),0),0);
+ const firstQuizSceneIndex=moduleId=>{const scenes=modules[moduleId]?.scenes||[];const found=scenes.findIndex((_,i)=>Boolean(catalog[`academy:${moduleId}:${i}`]));return found>=0?found:0};
+ const list=document.querySelector('#episodeEditorList');if(!adminModuleKey){adminModuleKey=SceneCore.catalog()[0]?.id||'';adminSceneIndex=firstQuizSceneIndex(adminModuleKey)}
+ if(!catalog[`academy:${adminModuleKey}:${adminSceneIndex}`]&&!(modules[adminModuleKey]?.scenes?.[adminSceneIndex]?.question)){adminSceneIndex=firstQuizSceneIndex(adminModuleKey)}
+ list.innerHTML=SceneCore.catalog().map(m=>{const q=(m.scenes||[]).filter((_,i)=>catalog[`academy:${m.id}:${i}`]).length;return `<button class="episode-editor-module ${m.id===adminModuleKey?'selected':''}" data-admin-module="${m.id}"><b>Folge ${m.episode}: ${esc(m.title)}</b><small>${m.sceneCount} Szenen · ${q} Quizfragen · ${m.ready?'spielbar':'vorbereitet'}</small></button>`}).join('');
+ list.querySelectorAll('[data-admin-module]').forEach(b=>b.onclick=()=>{adminModuleKey=b.dataset.adminModule;adminSceneIndex=firstQuizSceneIndex(adminModuleKey);renderEpisodeEditor()});
+ const m=modules[adminModuleKey],sceneList=document.querySelector('#episodeEditorScenes'),editor=document.querySelector('#episodeEditorForm');if(!m){editor.innerHTML='';return}
+ sceneList.innerHTML=(m.scenes||[]).map((sc,i)=>{const hasQuiz=Boolean(catalog[`academy:${adminModuleKey}:${i}`]||sc.question);return `<button class="episode-editor-scene ${i===adminSceneIndex?'selected':''}" data-admin-scene="${i}">Szene ${i+1}: ${esc(sc.who||'Ohne Sprecher')}${hasQuiz?' · Quiz':''}</button>`}).join('')||'<p>Für diese Folge sind noch keine Szenen angelegt.</p>';
+ sceneList.querySelectorAll('[data-admin-scene]').forEach(b=>b.onclick=()=>{adminSceneIndex=Number(b.dataset.adminScene);renderEpisodeEditor()});
+ const sc=m.scenes?.[adminSceneIndex];if(!sc){editor.innerHTML='<p>Keine Szene zur Bearbeitung vorhanden.</p>';return}
+ const qid=`academy:${adminModuleKey}:${adminSceneIndex}`,baseQuiz={question:sc.question||'',answers:(sc.choices||[]).map(x=>x[0]),correct:Math.max(0,(sc.choices||[]).findIndex(x=>x[1]==='good')),repeat:sc.good||''};
+ const initialVariant=window.KCAdaptiveQuizCore?.resolve(qid,baseQuiz,[],'advanced')||baseQuiz;
+ const hasPreparedQuiz=Boolean(catalog[qid]);
+ editor.innerHTML=`<h3>${esc(m.title)} · Szene ${adminSceneIndex+1}</h3>
+ <label>Sprecher<select id="adminSpeaker">${Object.entries(chars).map(([k,c])=>`<option value="${k}" ${k===sc.key?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+ <label>Gesprochener Text<textarea id="adminText" rows="5">${esc(text(sc.text(state.name||'Teilnehmer')))}</textarea></label>
+ <section class="quiz-author-card"><div class="quiz-author-head"><div><h4>Quizfrage einfach pflegen</h4><p>Eine Frage – drei passende Antwortstufen. Der Teilnehmer bekommt automatisch die passende Variante.</p></div><span class="quiz-auto-badge">${catalogKeys.length} Fragen · ${catalogVariants} Stufen · ${catalogAnswers} Antworten eingelesen</span></div>
+ <label>Frage<textarea id="adminQuestion" rows="2">${esc(initialVariant.question||'')}</textarea></label>${hasPreparedQuiz?'':'<p class="settings-note">Diese Szene enthält keine vorbereitete Quizfrage. Wähle in der Szenenliste eine mit „Quiz“ gekennzeichnete Szene oder lege hier eine neue Frage an.</p>'}
+ <div class="quiz-level-tabs" role="tablist">${['beginner','advanced','expert'].map((l,i)=>`<button type="button" data-quiz-level="${l}" class="${i===1?'active':''}">${i+1}. ${window.KCAdaptiveQuizCore?.labels?.[l]||l}</button>`).join('')}</div>
+ <input id="adminDifficultyLevel" type="hidden" value="advanced">
+ <div class="quiz-level-summary"><strong id="quizLevelTitle">Fortgeschritten</strong><span id="quizTimeEstimate"></span></div>
+ <p id="quizLevelHint" class="settings-note"></p>
+ <div id="quizChoiceRows" class="quiz-choice-editor"></div>
+ <div class="actions compact quiz-copy-actions"><button id="copyFromAdvanced" type="button" class="secondary">Von Fortgeschritten übernehmen</button><button id="copyToBeginner" type="button" class="secondary">Nach Anfänger kopieren</button><button id="copyToExpert" type="button" class="secondary">Nach Experte kopieren</button><button id="previewQuizLevel" type="button" class="ghost-dark">Vorschau</button></div>
+ <div id="quizLevelQuality" class="quiz-quality-panel" aria-live="polite"></div></section>
+ <label>Richtige Rückmeldung<textarea id="adminGood" rows="2">${esc(sc.good||'')}</textarea></label><label>Reaktion der Figur<textarea id="adminGuest" rows="3">${esc(sc.guest||'')}</textarea></label><label>Extra-Tipp<textarea id="adminTip" rows="3">${esc(sc.tip||'')}</textarea></label>
+ <div class="actions"><button id="adminPreview" class="secondary">▶ Szene testen</button><button id="adminSave" class="primary">Änderungen speichern</button><button id="adminReset" class="ghost-dark">Szene zurücksetzen</button></div>`;
+ const diff=document.querySelector('#adminDifficultyLevel'),rowsHost=document.querySelector('#quizChoiceRows');
+ function currentVariant(){return window.KCAdaptiveQuizCore?.resolve(qid,{...baseQuiz,question:document.querySelector('#adminQuestion').value.trim()},[],diff.value)||baseQuiz}
+ function renderRows(v){const answers=(v.answers||[]).length?v.answers:['','','',''];rowsHost.innerHTML=answers.map((x,i)=>`<div class="quiz-choice-row"><input type="radio" name="quizCorrect" value="${i}" ${i===Number(v.correct)?'checked':''} aria-label="Antwort ${i+1} ist richtig"><span>${String.fromCharCode(65+i)}</span><input data-quiz-answer="${i}" value="${esc(x)}" placeholder="Antwort ${i+1}"><button type="button" data-remove-answer="${i}" aria-label="Antwort entfernen">×</button></div>`).join('')+`<button id="addQuizAnswer" type="button" class="secondary quiz-add-answer">+ Antwort hinzufügen</button>`;document.querySelector('#addQuizAnswer').onclick=()=>{const v=parseAdminQuizChoices();v.answers.push('');renderRows(v);updateQuality()};rowsHost.querySelectorAll('[data-remove-answer]').forEach(b=>b.onclick=()=>{const v=parseAdminQuizChoices();if(v.answers.length<=2)return;const ix=Number(b.dataset.removeAnswer);v.answers.splice(ix,1);if(v.correct>=v.answers.length)v.correct=0;renderRows(v);updateQuality()});rowsHost.querySelectorAll('input').forEach(x=>x.oninput=updateQuality)}
+ function updateQuality(){const v={question:document.querySelector('#adminQuestion').value.trim(),...parseAdminQuizChoices()},basic=window.KCAdaptiveQuizCore?.validateVariant(v),level=window.KCAdaptiveQuizCore?.assessDifficulty?.(v,diff.value),seconds=window.KCAdaptiveQuizCore?.estimateSeconds?.(v,diff.value)||0,all=window.KCAdaptiveQuizCore?.quality(qid,baseQuiz);document.querySelector('#quizTimeEstimate').textContent=`ca. ${seconds} Sek.`;const issues=[...(basic?.issues||[]),...(level?.issues||[])];document.querySelector('#quizLevelQuality').innerHTML=issues.length?`<b>Bitte prüfen</b><ul>${issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><small>Ähnlichkeit der Ablenkungsantworten: ${level?.similarity||0}%</small>`:`<b>✓ Diese Stufe ist plausibel aufgebaut.</b><small>${all?.warning||'Alle drei Stufen individuell gepflegt.'}</small>`}
+ function loadLevel(){const v=currentVariant(),label=window.KCAdaptiveQuizCore?.labels?.[diff.value]||diff.value;document.querySelector('#adminQuestion').value=v.question||'';document.querySelector('#adminGood').value=v.repeat||sc.good||'';document.querySelector('#quizLevelTitle').textContent=label;document.querySelector('#quizLevelHint').textContent=diff.value==='beginner'?'Klare richtige Antwort und deutlich erkennbare Ablenkungen.':diff.value==='expert'?'Sehr ähnliche, fachlich plausible Antworten – entscheidend sind genaue Formulierungen.':'Realistische Antworten mit mittlerem Anspruch.';document.querySelectorAll('[data-quiz-level]').forEach(b=>b.classList.toggle('active',b.dataset.quizLevel===diff.value));renderRows(v);updateQuality()}
+ document.querySelectorAll('[data-quiz-level]').forEach(b=>b.onclick=()=>{saveCurrentQuizVariant(false);diff.value=b.dataset.quizLevel;loadLevel()});
+ function saveCurrentQuizVariant(show=true){const v={question:document.querySelector('#adminQuestion').value.trim(),...parseAdminQuizChoices(),repeat:document.querySelector('#adminGood').value.trim()};const val=window.KCAdaptiveQuizCore?.validateVariant(v);if(!val?.ok&&show){document.querySelector('#episodeEditorStatus').textContent='Quizstufe noch nicht gespeichert: '+val.issues.join(', ');return false}window.KCAdaptiveQuizCore?.saveVariant(qid,diff.value,v);return true}
+ document.querySelector('#copyFromAdvanced').onclick=()=>{window.KCAdaptiveQuizCore?.copyVariant(qid,'advanced',diff.value,baseQuiz);loadLevel()};
+ document.querySelector('#copyToBeginner').onclick=()=>{saveCurrentQuizVariant(false);window.KCAdaptiveQuizCore?.copyVariant(qid,diff.value,'beginner',baseQuiz);diff.value='beginner';loadLevel()};
+ document.querySelector('#copyToExpert').onclick=()=>{saveCurrentQuizVariant(false);window.KCAdaptiveQuizCore?.copyVariant(qid,diff.value,'expert',baseQuiz);diff.value='expert';loadLevel()};
+ document.querySelector('#previewQuizLevel').onclick=()=>{const v={question:document.querySelector('#adminQuestion').value.trim(),...parseAdminQuizChoices()};alert(`${window.KCAdaptiveQuizCore?.labels?.[diff.value]}\n\n${v.question}\n\n${v.answers.map((x,i)=>`${String.fromCharCode(65+i)}  ${x}${i===v.correct?'  ✓':''}`).join('\n')}`)};
+ document.querySelector('#adminQuestion').oninput=updateQuality;document.querySelector('#adminPreview').onclick=()=>speak(document.querySelector('#adminText').value,{characterKey:document.querySelector('#adminSpeaker').value});document.querySelector('#adminSave').onclick=()=>{if(saveCurrentQuizVariant())saveEpisodeScene()};document.querySelector('#adminReset').onclick=resetEpisodeScene;loadLevel();
+}
+function parseAdminQuizChoices(){const answers=[...document.querySelectorAll('[data-quiz-answer]')].map(x=>x.value.trim()).filter(Boolean);const selected=document.querySelector('input[name="quizCorrect"]:checked');return{answers,correct:Math.min(Math.max(0,Number(selected?.value||0)),Math.max(0,answers.length-1))}}
+function saveEpisodeScene(){const m=modules[adminModuleKey],sc=m?.scenes?.[adminSceneIndex];if(!sc)return;const key=document.querySelector('#adminSpeaker').value;const parsedQuiz=parseAdminQuizChoices();const difficulty=document.querySelector('#adminDifficultyLevel')?.value||'advanced';window.KCAdaptiveQuizCore?.saveVariant(`academy:${adminModuleKey}:${adminSceneIndex}`,difficulty,{question:document.querySelector('#adminQuestion').value.trim(),...parsedQuiz,repeat:document.querySelector('#adminGood').value.trim()});const ov={key,text:document.querySelector('#adminText').value.trim(),question:document.querySelector('#adminQuestion').value.trim(),good:document.querySelector('#adminGood').value.trim(),guest:document.querySelector('#adminGuest').value.trim(),tip:document.querySelector('#adminTip').value.trim(),choices:parsedQuiz.answers.map((x,i)=>[x,i===parsedQuiz.correct?'good':'bad'])};episodeOverrides[adminModuleKey]??=[];episodeOverrides[adminModuleKey][adminSceneIndex]=ov;set('localStorage',EPISODE_OVERRIDE_KEY,JSON.stringify(episodeOverrides));sc.key=key;sc.who=chars[key].name;sc.text=()=>ov.text;sc.question=ov.question||undefined;sc.good=ov.good||undefined;sc.guest=ov.guest||undefined;sc.tip=ov.tip||undefined;sc.choices=ov.choices.length?ov.choices:undefined;document.querySelector('#episodeEditorStatus').textContent='Gespeichert. Die zugehörige Stimme ist bis zur Neuerzeugung als veraltet markiert.';autoRegenerateDialog(`module:${adminModuleKey}:scene:${adminSceneIndex}:main`);if(ov.guest)autoRegenerateDialog(`module:${adminModuleKey}:scene:${adminSceneIndex}:guest`);renderEpisodeEditor()}
 function resetEpisodeScene(){if(!episodeOverrides[adminModuleKey])return;delete episodeOverrides[adminModuleKey][adminSceneIndex];set('localStorage',EPISODE_OVERRIDE_KEY,JSON.stringify(episodeOverrides));document.querySelector('#episodeEditorStatus').textContent='Lokale Änderung entfernt. Wirksam nach Neustart der Academy.'}
 const ADMIN_REPORT_FILTERS_KEY='kcAcademyAdminReportFiltersV1';
 let adminReportFilters=safeParse(get('localStorage',ADMIN_REPORT_FILTERS_KEY,'{}'),{person:'all',period:'all',category:'all',status:'all',device:'all'});
@@ -1001,8 +1440,20 @@ function applyNativeTooltips(root=document){
 const tooltipObserver=new MutationObserver(rows=>rows.forEach(row=>row.addedNodes.forEach(node=>{if(node.nodeType===1)applyNativeTooltips(node)})));
 tooltipObserver.observe(document.body,{childList:true,subtree:true});applyNativeTooltips();
 setVoiceMonitor(state.sound?'ready':'off',state.sound?'Ton bereit':'Ton aus');
-document.querySelector('#modalQuizMode').onchange=e=>{state.quizMode=e.target.value;saveSettings()};document.querySelector('#modalEpisodeView').onchange=e=>{state.episodeView=e.target.value;saveSettings();if(state.view==='home')home()};document.querySelector('#modalRememberView').onchange=e=>{state.rememberView=e.target.checked;saveSettings()};document.querySelector('#modalShuffleAnswers').onchange=e=>{state.shuffleAnswers=e.target.checked;saveSettings()};document.querySelector('#modalCountdown').onchange=e=>{state.countdownEnabled=e.target.checked;saveSettings()};document.querySelector('#modalAutoContinue').onchange=e=>{state.autoContinue=e.target.checked;saveSettings()};document.querySelector('#modalSkipIntroductions').onchange=e=>{state.skipIntroductions=e.target.checked;saveSettings()};document.querySelector('#modalOpenLast').onchange=e=>{state.openLast=e.target.checked;saveSettings()};document.querySelector('#modalVolume').oninput=e=>setUserVolume(e.target.value);
+document.querySelector('#modalDifficultyMode').value=state.quizDifficultyMode;document.querySelector('#modalDifficultyMode').onchange=e=>{state.quizDifficultyMode=e.target.value;window.KCAdaptiveQuizCore?.saveConfig({mode:e.target.value});saveSettings()};document.querySelector('#modalQuizMode').onchange=e=>{state.quizMode=e.target.value;saveSettings()};document.querySelector('#modalEpisodeView').onchange=e=>{state.episodeView=e.target.value;saveSettings();if(state.view==='home')home()};document.querySelector('#modalRememberView').onchange=e=>{state.rememberView=e.target.checked;saveSettings()};document.querySelector('#modalShuffleAnswers').onchange=e=>{state.shuffleAnswers=e.target.checked;saveSettings()};document.querySelector('#modalCountdown').onchange=e=>{state.countdownEnabled=e.target.checked;saveSettings()};document.querySelector('#modalAutoContinue').onchange=e=>{state.autoContinue=e.target.checked;saveSettings()};document.querySelector('#modalSkipIntroductions').onchange=e=>{state.skipIntroductions=e.target.checked;saveSettings()};document.querySelector('#modalOpenLast').onchange=e=>{state.openLast=e.target.checked;saveSettings()};document.querySelector('#modalVolume').oninput=e=>setUserVolume(e.target.value);
 settingsModal.onclick=e=>{if(e.target===settingsModal)closeSettings()};document.querySelector('#diagnosticsModal').onclick=e=>{if(e.target.id==='diagnosticsModal')closeDiagnostics()};dashboardModal.onclick=e=>{if(e.target===dashboardModal)closeDashboard()};roadmapModal.onclick=e=>{if(e.target===roadmapModal)closeRoadmap()};docsModal.onclick=e=>{if(e.target===docsModal)closeDocs()};exitModal.onclick=e=>{if(e.target===exitModal)closeExit()};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!settingsModal.hidden)closeSettings();else if(!dashboardModal.hidden)closeDashboard();else if(!roadmapModal.hidden)closeRoadmap();else if(!docsModal.hidden)closeDocs();else if(!document.querySelector('#diagnosticsModal').hidden)closeDiagnostics();else if(!episodeEditorModal.hidden)closeEpisodeEditor();else if(!adminPinModal.hidden)closeAdminPin();else if(!exitModal.hidden)closeExit()}});
-applyTheme(state.theme);bindSecretAccess();updateDbStatus();if(participantProfile?.displayName){state.name=participantProfile.displayName;set('sessionStorage','kcAcademyName',state.name);showPersonalWelcome()}else{welcome();setTimeout(openFirstRun,120)};
+async function initializeAcademy(){
+ applyTheme(state.theme);bindSecretAccess();updateDbStatus();
+ let unified=null;try{unified=await window.KCParticipantDataCore?.getProfile?.()}catch{}
+ if(launchName){
+  saveParticipantProfile({...(unified||{}),...(participantProfile||{}),displayName:launchName,addressMode:state.address,coach:state.coach});
+ }else if(!participantProfile&&unified?.displayName){
+  saveParticipantProfile({...unified,addressMode:unified.addressMode||state.address,coach:unified.coach||state.coach});
+ }
+ if(participantProfile?.displayName){state.name=participantProfile.displayName;state.address=participantProfile.addressMode||state.address;state.coach=participantProfile.coach||state.coach;set('sessionStorage','kcAcademyName',state.name);showPersonalWelcome()}
+ else{welcome();setTimeout(openFirstRun,120)}
+ if(new URLSearchParams(location.search).get('protected')==='1')setTimeout(openEpisodeEditor,220);
+}
+initializeAcademy();
 
 window.KCSupabaseAdapter?.load?.();updateDbStatus();if(window.KCSupabaseAdapter?.config?.enabled&&navigator.onLine)setTimeout(()=>window.KCSupabaseAdapter.sync().catch(()=>{}),1200);

@@ -1,0 +1,38 @@
+{
+  "id": "kc-futura-game-tic-tac-toe",
+  "name": "KC FUTURA Tic-Tac-Toe",
+  "version": "1.4.0",
+  "type": "futura-game-module",
+  "entry": "index.html",
+  "component": "futura-tic-tac-toe",
+  "dependencies": [],
+  "supportedBoardSizes": [
+    3,
+    4
+  ],
+  "difficulties": [
+    "easy",
+    "medium",
+    "expert"
+  ],
+  "storage": "localStorage-fallback",
+  "studioStatus": "integration-pending",
+  "tuevStatus": "integration-pending",
+  "features": [
+    "symbol-selection",
+    "theme-presets",
+    "tablet-responsive",
+    "persistent-statistics",
+    "sound-toggle",
+    "club-face-symbols",
+    "circular-face-crop",
+    "real-member-photo-source",
+    "per-member-face-focus",
+    "academy-avatar-symbols"
+  ],
+  "defaultSymbols": {
+    "player": "member01",
+    "computer": "member02"
+  },
+  "plannedSiblingModule": "kc-futura-game-slot-machine"
+}

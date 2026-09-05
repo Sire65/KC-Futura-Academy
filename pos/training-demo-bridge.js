@@ -4,9 +4,6 @@ const params=new URLSearchParams(location.search);
 if(params.get('embeddedTraining')!=='1')return;
 let token=0,cursor=null;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-let cueSeq=0,cueWaiters=new Map();
-function cue(text,label=''){const cueId='cue-'+(++cueSeq);return new Promise(resolve=>{cueWaiters.set(cueId,resolve);parent.postMessage({type:'KC_TRAINING_CUE',cueId,text,label},'*');setTimeout(()=>{if(cueWaiters.has(cueId)){cueWaiters.delete(cueId);resolve()}},30000)})}
-window.addEventListener('message',e=>{const m=e.data;if(m?.type==='KC_TRAINING_CUE_DONE'&&cueWaiters.has(m.cueId)){const done=cueWaiters.get(m.cueId);cueWaiters.delete(m.cueId);done()}});
 function inject(){
  if(document.getElementById('kc-live-demo-style'))return;
  const s=document.createElement('style');s.id='kc-live-demo-style';s.textContent=`
@@ -32,58 +29,7 @@ async function demo(name){
  const step=async fn=>{if(!alive())throw new Error('cancelled');return fn()};
  try{
 
-  if(name==='orientationOverview'){
-   await step(()=>focus('#app',700));await cue('Wir wollen uns gemeinsam die Oberfläche des KC Bilderrechners ansehen. Sie ist in klar erkennbare Arbeitsbereiche gegliedert.','Gesamtoberfläche');
-   await step(()=>move('.app-header',800));await step(()=>focus('.app-header',400));await cue('Ganz oben befindet sich die Kopfzeile.','Kopfzeile');
-   await step(()=>move('.mode-strip',800));await step(()=>focus('.mode-strip',400));await cue('Direkt darunter liegt die Bediener- und Moduszeile.','Bediener- und Moduszeile');
-   await step(()=>move('#categories',800));await step(()=>focus('#categories, #productGrid',400));await cue('Links findest du die Warengruppen und die dazugehörigen Artikelbuttons.','Warengruppen und Artikel');
-   await step(()=>move('#cartList',800));await step(()=>focus('#cartList, #grandTotal',400));await cue('Rechts befindet sich der Warenkorb mit Mengen, Preisen und Gesamtsumme.','Warenkorb');
-   await step(()=>move('#payBtn',800));await step(()=>focus('#banknotes, #coins, #payBtn, .main-actions',400));await cue('Im unteren Bereich liegen die Zahlung und die Sonderfunktionen. Diese Bereiche sehen wir uns jetzt einzeln an.','Zahlung und Sonderfunktionen');
-  } else if(name==='headerTour'){
-   await step(()=>move('#clubName',750));await step(()=>focus('#secretTrigger',350));await cue('Links stehen der Name des Köcheclubs und darunter die aktuelle Veranstaltung.','Vereinsname und Veranstaltung');
-   await step(()=>move('#registerName',750));await step(()=>focus('#registerName, #operatorName',350));await cue('Hier siehst du den Namen der Kasse, zum Beispiel Kasse eins, und darunter den aktuell zugeordneten Bediener.','Kasse und Bediener');
-   await step(()=>move('#version',700));await step(()=>focus('#version, #dateText, #timeText',350));await cue('Daneben werden Programmversion, Datum und Uhrzeit angezeigt.','Version, Datum und Uhrzeit');
-   await step(()=>move('#shiftStatus',700));await step(()=>focus('.operator-mini-dashboard',350));await cue('Diese Statusfelder informieren über Schicht, Wechselgeld und den aktuellen Betriebsmodus.','Statusanzeigen');
-   await step(()=>move('#screenLockBtn',650));await step(()=>focus('#screenLockBtn',300));await cue('Mit dem Schloss kann der Bildschirm abgedunkelt und gesperrt werden.','Bildschirmsperre');
-   await step(()=>move('#cashSoundBtn',650));await step(()=>focus('#cashSoundBtn',300));await cue('Der Lautsprecher schaltet den Kassenton ein oder aus. Er dient nicht für Durchsagen.','Kassenton');
-   await step(()=>move('#menuBtn',650));await step(()=>focus('#menuBtn, #headerExitBtn',300));await cue('Über Menü werden weitere Verwaltungsfunktionen geöffnet. Die Tür beendet beziehungsweise verlässt das Programm.','Menü und Programmende');
-  } else if(name==='modeRowTour'){
-   await step(()=>move('#operatorBtn',700));await step(()=>focus('#operatorBtn',300));await cue('Links wird der aktive Bediener angezeigt. Über diese Taste kann ein Bedienerwechsel erfolgen.','Bediener');
-   await step(()=>move('#productSearchInput',700));await step(()=>focus('.product-search-wrap',300));await cue('Mit der Suche findest du einen Artikel schnell über seinen Namen.','Artikelsuche');
-   await step(()=>move('#trainingModeTopBtn',700));await step(()=>focus('#trainingModeTopBtn',300));await cue('Der Trainingsmodus ist zum Üben. Trainingsvorgänge dürfen keine echten Umsätze erzeugen.','Trainingsmodus');
-   await step(()=>move('#rushModeBtn',700));await step(()=>focus('#rushModeBtn',300));await cue('Der Stoßzeitenmodus vereinfacht die Oberfläche bei starkem Andrang.','Stoßzeiten');
-   await step(()=>move('#happyHourQuickBtn',700));await step(()=>focus('.mode-quick-switches',300));await cue('Eine aktive Happy Hour wird in diesem Bereich sichtbar angezeigt und verwendet automatisch die freigegebenen Sonderpreise.','Happy Hour');
-   await step(()=>move('#notificationBar',700));await step(()=>focus('#notificationBar, #messageHistoryBtn',300));await cue('Hier erscheinen Kassenmeldungen. Mit dem gebogenen Pfeil können vorherige Meldungen erneut angezeigt werden.','Meldungszeile');
-  } else if(name==='productsTour'){
-   await step(()=>move('#categories',700));await step(()=>focus('#categories',300));await cue('Die Warengruppen bestimmen, welche Artikel darunter angezeigt werden. Die aktive Warengruppe ist optisch hervorgehoben.','Warengruppen');
-   await step(()=>move(()=>tile('Glühwein rot'),750));await step(()=>focus(()=>tile('Glühwein rot'),350));await cue('Die große Artikelfläche zeigt Bild, Artikelname und Preis. Ein Klick verkauft den Standardartikel.','Artikelbutton');
-   await step(()=>move(()=>tile('Glühwein rot')?.closest('.product-tile-wrap')?.querySelector('.product-info-button'),650));await step(()=>focus('.product-info-button',300));await cue('Die kleine Infotaste öffnet hinterlegte Artikelinformationen, zum Beispiel Allergene und Zutaten.','Infotaste');
-   await step(()=>move(()=>plus('Glühwein rot'),650));await step(()=>focus('.product-variant-button',300));await cue('Das Pluszeichen öffnet Varianten oder Zusätze. Es erhöht nicht die Menge.','Varianten');
-   await step(()=>focus('.offer-badge, .happyhour-tile, #happyHourQuickBtn',300));await cue('Das Zeichen H H kennzeichnet einen Artikel oder Preis, für den eine Happy-Hour-Regel gilt.','Happy-Hour-Kennzeichen');
-  } else if(name==='cartAreaTour'){
-   api.clearCart?.();api.addStandardProduct?.('Glühwein rot');await wait(600);api.addStandardProduct?.('Glühwein rot');await wait(600);
-   await step(()=>move('#voidBonBtn',700));await step(()=>focus('#voidBonBtn',300));await cue('Diese Taste löscht den kompletten offenen Warenkorb. Sie ist nicht zum Löschen einer einzelnen Position gedacht.','Warenkorb löschen');
-   await step(()=>move('#cartQuantityBar',700));await step(()=>focus('#cartQuantityBar',300));await cue('In der Mengenzeile kann die Menge des markierten Artikels verändert werden.','Mengenzeile');
-   await step(()=>move('.cart-row',700));await step(()=>focus('.cart-row',300));await cue('Jede Warenkorbzeile enthält Artikelname, Menge, Einzelpreis und Zeilensumme.','Warenkorbposition');
-   await step(()=>move('.cart-row button[data-a="plus"]',650));await step(()=>focus('.cart-row .qty-box',300));await cue('Mit Plus und Minus in der Zeile wird nur die Menge dieser Position verändert.','Plus und Minus');
-   await step(()=>move('.position-discount-button',650));await step(()=>focus('.position-discount-button',300));await cue('Über Positionsrabatt wird ausschließlich diese Artikelposition rabattiert.','Positionsrabatt');
-   await step(()=>move('.delete-row',650));await step(()=>focus('.delete-row',300));await cue('Der Mülleimer in der Zeile löscht nur diesen Artikel aus dem offenen Warenkorb.','Position löschen');
-   await step(()=>move('#discountBtn',650));await step(()=>focus('#discountBtn, #discountDisplay, #grandTotal',300));await cue('Unter dem Warenkorb befinden sich Gesamtrabatt und Gesamtsumme. Ein Gesamtrabatt wirkt auf den gesamten offenen Vorgang.','Gesamtrabatt und Summe');
-  } else if(name==='paymentAreaTour'){
-   api.clearCart?.();api.addStandardProduct?.('Glühwein rot');await wait(700);
-   await step(()=>move('#banknotes',700));await step(()=>focus('#banknotes, #coins',300));await cue('Über Scheine und Münzen wird der erhaltene Barbetrag eingegeben.','Geldbetrag erfassen');
-   await step(()=>move('#changeDisplay',700));await step(()=>focus('#changeDisplay, #givenDisplay, #dueDisplay',300));await cue('Die Anzeigen zeigen gegebenen Betrag, noch offenen Betrag und das errechnete Rückgeld.','Rückgeldanzeige');
-   await step(()=>move('#exactCashBtn',650));await step(()=>focus('#exactCashBtn',300));await cue('Stimmt so wird verwendet, wenn der Kunde auf Rückgeld verzichtet. Der Mehrbetrag wird als Trinkgeld behandelt.','Stimmt so');
-   await step(()=>move('#cardBtn',650));await step(()=>focus('#cardBtn',300));await cue('Diese Taste ist für eine freigegebene Kartenzahlung vorgesehen.','Kartenzahlung');
-   await step(()=>move('#payBtn',650));await step(()=>focus('#payBtn, #checkoutQrMini',300));await cue('Die große Bezahltaste schließt den Vorgang ab. Der eingeblendete QR-Code kann für freigegebene Scanner- oder Zahlungsabläufe verwendet werden.','Bezahlen und QR-Code');
-  } else if(name==='specialButtonsTour'){
-   await step(()=>move('#staffBtn',650));await step(()=>focus('#staffBtn',300));await cue('Personal verbucht Personalbeköstigung als eigene Buchungsart. Es ist kein normaler Rabatt.','Personal');
-   await step(()=>move('#depositBtn',650));await step(()=>focus('#depositBtn',300));await cue('Pfandrückgabe öffnet die Rückgabeartikel für Glas, Feuerzange oder weitere hinterlegte Pfandarten.','Pfandrückgabe');
-   await step(()=>move('#tipBtn',650));await step(()=>focus('#tipBtn',300));await cue('Über Trinkgeld kann ein Trinkgeldbetrag gezielt erfasst werden.','Trinkgeld');
-   await step(()=>move('#complaintBtn',650));await step(()=>focus('#complaintBtn',300));await cue('Reklamation startet einen kontrollierten Reklamationsvorgang. Ein abgeschlossener Verkauf darf nicht einfach durch Löschen ersetzt werden.','Reklamation');
-   await step(()=>move('#printBonBtn',650));await step(()=>focus('#printBonBtn',300));await cue('Bon druckt beziehungsweise öffnet die vorgesehenen Bonfunktionen.','Bon');
-   await step(()=>move('#moreBtn',650));await step(()=>focus('#moreBtn',300));await cue('Unter Mehr befinden sich Funktionen, die im normalen Verkauf seltener benötigt werden.','Mehr');
-  } else if(name==='surfaceTour'){await step(()=>move('.app-header',850));await step(()=>focus('.app-header',1000));await step(()=>move('#categories',900));await step(()=>focus('#categories',900));await step(()=>move('#productGrid',900));await step(()=>focus('#productGrid',1000));await step(()=>move('#cartQuantityBar',900));await step(()=>focus('#cartQuantityBar',900));await step(()=>move('#cartList',900));await step(()=>focus('#cartList',900));await step(()=>move('#banknotes',900));await step(()=>focus('#banknotes, #coins',900));await step(()=>move('.main-actions',900));await step(()=>focus('.main-actions',1000));
+  if(name==='surfaceTour'){await step(()=>move('.app-header',850));await step(()=>focus('.app-header',1000));await step(()=>move('#categories',900));await step(()=>focus('#categories',900));await step(()=>move('#productGrid',900));await step(()=>focus('#productGrid',1000));await step(()=>move('#cartQuantityBar',900));await step(()=>focus('#cartQuantityBar',900));await step(()=>move('#cartList',900));await step(()=>focus('#cartList',900));await step(()=>move('#banknotes',900));await step(()=>focus('#banknotes, #coins',900));await step(()=>move('.main-actions',900));await step(()=>focus('.main-actions',1000));
   } else if(name==='singleSale'){api.clearCart?.();await wait(900);await step(()=>move(()=>tile('Glühwein rot'),1250));await step(()=>click(()=>tile('Glühwein rot'),{perform:true,after:900}));await step(()=>focus('#cartList',1700));await wait(900);await step(()=>move('#banknotes button[data-value="10"]',1100));await step(()=>click('#banknotes button[data-value="10"]',{after:1200}));await step(()=>focus('#changeDisplay, #givenDisplay, #dueDisplay',1600));await wait(900);await step(()=>click('#payBtn',{after:1600}));
   } else if(name==='multiSale'){api.clearCart?.();await wait(700);await step(()=>move(()=>tile('Glühwein rot'),1150));await step(()=>click(()=>tile('Glühwein rot'),{perform:true,after:900}));const foodTab=[...document.querySelectorAll('#categories button,.category-tabs button')].find(x=>/essen|speisen|grill/i.test(x.textContent));if(foodTab)await step(()=>click(()=>foodTab,{after:1200}));await step(()=>move(()=>tile('Bratwurst'),1150));await step(()=>click(()=>tile('Bratwurst'),{perform:true,after:900}));await step(()=>focus('#cartList',1900));
   } else if(name==='quantityControls'){api.clearCart?.();api.addStandardProduct?.('Glühwein rot');await wait(1200);await step(()=>move('.cart-row button[data-a="plus"]',950));await step(()=>click('.cart-row button[data-a="plus"]',{after:900}));await step(()=>focus('#cartQuantityBar, #cartList',1400));

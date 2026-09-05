@@ -4,17 +4,26 @@ const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));
 const STORAGE_KEY='kc_training_profile_v0254';
 const FEEDBACK_KEY='kc_training_feedback_queue_v1';
-const TRAINING_VERSION='3.1.4-FUTURA';
+const TRAINING_VERSION='3.14.0-FUTURA';
 const PRODUCT_VERSION='0.31.3.6.11';
 const TRAINING_IMAGE_CONFIG='assets/training/images/training-images.json';
-let trainingImageMap={};let stillPreviewOpen=false;
+const TRAINING_CONTENT_REVISION='FUTURA-3.14-GUIDED-R4';
+const OFFLINE_TRAINING_IMAGES={
+ kopfzeile:{file:'01_kopfzeile.svg',title:'Kopfzeile',subtitle:'Verein · Kasse · Bediener · Status · Uhrzeit',features:[{title:'Verein und Veranstaltung',text:'Zeigen, wo der Bilderrechner eingesetzt wird.'},{title:'Kasse und Bediener',text:'Zeigen die verwendete Kasse und die angemeldete Person.'},{title:'Status und Programmtasten',text:'Hier werden Betriebszustand, Ton, Menü, Sperre und Ausgang kontrolliert.'}]},
+ meldungszeile:{file:'02_meldungszeile.svg',title:'Meldungs- und Moduszeile',subtitle:'Bediener · Suche · Trainingsmodus · Stoßzeiten · Happy Hour',features:[{title:'Bediener und Suche',text:'Bestätigen die aktive Person und helfen beim Finden von Artikeln.'},{title:'Betriebsmodi',text:'Trainingsmodus, Stoßzeiten und Happy Hour werden hier angezeigt.'},{title:'Meldungen',text:'Informieren über Hinweise und den Betriebszustand.'}]},
+ warengruppen_artikel:{file:'03_warengruppen.svg',title:'Warengruppen und Artikelbuttons',subtitle:'Auswahl und Navigation der Artikel',features:[{title:'Warengruppen',text:'Bestimmen die angezeigten Artikel.'},{title:'Artikelbild, Name und Preis',text:'Zeigen eindeutig, was gebucht wird.'},{title:'Info und Plus',text:'Öffnen Informationen, Varianten oder Zusätze.'}]},
+ warenkorb:{file:'05_warenkorb.svg',title:'Warenkorb',subtitle:'Positionen · Mengen · Löschen · Gesamtsumme',features:[{title:'Artikelpositionen',text:'Zeigen alle ausgewählten Artikel.'},{title:'Mengen und Löschen',text:'Ändern oder entfernen gezielt eine Position.'},{title:'Gesamtsumme',text:'Zeigt den aktuell zu zahlenden Betrag.'}]},
+ zahlungsbereich:{file:'06_zahlungsbereich.svg',title:'Zahlungsbereich',subtitle:'Bargeld · Rückgeld · Stimmt so · Abschluss',features:[{title:'Bargeld erfassen',text:'Scheine und Münzen erfassen den gegebenen Betrag.'},{title:'Rückgeld kontrollieren',text:'Gegebener Betrag und Rückgeld werden angezeigt.'},{title:'Zahlung abschließen',text:'Die freigegebene Zahlungsart schließt den Vorgang ab.'}]},
+ sondertasten:{file:'07_sondertasten.svg',title:'Sondertasten',subtitle:'Personal · Pfand · Trinkgeld · Reklamation · Mehr',features:[{title:'Besondere Buchungen',text:'Personal, Pfand und Trinkgeld besitzen eigene Abläufe.'},{title:'Korrekturen und Belege',text:'Reklamation, Bon und Mehr öffnen weitere Funktionen.'}]}
+};
+let trainingImageMap={...OFFLINE_TRAINING_IMAGES};let stillPreviewOpen=false;
 let speechEpoch=0;
 let readAlongTimer=null;
 const FEEDBACK_SCHEMA='KC_TRAINING_FEEDBACK_V1';
-const sections=['welcome','futuraIntro','chapterOverview','dashboard','extensionInfo','lesson','practice','certificate','bonus','trainingTuv','survey'];
+const sections=['welcome','softwareIntroChoice','softwareGuide','personalTrainingIntro','futuraIntro','chapterOverview','dashboard','extensionInfo','lesson','practice','certificate','bonus','trainingTuv','survey'];
 function primeSpeechEngine(){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();speechSynthesis.resume();const warm=new SpeechSynthesisUtterance(' ');warm.lang='de-DE';warm.volume=0;speechSynthesis.speak(warm)}catch{}}
 let trainingAudioContext=null;
-function setTrainingVoiceMonitor(mode='ready',label=''){const el=$('trainingVoiceMonitor'),txt=$('trainingVoiceMonitorText');if(!el)return;el.classList.remove('is-ready','is-speaking','is-pending','is-off','is-error');el.classList.add(`is-${mode}`);const d={ready:'Ton bereit',speaking:'Stimme läuft',pending:'Stimme startet',off:'Ton aus',error:'Tonfehler'}[mode]||'Ton bereit';if(txt)txt.textContent=label||d}
+function setTrainingVoiceMonitor(mode='ready',label=''){const el=$('trainingVoiceMonitor'),txt=$('trainingVoiceMonitorText');if(!el)return;el.classList.remove('is-ready','is-speaking','is-pending','is-off','is-error');el.classList.add(`is-${mode}`);const d={ready:'Ton bereit',speaking:'Stimme läuft',pending:'Stimme startet',off:'Ton aus',error:'Tonfehler'}[mode]||'Ton bereit';if(txt)txt.textContent=label||d;window.dispatchEvent(new CustomEvent('kc:voice-monitor',{detail:{mode,label:label||d}}))}
 async function unlockTrainingAudio(){try{const Ctx=window.AudioContext||window.webkitAudioContext;if(Ctx){trainingAudioContext=trainingAudioContext||new Ctx();if(trainingAudioContext.state==='suspended')await trainingAudioContext.resume()}primeSpeechEngine();return true}catch{return false}}
 async function playTrainingTestTone(){const ok=await unlockTrainingAudio();if(!ok||!trainingAudioContext)throw new Error('AudioContext nicht verfügbar');return new Promise(resolve=>{const o=trainingAudioContext.createOscillator(),g=trainingAudioContext.createGain();o.frequency.value=660;g.gain.setValueAtTime(.0001,trainingAudioContext.currentTime);g.gain.exponentialRampToValueAtTime(.09,trainingAudioContext.currentTime+.03);g.gain.exponentialRampToValueAtTime(.0001,trainingAudioContext.currentTime+.28);o.connect(g).connect(trainingAudioContext.destination);o.start();o.stop(trainingAudioContext.currentTime+.3);o.onended=resolve})}
 async function runTrainingAudioTuv(){const status=$('trainingAudioTuvStatus'),btn=$('trainingAudioTuv');btn.disabled=true;status.className='status';status.textContent='Prüfung läuft: Testton und Testansage …';try{soundEnabled=true;profile.sound=true;$('globalSoundToggle').checked=true;$('startSound').checked=true;saveProfile();setTrainingVoiceMonitor('pending','Audio-TÜV läuft');await playTrainingTestTone();await new Promise((resolve,reject)=>speak(addressText(`Dies ist ein Audiotest. Ich bin ${assistantName()}, Ihr Hauptcoach.`),{onend:resolve,onerror:reject}));status.className='status pass';status.textContent='BESTANDEN: Testton und Testansage wurden gestartet. Bitte bestätigen Sie zusätzlich, dass beides hörbar war.';setTrainingVoiceMonitor('ready','Ton geprüft')}catch(err){status.className='status fail';status.textContent='NICHT BESTANDEN: '+(err?.message||'Audioausgabe nicht verfügbar');setTrainingVoiceMonitor('error','Tonfehler')}finally{btn.disabled=false;syncGlobalSettingsUi()}}
@@ -29,7 +38,7 @@ const quick=[
  {title:'Kapitel 7 · Sondertasten',text:'Unterhalb des Zahlungsbereichs befinden sich Sondertasten wie Personal, Pfandrückgabe, Trinkgeld, Reklamation, Bon und Mehr. Sie werden nur für besondere Vorgänge verwendet.',tip:'Sondertasten nicht mit normalen Verkaufsartikeln oder Rabatten verwechseln.',selector:'.main-actions',demo:'specialButtonsTour',synced:true,trainingImage:'sondertasten',quiz:{question:'Wofür dient die Taste Personal?',answers:['Für einen normalen Barverkauf','Für Personalbeköstigung als eigene Buchungsart','Für den Gesamtrabatt','Zum Öffnen des Menüs'],correct:1,repeat:'Personal erfasst Personalbeköstigung als eigene Buchungsart und ist kein normaler Rabattverkauf.'}},
  {title:'Kapitel 8 · Einzelartikel verkaufen',text:'Ich wähle einen einzelnen Artikel über seine große Artikeltaste aus. Der Artikel erscheint sofort im Warenkorb. Danach wird die Barzahlung gestartet und der Vorgang abgeschlossen.',tip:'Für den Standardartikel immer die große Artikelfläche verwenden. Das Pluszeichen ist ausschließlich für Varianten gedacht.',selector:'#productGrid',demo:'singleSale',quiz:{question:'Wo tippst du für den Verkauf eines Standardartikels?',answers:['Auf die große Artikelfläche','Immer auf das Pluszeichen','Auf den Mülleimer','Auf die Uhrzeit'],correct:0,repeat:'Ein Standardartikel wird über seine große Artikelfläche ausgewählt. Das Pluszeichen ist für Varianten und Zusätze vorgesehen.'}},
  {title:'Kapitel 9 · Mehrere Artikel und verschiedene Warengruppen',text:'Jetzt werden mehrere Artikel nacheinander ausgewählt, auch aus unterschiedlichen Warengruppen. Mehrfaches Antippen einer Artikeltaste erhöht die Menge dieses Artikels.',tip:'Vor dem Bezahlen immer Artikel, Mengen und Gesamtsumme kontrollieren.',selector:'#categories, #productGrid',demo:'multiSale',quiz:{question:'Was bewirkt mehrfaches Antippen derselben Artikeltaste?',answers:['Die Menge dieses Artikels wird erhöht','Der Artikel wird gelöscht','Die Kasse wird gesperrt','Die Warengruppe wird geschlossen'],correct:0,repeat:'Mehrfaches Antippen derselben Artikeltaste erhöht die Menge dieses Artikels im Warenkorb.'}},
- {title:'Kapitel 10 · Mengen im Warenkorb ändern',text:'Eine Menge kann durch mehrfaches Antippen der Artikeltaste, über die Mengenknöpfe im Kopf des Warenkorbs und direkt in der jeweiligen Artikelzeile geändert werden.',tip:'Zuerst die richtige Warenkorbzeile markieren und danach die gewünschte Mengensteuerung verwenden.',selector:'#cartQuantityBar, #cartList',demo:'quantityControls',quiz:{question:'Was muss vor einer Mengenänderung in der Artikelzeile geprüft werden?',answers:['Ob die richtige Warenkorbzeile ausgewählt ist','Ob die Uhr richtig geht','Ob der Ton ausgeschaltet ist','Ob das Logo sichtbar ist'],correct:0,repeat:'Vor der Mengenänderung muss die richtige Warenkorbzeile ausgewählt beziehungsweise eindeutig zugeordnet sein.'}},
+ {title:'Kapitel 10 · Mengen im Warenkorb ändern',text:'Wir ändern jetzt die Menge direkt in der richtigen Warenkorbzeile. Dazu kontrollieren wir zuerst den Artikel und verwenden anschließend dort die Plustaste. Die Mengenanzeige wechselt sichtbar von eins auf zwei.',tip:'Zuerst die richtige Warenkorbzeile kontrollieren und erst danach Plus oder Minus verwenden.',selector:'#cartQuantityBar, #cartList',demo:'quantityControls',quiz:{question:'Was muss vor einer Mengenänderung in der Artikelzeile geprüft werden?',answers:['Ob die richtige Warenkorbzeile ausgewählt ist','Ob die Uhr richtig geht','Ob der Ton ausgeschaltet ist','Ob das Logo sichtbar ist'],correct:0,repeat:'Vor der Mengenänderung muss die richtige Warenkorbzeile ausgewählt beziehungsweise eindeutig zugeordnet sein.'}},
  {title:'Kapitel 11 · Artikel oder gesamten Warenkorb löschen',text:'Ein einzelner Artikel wird über das Mülleimersymbol seiner Warenkorbzeile entfernt. Der komplette offene Warenkorb kann über Warenkorb löschen geleert werden.',tip:'Ein Löschen ersetzt niemals eine Reklamation eines bereits abgeschlossenen Verkaufs.',selector:'#cartList',demo:'cartDelete',quiz:{question:'Wie entfernst du nur eine einzelne offene Position?',answers:['Mit dem Mülleimer in ihrer Warenkorbzeile','Mit Warenkorb löschen','Durch Programmende','Mit der Personaltaste'],correct:0,repeat:'Nur der Mülleimer in der betreffenden Warenkorbzeile entfernt diese einzelne offene Position.'}},
  {title:'Kapitel 12 · Warenkorb bezahlen und Rückgeld',text:'Nach der Kontrolle wird der erhaltene Barbetrag über Scheine oder Münzen eingegeben. Die Kasse zeigt Zahlbetrag und Rückgeld.',tip:'Das angezeigte Rückgeld laut nennen und erst danach den Vorgang abschließen.',selector:'#banknotes, #coins, #payBtn',demo:'paymentFlow',quiz:{question:'Was ist vor dem endgültigen Abschluss einer Barzahlung zu tun?',answers:['Rückgeld kontrollieren und laut nennen','Den Warenkorb ungesehen löschen','Die Kasse neu laden','Die Warengruppe wechseln'],correct:0,repeat:'Vor dem Abschluss wird das angezeigte Rückgeld kontrolliert und dem Gast laut genannt.'}}
 ];
@@ -38,7 +47,7 @@ const advanced=[
  {title:'Kapitel 8 · Buchung auf ein Personen- oder Organisationskonto',text:'Organisationen oder berechtigte Personen können Waren auf Rechnung erhalten. Die ausgewählten Artikel werden einem Konto zugeordnet und dort zu einem späteren Rechnungsbetrag summiert. Dieses Kapitel ist in der Schulungsstruktur vorbereitet. Die vorliegende Stand-alone-Kasse besitzt jedoch noch keine freigegebene vollständige Kontobuchungsoberfläche.',tip:'Kontobuchungen dürfen erst praktisch geschult werden, wenn Kontoauswahl, Berechtigung, Sammelrechnung und Abschluss im Bilderrechner freigegeben sind.',selector:'#moreBtn',demo:'accountPreview',availability:'planned',quiz:{question:'Wann darf die Kontobuchung praktisch verwendet werden?',answers:['Immer sofort', 'Erst wenn Kontoauswahl, Berechtigung und Abrechnung freigegeben sind', 'Nur ohne Berechtigung', 'Nur im Trainingsmodus'],correct:1,repeat:'Die Kontobuchung darf erst nach vollständiger Freigabe aller notwendigen Funktionen verwendet werden.'}},
  {title:'Kapitel 9 · Personalbeköstigung verbuchen',text:'Zuerst wird der Artikel mit der richtigen Menge in den Warenkorb gelegt. Statt über Bezahlen wird der Vorgang über Personal verbucht. Dadurch wird die Ware als Personalbeköstigung erfasst, ohne eine personenbezogene Einzelzuordnung vorzunehmen.',tip:'Personal ist eine eigene Buchungsart und kein Rabattverkauf.',selector:'#staffBtn',demo:'staffBooking',quiz:{question:'Wie wird Personalbeköstigung korrekt abgeschlossen?',answers:['Über Bezahlen', 'Über die Taste Personal', 'Als Rabatt', 'Durch Löschen'],correct:1,repeat:'Personalbeköstigung wird über die eigene Taste Personal verbucht.'}},
  {title:'Kapitel 10 · Pfandverkauf, Pfandrückgabe und Auszahlung',text:'Pfandaufschläge sind bei den entsprechenden Verkaufsartikeln bereits enthalten. Bei der Rückgabe wird in der Warengruppe Pfand der passende Rückgabeartikel und die Menge gewählt. Verkaufsartikel und Rückgaben können im selben Warenkorb verrechnet werden. Entsteht ein negativer Gesamtbetrag, zeigt die Kasse Auszahlung und der Bezahlknopf ändert seinen Zustand. Glas und Feuerzange können einzeln oder gemeinsam zurückgegeben werden.',tip:'Pfandart und Rückgabemenge immer genau mit den tatsächlich abgegebenen Gegenständen abgleichen.',selector:'#depositBtn, #cartList, #payBtn',demo:'depositCalculation',quiz:{question:'Was muss bei einer Pfandrückgabe geprüft werden?',answers:['Nur die Uhrzeit', 'Pfandart und tatsächliche Rückgabemenge', 'Nur der Bedienername', 'Nur der Ton'],correct:1,repeat:'Pfandart und Menge müssen mit den tatsächlich zurückgegebenen Gegenständen übereinstimmen.'}},
- {title:'Kapitel 11 · Artikelinformationen und Allergene',text:'Oben rechts auf entsprechend vorbereiteten Artikeltasten befindet sich die Infotaste. Der erste Klick öffnet eine Schnellübersicht mit Allergenen und wichtigen Hinweisen. Über Weitere Informationen werden zusätzliche Angaben wie Zutaten und Nährwerte angezeigt.',tip:'Bei Allergenen und Inhaltsstoffen ausschließlich die hinterlegten Informationen verwenden und niemals raten.',selector:'#productGrid',demo:'productInfoDeep',quiz:{question:'Wie werden Fragen zu Allergenen beantwortet?',answers:['Nach Vermutung', 'Nur anhand der hinterlegten Informationen', 'Mit einer privaten Internetrecherche', 'Gar nicht'],correct:1,repeat:'Bei Allergenen dürfen ausschließlich die hinterlegten Informationen verwendet werden.'}},
+ {title:'Kapitel 11 · Artikelinformationen und Allergene',text:'Oben links auf entsprechend vorbereiteten Artikeltasten befindet sich die grüne Infotaste mit dem kleinen i. Oben rechts sitzt dagegen der goldene Favoritenstern – die beiden nicht verwechseln. Der erste Klick öffnet eine Schnellübersicht mit Allergenen und wichtigen Hinweisen. Über Weitere Informationen werden zusätzliche Angaben wie Zutaten und Nährwerte angezeigt.',tip:'Bei Allergenen und Inhaltsstoffen ausschließlich die hinterlegten Informationen verwenden und niemals raten.',selector:'#productGrid',demo:'productInfoDeep',quiz:{question:'Wie werden Fragen zu Allergenen beantwortet?',answers:['Nach Vermutung', 'Nur anhand der hinterlegten Informationen', 'Mit einer privaten Internetrecherche', 'Gar nicht'],correct:1,repeat:'Bei Allergenen dürfen ausschließlich die hinterlegten Informationen verwendet werden.'}},
  {title:'Kapitel 12 · Varianten über das Pluszeichen auswählen',text:'Das Pluszeichen auf einer Artikeltaste öffnet die zugehörigen Varianten. Dort kann die gewünschte Ausführung gewählt werden. Varianten können alternativ auch zusammen mit dem Hauptartikel auf einer eigenen gemeinsamen Auswahltaste angeboten werden.',tip:'Große Artikelfläche bedeutet Standardartikel; Pluszeichen bedeutet Varianten- oder Zusatzauswahl.',selector:'#productGrid',demo:'variantsFlow',quiz:{question:'Wofür steht das Pluszeichen?',answers:['Standardartikel sofort verkaufen', 'Varianten oder Zusätze öffnen', 'Artikel löschen', 'Kasse sperren'],correct:1,repeat:'Das Pluszeichen öffnet Varianten oder Zusätze.'}},
  {title:'Kapitel 13 · Favoriten und meistverkaufte Artikel',text:'Goldene Sterne oben rechts kennzeichnen Favoriten beziehungsweise häufig verkaufte Artikel. Diese Artikel werden zusätzlich in der eigenen Warengruppe Favoriten gesammelt und können dort besonders schnell ausgewählt werden.',tip:'Der Stern ist eine Orientierungshilfe. Artikelname und Preis trotzdem vor dem Antippen prüfen.',selector:'#categories, #productGrid',demo:'favoritesFlow',quiz:{question:'Was kennzeichnet der goldene Stern?',answers:['Einen gelöschten Artikel', 'Favoriten oder häufig verkaufte Artikel', 'Pfandartikel', 'Reklamationen'],correct:1,repeat:'Der goldene Stern kennzeichnet Favoriten beziehungsweise häufig verkaufte Artikel.'}},
  {title:'Kapitel 14 · Pool- und Kombinationsartikel',text:'Bei Pool- oder Kombinationsartikeln liegen häufig gemeinsam verkaufte Produkte auf einer gemeinsamen Artikeltaste. Ein Klick legt beide Bestandteile sofort in den Warenkorb, dort werden sie weiterhin einzeln angezeigt. Für eine Kombination kann ein eigener Gesamtpreis hinterlegt sein.',tip:'Im Warenkorb kontrollieren, ob alle Bestandteile und der vorgesehene Kombinationspreis korrekt übernommen wurden.',selector:'#productGrid, #cartList',demo:'poolArticlePreview',availability:'planned',quiz:{question:'Was ist bei einem Kombinationsartikel zu kontrollieren?',answers:['Nur das Bild', 'Alle Bestandteile und der Kombinationspreis', 'Nur die Uhrzeit', 'Nur die Warengruppe'],correct:1,repeat:'Im Warenkorb müssen alle Bestandteile und der vorgesehene Kombinationspreis geprüft werden.'}},
@@ -53,21 +62,41 @@ const tasks=[
  {title:'Reklamation',text:'Öffne den Reklamationsablauf.'},
  {title:'Pfandrückgabe',text:'Öffne die Pfandrückgabe und erfasse eine Glasrückgabe.'}
 ];
+window.KCFuturaGlobalSearchItems=[
+ ...quick.map((item,index)=>({kind:'training',module:'quick',targetIndex:index,part:'Teil 1',section:'Grundlagen und Verkauf',chapter:index+1,title:item.title,text:`${item.text} ${item.quiz?.question||''} ${(item.quiz?.answers||[]).join(' ')} ${item.quiz?.repeat||''}`,tip:item.tip||''})),
+ ...advanced.map((item,index)=>({kind:'training',module:'advanced',targetIndex:index,part:'Teil 1',section:'Sonderfunktionen',chapter:index+1,title:item.title,text:`${item.text} ${item.quiz?.question||''} ${(item.quiz?.answers||[]).join(' ')} ${item.quiz?.repeat||''}`,tip:item.tip||''})),
+ ...tasks.map((item,index)=>({kind:'training',module:'practice',targetIndex:index,part:'Teil 1',section:'Praxisprüfung',chapter:index+1,title:item.title,text:item.text,tip:''}))
+];
+try{localStorage.setItem('kcFuturaSearchCatalogPart1',JSON.stringify(window.KCFuturaGlobalSearchItems))}catch{}
 
-let profile=loadProfile(),lessonModule='quick',lessonIndex=0,taskIndex=0;if(localStorage.getItem('kcTrainingAudioBeta103')!=='1'){profile.sound=true;localStorage.setItem('kcTrainingAudioBeta103','1')}
+let profile=loadProfile(),lessonModule='quick',lessonIndex=0,taskIndex=0;if(profile.contentResetAt&&profile.save!==false)localStorage.setItem(STORAGE_KEY,JSON.stringify(profile));if(localStorage.getItem('kcTrainingAudioBeta103')!=='1'){profile.sound=true;localStorage.setItem('kcTrainingAudioBeta103','1')}
 let quizPassedForStep=false,activeSyncToken=0,syncDemoFinished=false;
 let assistantEnabled=true,soundEnabled=true,coachDockCollapsed=false;
 let trainingVolume=Math.max(1,Math.min(10,Number(localStorage.getItem('kcTrainingVolume'))||7));let trainingVolumeHideTimer=null;
+let trainingHeaderStartedAt=Date.now(),trainingHeaderPausedAt=0,trainingHeaderPausedTotal=0,trainingHeaderPaused=false;
 let playbackCore=null;
 let speechWatchdog=null,speechStartTimer=null,speechFallbackTimer=null,welcomeGreetingTimer=null,lastGreetingKey='';
-let lessonUnlockTimer=null;
+let lessonUnlockTimer=null,demoSendTimer=null,demoGeneration=0;
 let lessonNarrationToken=0,lessonExplanationDone=false,lessonTipStarted=false,lessonNarrationMode='idle';
 let quizAutoAdvanceTimer=null,pendingChapterCompletion=false;
 
-function fresh(){return{participantId:'',name:'',gender:'female',voiceVariant:'one',addressMode:'du',assistant:true,sound:true,save:true,quick:0,advanced:0,practice:0,quickDone:[],advancedDone:[],passedTasks:[],attempts:{},feedbackSubmittedAt:'',trainingStartedAt:'',lastActivityAt:'',introCompleted:false,quizStats:{},lessonStats:{},sessionId:''}}
-function loadProfile(){try{return {...fresh(),...JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}}catch{return fresh()}}
-function saveProfile(){profile.lastActivityAt=new Date().toISOString();if(profile.save)localStorage.setItem(STORAGE_KEY,JSON.stringify(profile));window.KCParticipantDataCore?.saveTraining?.(profile).then(saved=>{if(saved?.participantId&&!profile.participantId){profile.participantId=saved.participantId;localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}}).catch(()=>{})}
+function fresh(){return{contentRevision:TRAINING_CONTENT_REVISION,participantId:'',name:'',gender:'female',voiceVariant:'one',addressMode:'du',assistant:true,sound:true,save:true,quick:0,advanced:0,practice:0,quickDone:[],advancedDone:[],passedTasks:[],attempts:{},feedbackSubmittedAt:'',trainingStartedAt:'',lastActivityAt:'',introCompleted:false,chapterOverviewSeen:false,quizStats:{},quizHistory:[],quizDifficultyMode:'auto',lessonStats:{},sessionId:''}}
+function normalizeDoneList(value,length){return [...new Set((Array.isArray(value)?value:[]).map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<length))].sort((a,b)=>a-b)}
+function loadProfile(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'),launcher=JSON.parse(localStorage.getItem('kcFuturaLauncherProfileV1')||'null');
+  const unified=launcher?{name:launcher.name||'',addressMode:launcher.addressMode||'du',gender:launcher.coach==='marc'?'male':'female',assistant:launcher.coach!=='none',voiceVariant:launcher.voiceVariant||'one',sound:launcher.sound!==false,save:true}:{};
+  const merged={...fresh(),...unified,...saved,name:saved.name||unified.name||''};
+  const stale=saved.contentRevision!==TRAINING_CONTENT_REVISION&&((saved.quickDone||[]).length||(saved.advancedDone||[]).length||(saved.passedTasks||[]).length||Number(saved.quick)||Number(saved.advanced)||Number(saved.practice)||saved.introCompleted||saved.chapterOverviewSeen);
+  if(stale){Object.assign(merged,{contentRevision:TRAINING_CONTENT_REVISION,quick:0,advanced:0,practice:0,quickDone:[],advancedDone:[],passedTasks:[],attempts:{},introCompleted:false,chapterOverviewSeen:false,quizStats:{},quizHistory:[],lessonStats:{},resumePoint:null,part1CompletedAt:null,contentResetAt:new Date().toISOString()});queueMicrotask(()=>{try{window.KCLearningProgressCore?.resetPart?.('part1',{role:'system',reason:TRAINING_CONTENT_REVISION})}catch{}})}
+  return merged;
+ }catch{return fresh()}
+}
+function saveProfile(){profile.lastActivityAt=new Date().toISOString();if(profile.save)localStorage.setItem(STORAGE_KEY,JSON.stringify(profile));window.KCLearningProgressCore?.setParticipant?.({name:profile.name,addressMode:profile.addressMode,id:profile.participantId||''});window.KCParticipantDataCore?.saveTraining?.(profile).then(saved=>{if(saved?.participantId&&!profile.participantId){profile.participantId=saved.participantId;localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}}).catch(()=>{})}
 function overall(){return Math.round((profile.quick+profile.advanced+profile.practice)/3)}
+function renderTrainingHeader(){const pct=overall(),progressEl=$('trainingHeaderProgress');if(progressEl)progressEl.style.setProperty('--training-progress',pct+'%');if($('trainingHeaderProgressText'))$('trainingHeaderProgressText').textContent=pct+' %';const now=new Date();if($('trainingDateDisplay'))$('trainingDateDisplay').textContent=now.toLocaleDateString('de-DE');if($('trainingClockDisplay'))$('trainingClockDisplay').textContent=now.toLocaleTimeString('de-DE');const end=trainingHeaderPaused&&trainingHeaderPausedAt?trainingHeaderPausedAt:Date.now(),sec=Math.max(0,Math.floor((end-trainingHeaderStartedAt-trainingHeaderPausedTotal)/1000)),h=String(Math.floor(sec/3600)).padStart(2,'0'),m=String(Math.floor(sec%3600/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0');if($('trainingElapsedDisplay'))$('trainingElapsedDisplay').textContent=`Laufzeit ${h}:${m}:${s}`}
+function renderTrainingDatabases(){const host=$('trainingDbCluster');if(!host)return;let configured;try{configured=JSON.parse(localStorage.getItem('kcFuturaDataSourcesV1')||'null')}catch{};const sources=Array.isArray(configured)?configured.filter(x=>x.enabled!==false):[{label:'Lokal',status:'green'},{label:'Cloud',status:localStorage.getItem('kcSupabaseConfig')?'green':'yellow'}];host.innerHTML=sources.map(s=>`<span class="training-db-pair" title="${escapeHtml(s.label||'Datenbank')}"><i class="training-db-led ${escapeHtml(s.status||'yellow')}"></i><i class="training-db-led"></i></span>`).join('')}
+function toggleTrainingHeaderPause(){trainingHeaderPaused=!trainingHeaderPaused;if(trainingHeaderPaused){trainingHeaderPausedAt=Date.now();try{speechSynthesis.pause()}catch{};setTrainingVoiceMonitor('off','Pausiert')}else{trainingHeaderPausedTotal+=Date.now()-trainingHeaderPausedAt;trainingHeaderPausedAt=0;try{speechSynthesis.resume()}catch{};setTrainingVoiceMonitor(soundEnabled?'ready':'off',soundEnabled?'Ton bereit':'Ton aus')}$('trainingHeaderPause').textContent=trainingHeaderPaused?'▶ Weiter':'⏸ Pause';document.body.classList.toggle('training-paused',trainingHeaderPaused)}
 function show(id){
  sections.forEach(x=>$(x)?.classList.toggle('hidden',x!==id));
  document.querySelector('.app-shell')?.classList.toggle('lesson-active',id==='lesson'||id==='practice');
@@ -99,6 +128,18 @@ function applyAddressUi(){
  if($('feedbackThanksTitle'))$('feedbackThanksTitle').textContent=formal?'Vielen Dank für Ihr Feedback!':'Vielen Dank für dein Feedback!';
  if($('feedbackPositive'))$('feedbackPositive').placeholder=formal?'Ihre Rückmeldung …':'Deine Rückmeldung …';
  if($('feedbackImproveText'))$('feedbackImproveText').placeholder=formal?'Ihre Verbesserungsidee …':'Deine Verbesserungsidee …';
+ /* Nachgetragen am 02.09.2026: diese Stellen duzten weiter, obwohl "Sie" eingestellt war.
+    Gefunden beim vollstaendigen Durchlauf mit der Anrede Sie - der Umschalter kannte sie
+    schlicht nicht. Wer duzt, merkt so etwas nie; der Standard ist "du". */
+ if($('softwareGuideQuestion'))$('softwareGuideQuestion').textContent=formal?'Möchten Sie eine kurze Einweisung in die Bedienung der Schulungssoftware?':'Möchtest du eine kurze Einweisung in die Bedienung der Schulungssoftware?';
+ if($('softwareGuideIntro'))$('softwareGuideIntro').textContent=formal?'Wir zeigen Ihnen auf Wunsch zuerst die Kopfzeile, die wichtigsten Anzeigen und die Bedienknöpfe. Danach beginnt die eigentliche Schulung.':'Wir zeigen dir auf Wunsch zuerst die Kopfzeile, die wichtigsten Anzeigen und die Bedienknöpfe. Danach beginnt die eigentliche Schulung.';
+ if($('softwareGuideStatus'))$('softwareGuideStatus').textContent=formal?'Wählen Sie einen Bereich aus oder lassen Sie sich die Übersicht vollständig erklären.':'Wähle einen Bereich aus oder lasse dir die Übersicht vollständig erklären.';
+ if($('coachSectionEyebrow'))$('coachSectionEyebrow').textContent=formal?'Ihre Schulungsbegleitung':'Deine Schulungsbegleitung';
+ if($('pathEyebrow'))$('pathEyebrow').textContent=formal?'Ihr Lernpfad':'Dein Lernpfad';
+ if($('chapterOverviewTitle'))$('chapterOverviewTitle').textContent=formal?'Das erwartet Sie in diesem Kapitel':'Das erwartet dich in diesem Kapitel';
+ if($('coachGuideTitle')&&/^(Dein|Ihr) Assistent$/.test($('coachGuideTitle').textContent.trim()))$('coachGuideTitle').textContent=formal?'Ihr Assistent':'Dein Assistent';
+ if($('glueckskeksTitel'))$('glueckskeksTitel').textContent=formal?'Sie haben einen Glückskeks erhalten':'Du hast einen Glückskeks erhalten';
+ if($('glueckskeksFrage'))$('glueckskeksFrage').textContent=formal?'Möchten Sie ihn öffnen?':'Möchtest du ihn öffnen?';
 }
 function addressText(text){
  const value=String(text||'');if(profile.addressMode!=='sie')return value;
@@ -122,9 +163,53 @@ function dashboard(){
    else if(done){card?.classList.add('in-progress');state.textContent=`${done} von ${list.length}`}
    else state.textContent='Starten';
  });
- const trainingComplete=overall()>=100;$('certificateBtn').disabled=!trainingComplete;$('certificateBtn').classList.toggle('hidden',!trainingComplete);
+ const trainingComplete=window.KCLearningProgressCore?.eligible?.('part1')??overall()>=100;$('certificateBtn').disabled=!trainingComplete;$('certificateBtn').classList.toggle('hidden',!trainingComplete);$('bonusBtn')?.classList.toggle('hidden',!trainingComplete);if($('bonusBtn'))$('bonusBtn').disabled=!trainingComplete;
+ const academyCompleted=(()=>{try{return Object.keys(JSON.parse(localStorage.getItem('kcAcademyCompleted')||'{}')).length}catch{return 0}})();
+ if($('academyState'))$('academyState').textContent=academyCompleted?`${academyCompleted} Folgen abgeschlossen`:(trainingComplete?'Empfohlen':'Jederzeit öffnen');
  updateExtensionOverview();
  $('feedbackBtn').classList.add('hidden');
+}
+function academyPartTwoUrl(module=''){
+ const url=new URL('../academy/index.html',location.href);
+ if(module)url.searchParams.set('module',module);
+ url.searchParams.set('name',profile.name||'');
+ url.searchParams.set('coach',profile.gender==='male'?'marc':'laura');
+ url.searchParams.set('address',profile.addressMode||'du');
+ url.searchParams.set('source','unified-training');
+ url.searchParams.set('part','2');
+ url.searchParams.set('return','../training-video/index.html?view=dashboard');
+ return url.href;
+}
+function openAcademyPartTwo(module=''){saveProfile();location.href=academyPartTwoUrl(module)}
+function showPartOneComplete(){
+ profile.part1CompletedAt=profile.part1CompletedAt||new Date().toISOString();saveProfile();
+ const formal=profile.addressMode==='sie';
+ $('partOneCompleteTitle').textContent=formal?'Sehr gut – Sie haben die Pflichtschulung geschafft!':'Sehr gut – du hast die Pflichtschulung geschafft!';
+ $('partOneCompleteText').textContent=formal?'Ihr Lernstand wurde gespeichert. Möchten Sie eine Pause machen oder gleich mit Teil 2 in der FUTURA Academy weitermachen?':'Dein Lernstand wurde gespeichert. Möchtest du eine Pause machen oder gleich mit Teil 2 in der FUTURA Academy weitermachen?';
+ $('partOneCompleteOverlay').classList.remove('hidden');
+}
+function zeigeGlueckskeksMitFolgeaktion(folgeaktion){
+ zeigeGlueckskeks();
+ const schliessen=$('glueckskeksSchliessen');
+ schliessen.onclick=()=>{$('glueckskeksOverlay').classList.add('hidden');folgeaktion()};
+}
+function zeigeGlueckskeks(){
+ const keks=$('glueckskeksKeksGanz'),ergebnis=$('glueckskeksErgebnis'),zettel=$('glueckskeksZettel'),schliessen=$('glueckskeksSchliessen'),frage=$('glueckskeksFrage');
+ keks.classList.remove('hidden');ergebnis.classList.add('hidden');schliessen.classList.add('hidden');frage.classList.remove('hidden');
+ const oeffnen=()=>{
+   const sprueche=window.KC_GLUECKSKEKS_SPRUECHE||[];
+   const spruch=sprueche[Math.floor(Math.random()*sprueche.length)]||'Alles Gute für deine Zeit im Köcheclub!';
+   keks.style.transform='scale(1.15) rotate(-8deg)';
+   setTimeout(()=>{
+     keks.classList.add('hidden');frage.classList.add('hidden');
+     ergebnis.classList.remove('hidden');zettel.textContent='„'+spruch+'"';
+     schliessen.classList.remove('hidden');
+   },220);
+ };
+ keks.onclick=oeffnen;
+ keks.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();oeffnen()}};
+ schliessen.onclick=()=>$('glueckskeksOverlay').classList.add('hidden');
+ $('glueckskeksOverlay').classList.remove('hidden');
 }
 function voices(){return window.speechSynthesis?.getVoices?.()||[]}
 function assistantName(){return profile.gender==='male'?'Marc':'Laura'}
@@ -158,7 +243,7 @@ function utter(text,{gender=profile.gender}={}){
  const u=new SpeechSynthesisUtterance(prepared);
  const variant=profile.voiceVariant||'one';u.lang='de-DE';u.rate=gender==='male'?(variant==='one'?0.82:0.96):(variant==='one'?0.84:0.98);u.pitch=gender==='male'?(variant==='one'?0.98:1.06):(variant==='one'?1.06:0.97);u.volume=(gender==='male'?0.96:1)*(trainingVolume/10);u.voice=chooseVoice(gender,variant);return u;
 }
-function testSelectedVoice(){const mode=document.querySelector('input[name=assistantMode]:checked')?.value||'female';if(mode==='none')return;profile.gender=mode==='male'?'male':'female';profile.voiceVariant=document.querySelector('input[name=voiceVariant]:checked')?.value||'one';soundEnabled=true;stopSpeech();const text=profile.gender==='female'?'Schön, dass du da bist. Nimm dir ruhig einen Moment Zeit. Wir gehen die nächsten Schritte gemeinsam durch.':'Schön, dass du da bist. Wir gehen die nächsten Schritte ruhig und verständlich gemeinsam durch.';const u=utter(addressText(text),{gender:profile.gender});window.__kcTrainingActiveUtterance=u;u.onend=()=>{$('voiceTestStatus').textContent='Stimmprobe beendet.'};speechSynthesis.speak(u);$('voiceTestStatus').textContent=`${assistantName()} spricht mit der ausgewählten Stimme.`;saveProfile()}
+function testSelectedVoice(){const mode=document.querySelector('input[name=assistantMode]:checked')?.value||'female';if(mode==='none')return;profile.gender=mode==='male'?'male':'female';profile.voiceVariant=document.querySelector('input[name=voiceVariant]:checked')?.value||'one';soundEnabled=true;const text=profile.gender==='female'?'Schön, dass du da bist. Nimm dir ruhig einen Moment Zeit. Wir gehen die nächsten Schritte gemeinsam durch.':'Schön, dass du da bist. Wir gehen die nächsten Schritte ruhig und verständlich gemeinsam durch.';$('voiceTestStatus').textContent=`${assistantName()} spricht mit der ausgewählten Stimme.`;saveProfile();speak(addressText(text),{gender:profile.gender,onend:()=>{$('voiceTestStatus').textContent='Stimmprobe beendet.'}})}
 function stopSpeech(){speechEpoch++;clearTimeout(speechStartTimer);speechStartTimer=null;clearTimeout(speechFallbackTimer);speechFallbackTimer=null;clearInterval(speechWatchdog);speechWatchdog=null;clearInterval(readAlongTimer);readAlongTimer=null;try{speechSynthesis.pause();speechSynthesis.cancel();setTimeout(()=>{try{speechSynthesis.cancel();speechSynthesis.resume()}catch{}},0)}catch{}setCoachImage('neutral');setMouthViseme('');setTrainingVoiceMonitor(soundEnabled?'ready':'off',soundEnabled?'Ton bereit':'Ton aus')}
 function speakingTarget(){return $('coachGuideText')&&!$('lesson').classList.contains('hidden')?$('coachGuideText'):null}
 function renderReadAlong(el,text,index=0,length=0){if(!el)return;const clean=String(text||'');const a=clean.slice(0,index),b=clean.slice(index,index+Math.max(1,length)),c=clean.slice(index+Math.max(1,length));el.innerHTML=`<span class="spoken-text">${escapeHtml(a)}</span><strong class="spoken-current">${escapeHtml(b)}</strong><span>${escapeHtml(c)}</span>`}
@@ -168,7 +253,7 @@ function speak(text,{onend,gender=profile.gender,target=null,key='',label='',gro
  const clean=String(text||'').replace(/\s+/g,' ').trim();
  if(!clean){onend?.();return}
  if(!soundEnabled||!window.speechSynthesis){if(target)target.textContent=clean;setTrainingVoiceMonitor(soundEnabled?'error':'off',soundEnabled?'Keine Gerätestimme':'Ton aus');onend?.();return}
- unlockTrainingAudio();stopSpeech();setTrainingVoiceMonitor('pending',`${assistantName()} startet`);const localEpoch=speechEpoch;setCoachImage('speaking');const readTarget=target||speakingTarget();if(readTarget)renderReadAlong(readTarget,clean,0,0);
+ unlockTrainingAudio();stopSpeech();setTrainingVoiceMonitor('pending',`${assistantName()} startet`);const localEpoch=speechEpoch;setCoachImage('speaking');const readTarget=target||null;if(readTarget)renderReadAlong(readTarget,clean,0,0);
  const u=utter(clean,{gender});let finished=false;let boundarySeen=false;let actuallyStarted=false;
  const wordMatches=[...clean.matchAll(/\S+/g)];
  const estimatedMs=Math.max(2200,Math.min(45000,wordMatches.length*470/(u.rate||1)));let startedAt=Date.now();
@@ -298,28 +383,53 @@ function playFuturaIntro(){
  const opening=introAddress(`Herzlich willkommen. Bevor wir mit der eigentlichen Schulung beginnen, sprechen wir über eine Frage, die viele Mitglieder bewegt. Warum brauchen wir überhaupt einen Bilderrechner? Es ging doch viele Jahre auch ohne. Darauf können wir stolz sein. Der Bilderrechner soll unsere Erfahrung und unsere bewährte Arbeit nicht ersetzen. Er soll uns unterstützen.`,`Herzlich willkommen. Bevor wir mit der eigentlichen Schulung beginnen, sprechen wir über eine Frage, die viele Mitglieder bewegt. Warum brauchen wir überhaupt einen Bilderrechner? Es ging doch viele Jahre auch ohne. Darauf können wir stolz sein. Der Bilderrechner soll unsere Erfahrung und unsere bewährte Arbeit nicht ersetzen. Er soll uns unterstützen.`);
  speakSequence([{text:opening}],0,token,()=>{if(token!==introRunToken||futuraIntroState!=='opening')return;playFuturaReasons()});
 }
-function openFuturaIntro(){clearTimeout(futuraOpeningTimer);show('futuraIntro');renderFuturaIntro();futuraOpeningTimer=setTimeout(()=>{futuraOpeningTimer=null;playFuturaIntro()},350)}
+let softwareGuideToken=0;
+function personalIntroText(){
+ const name=profile.name||'';
+ if(profile.gender==='male')return introAddress(`Hallo, ${name}. Mein Name ist Marc. Gemeinsam mit Laura begleite ich dich durch diese interaktive Schulung zum KC Bilderrechner. Nimm dir Zeit. Nach Abschluss der gesamten Schulung freuen wir uns über dein Feedback.`,`Hallo, ${name}. Mein Name ist Marc. Gemeinsam mit Laura begleite ich Sie durch diese interaktive Schulung zum KC Bilderrechner. Nehmen Sie sich Zeit. Nach Abschluss der gesamten Schulung freuen wir uns über Ihr Feedback.`);
+ return introAddress(`Hallo, ${name}. Mein Name ist Laura. Gemeinsam mit Marc begleite ich dich durch diese interaktive Schulung zum KC Bilderrechner. Nimm dir Zeit. Nach Abschluss der gesamten Schulung freuen wir uns über dein Feedback.`,`Hallo, ${name}. Mein Name ist Laura. Gemeinsam mit Marc begleite ich Sie durch diese interaktive Schulung zum KC Bilderrechner. Nehmen Sie sich Zeit. Nach Abschluss der gesamten Schulung freuen wir uns über Ihr Feedback.`);
+}
+function openSoftwareIntroChoice(){
+ stopSpeech();softwareGuideToken++;show('softwareIntroChoice');
+ $('softwareIntroChoiceCoach').src=coachAsset(profile.gender,'neutral');
+}
+function runSoftwareGuide(){
+ const token=++softwareGuideToken,items=[...document.querySelectorAll('[data-guide]')];
+ stopSpeech();items.forEach(x=>x.classList.remove('active'));
+ const next=index=>{if(token!==softwareGuideToken||index>=items.length){$('softwareGuideStatus').textContent='Die kurze Bedienungseinweisung ist abgeschlossen. Du kannst jetzt zur persönlichen Begrüßung wechseln.';return}
+  const item=items[index];items.forEach(x=>x.classList.remove('active'));item.classList.add('active');$('softwareGuideStatus').textContent=`Jetzt erklärt: ${item.dataset.guide}`;
+  if(assistantEnabled&&soundEnabled)speak(introAddress(item.dataset.guideText,item.dataset.guideText.replaceAll(' du ',' Sie ').replaceAll(' dein ',' Ihr ')),{onend:()=>next(index+1)});else setTimeout(()=>next(index+1),1250);
+ };
+ next(0);
+}
+function openSoftwareGuide(){stopSpeech();show('softwareGuide');$('softwareGuideCoach').src=coachAsset(profile.gender,'neutral');runSoftwareGuide()}
+function openPersonalTrainingIntro(){
+ stopSpeech();softwareGuideToken++;show('personalTrainingIntro');const text=personalIntroText();
+ $('personalTrainingCoach').src=coachAsset(profile.gender,'neutral');$('personalTrainingTitle').textContent=`Hallo, ich bin ${assistantName()}.`;$('personalTrainingText').textContent=text;
+ const play=()=>{stopSpeech();$('personalTrainingPulse').classList.toggle('speaking',assistantEnabled&&soundEnabled);if(assistantEnabled&&soundEnabled)speak(text,{target:$('personalTrainingText'),onend:()=>$('personalTrainingPulse').classList.remove('speaking')})};
+ $('personalTrainingReplay').onclick=play;setTimeout(play,250);
+}
+function openFuturaIntro(){clearTimeout(welcomeGreetingTimer);welcomeGreetingTimer=null;stopSpeech();clearTimeout(futuraOpeningTimer);show('futuraIntro');renderFuturaIntro();futuraOpeningTimer=setTimeout(()=>{futuraOpeningTimer=null;playFuturaIntro()},350)}
 
 function openChapterOverview({speakOverview=true}={}){
  clearTimeout(futuraOpeningTimer);futuraOpeningTimer=null;stopSpeech();const overviewToken=++introRunToken;futuraIntroState='completed';show('chapterOverview');
  $('chapterOverviewCoachImage').src=coachAsset(profile.gender,'neutral');$('chapterOverviewCoachName').textContent=assistantName();
+ $('chapterOverviewTitle').textContent=introAddress('Das erwartet dich in diesem Kapitel','Das erwartet Sie in diesem Kapitel');
+ $('chapterOverviewCoachText').textContent=introAddress('zeigt, was du gleich lernst','zeigt, was Sie gleich lernen');
  $('chapterOverviewLead').textContent=introAddress('In diesem Kapitel schauen wir uns die Kassenoberfläche an. Du lernst Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden.','In diesem Kapitel schauen wir uns die Kassenoberfläche an. Sie lernen Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden.');
- const text=introAddress('In diesem Kapitel schauen wir uns die Kassenoberfläche an. Du lernst Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden. Das Kapitel besteht aus ungefähr 165 Einzelschritten und dauert etwa 12 Minuten. Danach folgen Übungen und Wissensfragen. Anschließend startet das erste Thema automatisch.','In diesem Kapitel schauen wir uns die Kassenoberfläche an. Sie lernen Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden. Das Kapitel besteht aus ungefähr 165 Einzelschritten und dauert etwa 12 Minuten. Danach folgen Übungen und Wissensfragen. Anschließend startet das erste Thema automatisch.');
- let overviewStarted=false;
- const autoStart=()=>{if(overviewStarted||overviewToken!==introRunToken||$('chapterOverview').classList.contains('hidden'))return;overviewStarted=true;setTimeout(()=>{if(overviewToken===introRunToken&&!$('chapterOverview').classList.contains('hidden'))startFirstMandatoryChapter()},300)};
+ const text=introAddress('In diesem Kapitel schauen wir uns die Kassenoberfläche an. Du lernst Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden. Dich erwarten zwölf geführte Themen mit Vorführungen, Übungen und Wissensfragen. Plane dafür ungefähr dreißig bis vierzig Minuten ein. Starte das erste Thema anschließend selbst mit der gelben Taste.','In diesem Kapitel schauen wir uns die Kassenoberfläche an. Sie lernen Artikel zu verkaufen, Mengen zu ändern, den Warenkorb zu kontrollieren, Zahlungen abzuschließen und wichtige Sonderfunktionen sicher zu verwenden. Sie erwarten zwölf geführte Themen mit Vorführungen, Übungen und Wissensfragen. Planen Sie dafür ungefähr dreißig bis vierzig Minuten ein. Starten Sie das erste Thema anschließend selbst mit der gelben Taste.');
+ const overviewReady=()=>{if(overviewToken!==introRunToken||$('chapterOverview').classList.contains('hidden'))return;$('chapterOverviewStart').classList.add('ready-pulse');$('chapterOverviewStart').focus({preventScroll:true})};
  if(speakOverview&&assistantEnabled&&soundEnabled){
-  speak(text,{target:$('chapterOverviewLead'),onend:autoStart});
-  // Zusätzliche Ablaufabsicherung, falls der Browser keine Speech-Endmeldung liefert.
-  setTimeout(autoStart,Math.max(9000,text.split(/\s+/).length*520));
- }else setTimeout(autoStart,700);
+  speak(text,{target:$('chapterOverviewLead'),onend:overviewReady});
+ }else setTimeout(overviewReady,250);
 }
 function startFirstMandatoryChapter(){
  introRunToken++;stopSpeech();profile.chapterOverviewSeen=true;saveProfile();lessonModule='quick';lessonIndex=0;show('lesson');renderLesson();
 }
 
 async function loadTrainingImages(){
- try{const r=await fetch(TRAINING_IMAGE_CONFIG,{cache:'no-store'});const cfg=await r.json();trainingImageMap=Object.fromEntries((cfg.areas||[]).map(x=>[x.id,x]));}
- catch(err){console.warn('Schulungsbilder konnten nicht geladen werden',err);trainingImageMap={};}
+ try{const r=await fetch(TRAINING_IMAGE_CONFIG,{cache:'no-store'});const cfg=await r.json();trainingImageMap={...OFFLINE_TRAINING_IMAGES,...Object.fromEntries((cfg.areas||[]).map(x=>[x.id,x]))};}
+ catch(err){console.info('Lokaler Dateistart: eingebauter Folienkatalog wird verwendet.');trainingImageMap={...OFFLINE_TRAINING_IMAGES};}
 }
 function showStillPreview(step,token){
  const entry=step?.trainingImage?trainingImageMap[step.trainingImage]:null;
@@ -330,9 +440,12 @@ function showStillPreview(step,token){
  $('lessonStillFeatures').innerHTML=features.map((f,i)=>`<li data-feature="${i}"><strong>${f.title}</strong><span>${f.text}</span></li>`).join('');
  $('lessonStillPreview').classList.remove('hidden');$('lessonVisual').classList.add('hidden');$('lessonNext').disabled=true;$('lessonNext').classList.remove('ready');$('currentAction').textContent='Bereich zuerst in Ruhe ansehen';
  const intro=`Wir möchten uns jetzt den Bereich ${entry.title||''} ansehen. Zuerst betrachten wir das Bild in Ruhe. Danach erkläre ich die einzelnen Funktionen und Buttons kurz. Danach wechseln wir automatisch in die bewegte Originaloberfläche.`;
- const featureItems=features.map((f,i)=>({text:`${f.title}. ${f.text}`,before:()=>{document.querySelectorAll('#lessonStillFeatures li').forEach((x,j)=>x.classList.toggle('active',j===i));document.querySelector(`[data-feature="${i}"]`)?.scrollIntoView({block:'nearest',behavior:'smooth'})},after:()=>document.querySelector(`[data-feature="${i}"]`)?.classList.add('done')}));
- const run=()=>{stopSpeech();document.querySelectorAll('#lessonStillFeatures li').forEach(x=>x.classList.remove('active','done'));const local=++introRunToken;speakSequence([{text:intro},...featureItems],0,local,()=>{document.querySelectorAll('#lessonStillFeatures li').forEach(x=>x.classList.add('done'));$('lessonStillContinue').classList.add('ready-next');$('currentAction').textContent='Standbild erklärt – bewegte Vorführung startet automatisch';setTimeout(()=>{$('lessonStillContinue')?.click()},650)})};
- run();$('lessonStillReplay').onclick=run;$('lessonStillContinue').classList.remove('ready-next');$('lessonStillContinue').onclick=()=>{if(token!==lessonRunToken)return;stopSpeech();$('lessonStillContinue').classList.remove('ready-next');stillPreviewOpen=false;$('lessonStillPreview').classList.add('hidden');$('lessonVisual').classList.remove('hidden');requestAnimationFrame(()=>{fitFrame('lessonPosFrame',82);focusOriginal(step.selector);startLiveLessonStep(step,token)});};
+ const pointerStops=[[12,16],[45,13],[72,20],[25,52],[58,55],[82,60],[42,78]];
+ const animateFeature=i=>{const stop=pointerStops[i%pointerStops.length],image=$('lessonStillImage'),cursor=$('lessonStillCursor'),stage=image?.parentElement;if(!image||!cursor||!stage)return;image.style.transformOrigin=`${stop[0]}% ${stop[1]}%`;image.classList.add('feature-zoom');stage.classList.add('feature-pulse');cursor.style.left=`${stop[0]}%`;cursor.style.top=`${stop[1]}%`;cursor.classList.add('show','point')};
+ const clearFeatureAnimation=()=>{const image=$('lessonStillImage'),cursor=$('lessonStillCursor'),stage=image?.parentElement;image?.classList.remove('feature-zoom');stage?.classList.remove('feature-pulse');cursor?.classList.remove('show','point')};
+ const featureItems=features.map((f,i)=>({text:`${f.title}. ${f.text}`,before:()=>{document.querySelectorAll('#lessonStillFeatures li').forEach((x,j)=>x.classList.toggle('active',j===i));document.querySelector(`[data-feature="${i}"]`)?.scrollIntoView({block:'nearest',behavior:'smooth'});animateFeature(i)},after:()=>document.querySelector(`[data-feature="${i}"]`)?.classList.add('done')}));
+ const run=()=>{stopSpeech();clearFeatureAnimation();document.querySelectorAll('#lessonStillFeatures li').forEach(x=>x.classList.remove('active','done'));const local=++introRunToken;speakSequence([{text:intro},...featureItems],0,local,()=>{clearFeatureAnimation();document.querySelectorAll('#lessonStillFeatures li').forEach(x=>x.classList.add('done'));$('lessonStillContinue').classList.add('ready-next');$('currentAction').textContent='Standbild erklärt – bewegte Vorführung startet automatisch';setTimeout(()=>{$('lessonStillContinue')?.click()},650)})};
+ run();$('lessonStillReplay').onclick=run;$('lessonStillContinue').classList.remove('ready-next');$('lessonStillContinue').onclick=()=>{if(token!==lessonRunToken)return;stopSpeech();clearFeatureAnimation();$('lessonStillContinue').classList.remove('ready-next');stillPreviewOpen=false;$('lessonStillPreview').classList.add('hidden');$('lessonVisual').classList.remove('hidden');requestAnimationFrame(()=>{fitFrame('lessonPosFrame',82);focusOriginal(step.selector);startLiveLessonStep(step,token)});};
  return true;
 }
 function startLiveLessonStep(step,token){
@@ -344,35 +457,50 @@ function startLiveLessonStep(step,token){
  const enableNext=()=>{
   if(!isCurrent())return;
   lessonExplanationDone=true;speechDone=true;lessonNarrationMode='complete';
-  $('lessonTip').classList.remove('tip-speaking','tip-flash');
+  $('lessonTip').classList.remove('tip-speaking','tip-flash');$('coachGuideText').textContent=addressText(step.text);
   $('currentAction').textContent='Erklärung abgeschlossen – Weiter ist jetzt freigegeben';
   $('lessonNext').disabled=false;$('lessonNext').classList.add('ready');
  };
- const explanation=`Neues Thema: ${topic}. ${addressText(step.text)} Extra Tipp: ${addressText(step.tip)}`;
- $('currentAction').textContent='Erklärung und Vorführung starten automatisch';
- runDemo(step,300);
- if(assistantEnabled&&soundEnabled)speak(explanation,{target:$('coachGuideText'),onend:enableNext});
- else enableNext();
- window.__KC_finishCurrentLessonStep=()=>{if(isCurrent())demoDone=true};
+ const explanation=`Neues Thema: ${topic}. ${addressText(step.text)}`;
+ const startTip=()=>{
+  if(!isCurrent())return;
+  const tip=addressText(step.tip||'').trim();
+  if(!tip){enableNext();return}
+ lessonTipStarted=true;lessonNarrationMode='tip';$('coachGuideText').textContent=addressText(step.text);
+  $('lessonTip').classList.add('tip-flash','tip-speaking');
+  $('currentAction').textContent=`Extra-Tipp von ${assistantName()} wird vorgelesen`;
+  /* Der Tipp darf den Lernfluss nicht blockieren: Sobald er sichtbar ist, kann
+     der Teilnehmer weiter. Die optionale Sprachausgabe läuft trotzdem zu Ende. */
+  lessonExplanationDone=true;speechDone=true;lessonNarrationMode='complete';
+  $('lessonNext').disabled=false;$('lessonNext').classList.add('ready');
+  speak(tip,{target:$('tipText'),onend:()=>{$('lessonTip').classList.remove('tip-speaking','tip-flash');$('currentAction').textContent='Erklärung abgeschlossen – Weiter ist freigegeben'}});
+ };
+ const startDemo=()=>{if(!isCurrent())return;$('coachGuideText').textContent=addressText(step.text);lessonNarrationMode='demo';$('currentAction').textContent='Die Erklärung wird jetzt Schritt für Schritt in der Kasse vorgeführt';runDemo(step,0)};
+ lessonUnlockTimer=setTimeout(()=>{if(!isCurrent()||lessonNarrationMode==='complete')return;$('currentAction').textContent='Die Vorführung wurde beendet – der Extra-Tipp folgt jetzt';demoDone=true;startTip()},45000);
+ $('currentAction').textContent='Zuerst erklärt der Assistent das Thema';
+ window.__KC_finishCurrentLessonStep=()=>{if(!isCurrent())return;demoDone=true;startTip()};
+ if(assistantEnabled&&soundEnabled)speak(explanation,{target:$('coachGuideText'),onend:startDemo});
+ else startDemo();
 }
 function frameDoc(id){try{return $(id)?.contentDocument||$(id)?.contentWindow?.document}catch{return null}}
-function fitFrame(id,maxVh=82){const f=$(id),wrap=f?.parentElement;if(!f||!wrap)return;const naturalW=1440,naturalH=920,availableW=Math.max(420,wrap.clientWidth-2),scale=Math.min(1,availableW/naturalW);f.style.width=naturalW+'px';f.style.height=naturalH+'px';f.style.transform=`scale(${scale})`;f.style.transformOrigin='top left';const shownH=Math.ceil(naturalH*scale);wrap.style.height=Math.min(shownH,Math.max(520,window.innerHeight-wrap.getBoundingClientRect().top-20))+'px';wrap.style.overflowY=shownH>wrap.clientHeight?'auto':'hidden';wrap.style.overflowX='hidden';}
+function fitFrame(id,maxVh=82){const f=$(id),wrap=f?.parentElement;if(!f||!wrap)return;const naturalW=1440,naturalH=920,layout=id==='lessonPosFrame'?document.querySelector('.coach-dock-layout'):null,wideLesson=id==='lessonPosFrame'&&window.innerWidth>820,collapsed=wideLesson&&coachDockCollapsed,layoutWidth=layout?.clientWidth||wrap.parentElement?.clientWidth||wrap.clientWidth,coachWidth=collapsed?44:Math.min(520,Math.max(320,layoutWidth*.34)),availableW=Math.max(560,wideLesson?layoutWidth-coachWidth-8:wrap.parentElement?.clientWidth||wrap.clientWidth),rect=wrap.getBoundingClientRect(),viewportBottom=window.visualViewport?.height||window.innerHeight,availableH=Math.max(360,viewportBottom-rect.top-10),heightLimit=Math.min(availableH,viewportBottom*Math.max(.35,Math.min(.92,maxVh/100))),scale=Math.min(1,availableW/naturalW,heightLimit/naturalH);f.style.width=naturalW+'px';f.style.height=naturalH+'px';f.style.transform=`scale(${scale})`;f.style.transformOrigin='top left';const shownW=Math.ceil(naturalW*scale),shownH=Math.ceil(naturalH*scale);wrap.style.setProperty('width',wideLesson?shownW+'px':'100%','important');wrap.style.setProperty('height',shownH+'px','important');wrap.style.setProperty('min-height','0','important');wrap.style.setProperty('max-height',shownH+'px','important');wrap.style.setProperty('overflow','hidden','important');if(layout){if(wideLesson){layout.style.setProperty('grid-template-columns',collapsed?`${shownW}px 44px`:`${shownW}px minmax(320px,1fr)`,'important');layout.style.setProperty('width',collapsed?`${shownW+50}px`:'100%','important')}else{layout.style.removeProperty('grid-template-columns');layout.style.removeProperty('width')}}f.dataset.fitScale=String(scale);if(id==='lessonPosFrame'&&$('lessonGuide')){const guide=$('lessonGuide');guide.style.setProperty('height',shownH+'px','important');guide.style.setProperty('min-height','0','important');guide.style.setProperty('max-height',shownH+'px','important')}window.dispatchEvent(new CustomEvent('kc:training-frame-fit',{detail:{id,scale,shownW,shownH,availableW,heightLimit,collapsed}}))}
 function clearFocus(doc){doc?.querySelectorAll('.training-focus-ring').forEach(x=>x.classList.remove('training-focus-ring'))}
 function focusOriginal(selector){
- const apply=()=>{fitFrame('lessonPosFrame',82);const d=frameDoc('lessonPosFrame');if(!d)return;clearFocus(d);const node=d.querySelector(selector);node?.classList.add('training-focus-ring');node?.scrollIntoView({block:'center',inline:'center'})};
+ const apply=()=>{fitFrame('lessonPosFrame',82);const d=frameDoc('lessonPosFrame');if(!d)return;try{$('lessonPosFrame').contentWindow.scrollTo(0,0);d.documentElement.scrollTop=0;d.body.scrollTop=0}catch{}clearFocus(d);const node=d.querySelector(selector);node?.classList.add('training-focus-ring')};
  const f=$('lessonPosFrame');if(f?.contentDocument?.readyState==='complete')setTimeout(apply,150);else f?.addEventListener('load',()=>setTimeout(apply,300),{once:true});
 }
 function api(){return $('lessonPosFrame')?.contentWindow?.KCTrainingAPI}
-function closeScenes(){try{api()?.closeAllDialogs?.()}catch{};clearFocus(frameDoc('lessonPosFrame'))}
+function closeScenes(){demoGeneration++;clearTimeout(demoSendTimer);demoSendTimer=null;try{$('lessonPosFrame')?.contentWindow?.postMessage({type:'KC_TRAINING_DEMO',action:'cancel'},'*')}catch{};try{api()?.closeAllDialogs?.()}catch{};clearFocus(frameDoc('lessonPosFrame'))}
 function runDemo(step,delay=0){
  const frame=$('lessonPosFrame');
  if(!frame||!step?.demo)return;
- playbackCore?.cancel?.();demoDone=false;
+ const generation=demoGeneration;
+ clearTimeout(demoSendTimer);demoSendTimer=null;playbackCore?.cancel?.();demoDone=false;
  try{frame.contentWindow?.postMessage({type:'KC_TRAINING_DEMO',action:'cancel'},'*')}catch{}
- const send=()=>{try{$('currentAction').textContent='Jetzt ansehen: '+demoActionLabel(step.demo);frame.contentWindow?.postMessage({type:'KC_TRAINING_DEMO',name:step.demo},'*')}catch{}};
+ const send=()=>{if(generation!==demoGeneration)return;try{$('currentAction').textContent='Jetzt ansehen: '+demoActionLabel(step.demo);frame.contentWindow?.postMessage({type:'KC_TRAINING_DEMO',name:step.demo},'*')}catch{}};
  const base=frame.contentDocument?.readyState==='complete'?650:850;
- if(frame.contentDocument?.readyState==='complete')setTimeout(send,base+delay);
- else frame.addEventListener('load',()=>setTimeout(send,base+delay),{once:true});
+ if(frame.contentDocument?.readyState==='complete')demoSendTimer=setTimeout(()=>{demoSendTimer=null;send()},base+delay);
+ else frame.addEventListener('load',()=>{if(generation!==demoGeneration)return;demoSendTimer=setTimeout(()=>{demoSendTimer=null;send()},base+delay)},{once:true});
 }
 function demoActionLabel(name){return ({surfaceTour:'Oberfläche kennenlernen',singleSale:'Artikel auswählen und anschließend bezahlen',multiSale:'Zwei Artikel aus verschiedenen Warengruppen auswählen',quantityControls:'Mengensteuerung ansehen',cartDelete:'Löschen kontrollieren',paymentFlow:'Zahlung und Rückgeld verfolgen'})[name]||'Gezeigten Ablauf verfolgen'}
 function estimatedSpeechLead(step){
@@ -405,15 +533,15 @@ function closeLessonQuiz({skipped=false}={}){
 function openLessonQuiz(step){
  if(!step?.quiz){advanceLesson();return}ensureQuizOverlay();
  clearTimeout(quizAutoAdvanceTimer);quizAutoAdvanceTimer=null;
- const q=step.quiz,overlay=$('lessonQuizOverlay'),answers=$('lessonQuizAnswers');quizPassedForStep=false;
+ const base=step.quiz,quizId=`training:${lessonModule}:${lessonIndex}`,q=window.KCAdaptiveQuizCore?.resolve(quizId,base,profile.quizHistory||[],profile.quizDifficultyMode||'auto')||base,overlay=$('lessonQuizOverlay'),answers=$('lessonQuizAnswers');quizPassedForStep=false;
  $('lessonQuizQuestion').textContent=q.question;$('lessonQuizFeedback').textContent='';$('lessonQuizSuccess')?.classList.add('hidden');
  answers.innerHTML=q.answers.map((a,i)=>`<button type="button" data-quiz-answer="${i}"><span>${i+1}</span>${a}</button>`).join('');
  $('lessonQuizClose').onclick=()=>closeLessonQuiz({skipped:true});
  answers.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
   const chosen=Number(btn.dataset.quizAnswer);answers.querySelectorAll('button').forEach(x=>x.disabled=true);
-  const statKey=`${lessonModule}:${lessonIndex}`;profile.quizStats[statKey]=profile.quizStats[statKey]||{question:q.question,attempts:0,wrong:0,correct:false,firstShownAt:new Date().toISOString()};profile.quizStats[statKey].attempts++;profile.quizStats[statKey].lastAnswer=chosen;profile.quizStats[statKey].lastAnsweredAt=new Date().toISOString();
-  if(chosen===q.correct){profile.quizStats[statKey].correct=true;profile.quizStats[statKey].completedAt=new Date().toISOString();saveProfile();btn.classList.add('correct');$('lessonQuizFeedback').textContent='Richtig. Der nächste Teil startet automatisch.';$('lessonQuizSuccess')?.classList.remove('hidden');quizPassedForStep=true;if(soundEnabled)speak('Richtig. Sehr gut. Der nächste Teil startet jetzt automatisch.');quizAutoAdvanceTimer=setTimeout(()=>closeLessonQuiz(),1400)}
-  else{profile.quizStats[statKey].wrong++;saveProfile();btn.classList.add('wrong');answers.querySelector(`[data-quiz-answer="${q.correct}"]`)?.classList.add('correct');$('lessonQuizFeedback').textContent='Noch nicht ganz. '+q.repeat;if(soundEnabled)speak('Noch nicht ganz. '+q.repeat);setTimeout(()=>{answers.querySelectorAll('button').forEach(x=>{x.disabled=false;x.classList.remove('wrong','correct')});$('lessonQuizFeedback').textContent='Versuche es noch einmal.'},Math.max(3500,q.repeat.length*55))}
+  const statKey=`${lessonModule}:${lessonIndex}`;profile.quizStats[statKey]=profile.quizStats[statKey]||{question:q.question,attempts:0,wrong:0,correct:false,firstShownAt:new Date().toISOString()};profile.quizStats[statKey].attempts++;profile.quizStats[statKey].lastAnswer=chosen;profile.quizStats[statKey].lastAnsweredAt=new Date().toISOString();profile.quizStats[statKey].difficulty=q.level||'beginner';
+  if(chosen===q.correct){profile.quizHistory=window.KCAdaptiveQuizCore?.record(profile.quizHistory||[],{correct:true,level:q.level,questionId:quizId})||profile.quizHistory;profile.quizStats[statKey].correct=true;profile.quizStats[statKey].completedAt=new Date().toISOString();saveProfile();btn.classList.add('correct');$('lessonQuizFeedback').textContent='Richtig. Der nächste Teil startet automatisch.';$('lessonQuizSuccess')?.classList.remove('hidden');quizPassedForStep=true;if(soundEnabled)speak('Richtig. Sehr gut. Der nächste Teil startet jetzt automatisch.');quizAutoAdvanceTimer=setTimeout(()=>closeLessonQuiz(),1400)}
+  else{profile.quizHistory=window.KCAdaptiveQuizCore?.record(profile.quizHistory||[],{correct:false,level:q.level,questionId:quizId})||profile.quizHistory;profile.quizStats[statKey].wrong++;saveProfile();btn.classList.add('wrong');answers.querySelector(`[data-quiz-answer="${q.correct}"]`)?.classList.add('correct');$('lessonQuizFeedback').textContent='Noch nicht ganz. '+q.repeat;if(soundEnabled)speak('Noch nicht ganz. '+q.repeat);setTimeout(()=>{answers.querySelectorAll('button').forEach(x=>{x.disabled=false;x.classList.remove('wrong','correct')});$('lessonQuizFeedback').textContent='Versuche es noch einmal.'},Math.max(3500,q.repeat.length*55))}
  });
  overlay.classList.remove('hidden');$('lessonQuizClose').focus({preventScroll:true});
 }
@@ -421,18 +549,20 @@ function chapterQuizResult(){const list=lessonModule==='quick'?quick:advanced;le
 function repeatCurrentChapter(){stopSpeech();$('chapterRewardOverlay').classList.add('hidden');profile[lessonModule+'Done']=[];Object.keys(profile.quizStats||{}).filter(k=>k.startsWith(lessonModule+':')).forEach(k=>delete profile.quizStats[k]);lessonIndex=0;saveProfile();show('lesson');renderLesson()}
 function showChapterReward(){
  pendingChapterCompletion=true;const r=chapterQuizResult(),formal=profile.addressMode==='sie';$('chapterRewardIcon').textContent=r.percent===100?'🏆':r.percent>=80?'👍':'📘';$('chapterRewardTitle').textContent=r.percent===100?`Herzlichen Glückwunsch ${profile.name||''}!`:'Kapitel abgeschlossen';
- $('chapterRewardText').textContent=r.percent===100?(formal?'Sie haben alle Wissensfragen richtig beantwortet.': 'Du hast alle Wissensfragen richtig beantwortet.'):(formal?`Sie haben ${r.correct} von ${r.total} Fragen richtig beantwortet.`:`Du hast ${r.correct} von ${r.total} Fragen richtig beantwortet.`)+(r.percent<80?(formal?' Um Ihr Wissen weiter zu festigen, können Sie das Kapitel gern wiederholen.':' Um dein Wissen weiter zu festigen, kannst du das Kapitel gern wiederholen.'):'');
+ $('chapterRewardText').textContent=r.percent===100?(formal?'Sie haben alle Wissensfragen richtig beantwortet.': 'Du hast alle Wissensfragen richtig beantwortet.'):(formal?`Sie haben ${r.correct} von ${r.total} Fragen richtig beantwortet.`:`Du hast ${r.correct} von ${r.total} Fragen richtig beantwortet.`)+(r.percent<80?(formal?' Um Ihr Wissen weiter zu festigen, können Sie das Kapitel gern wiederholen.':' Um dein Wissen weiter zu festigen, kannst du das Kapitel gern wiederholen.'):'')+(formal?' Es ist ein neuer Buchstabe für Ihren Lösungssatz dazugekommen.':' Es ist ein neuer Buchstabe für deinen Lösungssatz dazugekommen.');
  let actions=$('chapterRewardActions');if(!actions){actions=document.createElement('div');actions.id='chapterRewardActions';actions.className='chapter-reward-actions';$('chapterRewardContinue').replaceWith(actions)}actions.innerHTML=`<button id="chapterRepeat" type="button">Kapitel wiederholen</button><button id="chapterRewardContinue" class="primary" type="button">Nein, weiter ▶</button>`;$('chapterRepeat').onclick=repeatCurrentChapter;$('chapterRewardContinue').onclick=()=>{$('chapterRewardOverlay').classList.add('hidden');showChapterChoice()};$('chapterRewardOverlay').classList.remove('hidden');
 }
 function showChapterChoice(){$('chapterChoiceOverlay').classList.remove('hidden')}
 function advanceLesson(){
- const list=lessonModule==='quick'?quick:advanced,key=lessonModule+'Done';if(!profile[key].includes(lessonIndex))profile[key].push(lessonIndex);saveProfile();
+ const list=lessonModule==='quick'?quick:advanced,key=lessonModule+'Done';if(!profile[key].includes(lessonIndex))profile[key].push(lessonIndex);window.KCLearningProgressCore?.completeUnit?.('part1',lessonIndex,{module:lessonModule==='quick'?'basics':'advanced',source:'training-video'});saveProfile();
  if(lessonIndex<list.length-1){lessonIndex++;renderLesson()}else showChapterReward();
 }
 function renderLesson(){
+ closeScenes();
  const list=lessonModule==='quick'?quick:advanced,step=list[lessonIndex],doneKey=lessonModule+'Done';
- profile[doneKey]=Array.isArray(profile[doneKey])?profile[doneKey]:[];const lessonStatKey=`${lessonModule}:${lessonIndex}`;profile.lessonStats[lessonStatKey]=profile.lessonStats[lessonStatKey]||{title:step.title,startedAt:new Date().toISOString(),views:0,repeats:0};profile.lessonStats[lessonStatKey].views++;saveProfile();
- const pct=Math.round((lessonIndex+1)/list.length*100),remaining=list.length-lessonIndex-1;
+ profile[doneKey]=normalizeDoneList(profile[doneKey],list.length);const lessonStatKey=`${lessonModule}:${lessonIndex}`;profile.lessonStats[lessonStatKey]=profile.lessonStats[lessonStatKey]||{title:step.title,startedAt:new Date().toISOString(),views:0,repeats:0};profile.lessonStats[lessonStatKey].views++;saveProfile();
+ const completedCount=profile[doneKey].filter(i=>Number.isInteger(i)&&i>=0&&i<list.length).length;
+ const pct=Math.round(completedCount/list.length*100),remaining=Math.max(0,list.length-completedCount);
  $('lessonModule').textContent=lessonModule==='quick'?'1 · Grundlagen und Verkauf':'2 · Sonderfunktionen und Artikelintelligenz';
  $('lessonTitle').textContent=step.title;$('stepCounter').textContent=`Inhalt ${lessonIndex+1} von ${list.length}`;
  $('coachGuideTitle').textContent=step.title;$('coachGuideText').textContent=addressText(step.text);
@@ -450,8 +580,8 @@ function renderLesson(){
  if(!showStillPreview(step,token)){focusOriginal(step.selector);startLiveLessonStep(step,token)}
 }
 function startLesson(module){
- lessonModule=module;const list=module==='quick'?quick:advanced,done=profile[module+'Done']||[];
- lessonIndex=Math.min(done.length,list.length-1);show('lesson');renderLesson();
+ clearTimeout(welcomeGreetingTimer);welcomeGreetingTimer=null;stopSpeech();lessonModule=module;const list=module==='quick'?quick:advanced,done=Array.isArray(profile[module+'Done'])?profile[module+'Done']:[];
+ const firstOpen=list.findIndex((_,index)=>!done.includes(index));lessonIndex=firstOpen<0?list.length-1:firstOpen;show('lesson');renderLesson();
 }
 function completeLesson(){
  pendingChapterCompletion=false;profile[lessonModule]=100;saveProfile();dashboard();
@@ -477,7 +607,7 @@ function startPractice(){
 }
 function passPracticeTask(message){
  if(!profile.passedTasks.includes(taskIndex))profile.passedTasks.push(taskIndex);
- profile.practice=Math.round(profile.passedTasks.length/tasks.length*100);saveProfile();
+ profile.practice=Math.round(profile.passedTasks.length/tasks.length*100);window.KCLearningProgressCore?.completeUnit?.('part1',taskIndex,{module:'practice',source:'training-video'});saveProfile();
  $('feedback').textContent=message;$('feedback').className='feedback ok';$('nextTask').disabled=false;
  $('practicePercent').textContent=profile.practice+' %';$('practiceTopProgress').style.width=profile.practice+'%';
  if(assistantEnabled&&soundEnabled){const praise=profile.addressMode==='sie'?'Das war gut. Sie haben die Aufgabe geschafft. Machen Sie in Ruhe mit der nächsten Aufgabe weiter.':'Das war gut. Du hast die Aufgabe geschafft. Mach in Ruhe mit der nächsten Aufgabe weiter.';speak(praise)}
@@ -588,7 +718,8 @@ const STORIES=window.KC_STORY_CONTENT||{
 };
 let currentStory=null,lastTuvReport=null;
 let lessonRunToken=0,demoDone=false,speechDone=false;
-function openBonus(){stopSpeech();show('bonus');$('bonusChoice').classList.remove('hidden');$('storyViewer').classList.add('hidden')}
+function openBonus(){const unlocked=window.KCLearningProgressCore?.eligible?.('part1')??overall()>=100;if(!unlocked){dashboard();return}stopSpeech();show('bonus');$('bonusChoice').classList.remove('hidden');$('storyViewer').classList.add('hidden')}
+$('bonusBtn').onclick=openBonus;
 function storySpeaker(key=currentStory){return key==='marc'?{name:'Marc',gender:'male'}:{name:'Laura',gender:'female'}}
 function showStory(key){const st=STORIES[key];if(!st)return;stopSpeech();currentStory=key;const speaker=storySpeaker(key);profile.storiesSeen=Array.from(new Set([...(profile.storiesSeen||[]),key]));saveProfile();$('storyTitle').textContent=st.title;$('storyImage').src=st.image;$('storyImage').alt=speaker.name;$('storyIntro').textContent=profile.addressMode==='sie'?`${speaker.name} liest Ihnen diese Geschichte mit der eigenen Stimme vor. Die Vorlesetasten finden Sie direkt hier im Kopfbereich.`:`${speaker.name} liest dir diese Geschichte mit der eigenen Stimme vor. Die Vorlesetasten findest du direkt hier im Kopfbereich.`;$('storyText').innerHTML=st.text.map(p=>`<p>${addressText(p)}</p>`).join('');$('bonusChoice').classList.add('hidden');$('storyViewer').classList.remove('hidden')}
 function readStory(){if(!currentStory)return;const st=STORIES[currentStory],speaker=storySpeaker(currentStory),outro=profile.addressMode==='sie'?'Vielen Dank, dass Sie mir zugehört haben. Ich wünsche Ihnen alles Gute.':'Vielen Dank, dass du mir zugehört hast. Ich wünsche dir alles Gute.';speak(addressText(st.text.join('  ')),{gender:speaker.gender,onend:()=>setTimeout(()=>speak(outro,{gender:speaker.gender}),2200)})}
@@ -604,12 +735,17 @@ function printStory(){
  const printWindow=window.open('','_blank');
  if(!printWindow){alert('Das Druckfenster wurde blockiert. Bitte Pop-ups für diese Schulung erlauben und erneut versuchen.');return}
  const logoUrl=new URL('Koecheclub_Logo.webp',location.href).href,imageUrl=new URL(st.image,location.href).href;
- const pageHtml=pages.map((items,index)=>`<section class="print-page"><header class="club-head"><img src="${printEscape(logoUrl)}" alt="Köcheclub-Logo"><div><strong>Köcheclub Werne</strong><span>since 1991</span><i></i></div></header><main>${index===0?`<div class="story-person"><img src="${printEscape(imageUrl)}" alt="${printEscape(speaker.name)}"><div><span>Fiktive Bonusgeschichte</span><h1>${printEscape(st.title)}</h1></div></div>`:`<p class="continued">${printEscape(st.title)} · Fortsetzung</p>`}<div class="story-copy">${items.map(p=>`<p>${printEscape(p)}</p>`).join('')}</div></main><footer><span>Autor: Hans-Joachim Koch</span><span>Seite ${index+1} von ${pages.length}</span><span>Köcheclub Werne</span></footer></section>`).join('');
+ const pageHtml=pages.map((items,index)=>`<section class="print-page"><header class="club-head"><img src="${printEscape(logoUrl)}" alt="Köcheclub-Logo"><div><strong>Köcheclub Werne</strong><span>seit 1991</span><i></i></div></header><main>${index===0?`<div class="story-person"><img src="${printEscape(imageUrl)}" alt="${printEscape(speaker.name)}"><div><span>Fiktive Bonusgeschichte</span><h1>${printEscape(st.title)}</h1></div></div>`:`<p class="continued">${printEscape(st.title)} · Fortsetzung</p>`}<div class="story-copy">${items.map(p=>`<p>${printEscape(p)}</p>`).join('')}</div></main><footer><span>Autor: Hans-Joachim Koch</span><span>Seite ${index+1} von ${pages.length}</span><span>Köcheclub Werne</span></footer></section>`).join('');
  printWindow.document.open();
  printWindow.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${printEscape(st.title)} – Köcheclub Werne</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;background:#d8e1e8;color:#183a54;font-family:Arial,Helvetica,sans-serif}.print-page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:14mm 17mm 11mm;display:grid;grid-template-rows:auto 1fr auto;page-break-after:always;break-after:page}.print-page:last-child{page-break-after:auto}.club-head{display:flex;align-items:center;gap:7mm;border-bottom:1.2mm solid #e4aa2e;padding-bottom:5mm;margin-bottom:7mm}.club-head>img{width:25mm;height:20mm;object-fit:contain}.club-head div{display:grid}.club-head strong{font-size:20pt;color:#103752}.club-head span{font-size:9pt;letter-spacing:.08em}.club-head i{display:block;width:44mm;border-top:.4mm solid #103752;margin-top:1.5mm}.story-person{display:grid;grid-template-columns:39mm 1fr;align-items:center;gap:8mm;margin-bottom:6mm}.story-person>img{width:39mm;height:48mm;object-fit:cover;object-position:top;border:1.2mm solid #103752;border-radius:5mm;background:#dceaf2}.story-person span{color:#966200;font-size:10pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.story-person h1{font-size:23pt;line-height:1.12;margin:2mm 0 0}.continued{font-size:10pt;font-weight:700;color:#966200;margin:0 0 4mm}.story-copy p{font-family:Georgia,'Times New Roman',serif;font-size:11.2pt;line-height:1.52;margin:0 0 4mm;text-align:left;orphans:3;widows:3}.story-copy p:last-child{margin-bottom:0}footer{border-top:.45mm solid #aebdca;padding-top:3mm;display:grid;grid-template-columns:1fr auto 1fr;gap:5mm;align-items:center;font-size:8.5pt;color:#41566a}footer span:nth-child(2){font-weight:700;text-align:center}footer span:last-child{text-align:right;font-weight:700}@media print{html,body{background:#fff}.print-page{margin:0;width:210mm;height:297mm;min-height:297mm;overflow:hidden;box-shadow:none}}@media screen{.print-page{box-shadow:0 2mm 8mm #71808c}}</style></head><body>${pageHtml}<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));<\/script></body></html>`);
  printWindow.document.close();
 }
-function runTrainingTuv(){
+function requestGuidedTrainingTuv(timeoutMs=8000){return new Promise(resolve=>{const frame=$('lessonPosFrame'),requestId=`tuv-${Date.now()}-${Math.random().toString(36).slice(2)}`;let done=false;const send=()=>{try{frame?.contentWindow?.postMessage({type:'KC_TRAINING_TUV_REQUEST',requestId},'*')}catch{}};const finish=value=>{if(done)return;done=true;clearTimeout(timer);clearInterval(retry);window.removeEventListener('message',onMessage);resolve(value)};const onMessage=event=>{const message=event.data;if(message?.type==='KC_TRAINING_TUV_RESPONSE'&&message.requestId===requestId)finish(message.payload)};window.addEventListener('message',onMessage);const retry=setInterval(send,400),timer=setTimeout(()=>finish({ok:false,error:'Zeitüberschreitung beim Laden des Führungskerns.'}),timeoutMs);send()})}
+async function runTrainingTuv(){
+ const runBtn=$('runTuv');if(runBtn)runBtn.disabled=true;
+ $('tuvOverall').innerHTML='<strong>PRÜFUNG LÄUFT</strong><br>Bitte kurz warten';
+ $('tuvResults').innerHTML='<div class="tuv-row"><b>…</b><div><strong>Prüfungen werden vorbereitet</strong><small>Technik, Inhalte, Bedienung und Führungskern werden kontrolliert.</small></div><b>RUN</b></div>';
+ let guidedCore=null,guidedTuv=null;try{const remote=await requestGuidedTrainingTuv();if(remote?.ok){guidedTuv=remote.tuev;guidedCore={VERSION:remote.version,list:()=>remote.catalog||[],studioDescriptor:()=>remote.studio||{}}}else guidedTuv={error:remote?.error||'Führungskern nicht erreichbar'}}catch(error){guidedCore=null;guidedTuv={error:error.message||String(error)}}
  const checks=[
   ['TECH-01','JavaScript-Grundfunktionen',typeof show==='function'&&typeof dashboard==='function','Zentrale Navigation und Dashboard-Funktionen vorhanden.'],
   ['TECH-02','Originaloberfläche erreichbar',!!$('lessonPosFrame')&&!!$('practicePosFrame'),'Beide Trainings-iFrames sind eingebunden.'],
@@ -622,19 +758,35 @@ function runTrainingTuv(){
   ['CONTENT-01','Fiktiv-Kennzeichnung',document.querySelector('.fiction-note')?.textContent.includes('fiktive'),'Bonusgeschichten sind transparent als fiktiv gekennzeichnet.'],
   ['CONTENT-02','Beide Geschichten verfügbar',!!STORIES.marc&&!!STORIES.laura,'Marc und Laura sind pro Teilnehmer abrufbar.'],
   ['FEEDBACK-01','Geschichten im Feedback',!!document.querySelector('[data-rating="stories"]'),'Bonusgeschichten werden im Feedback berücksichtigt.'],
-  ['DATA-01','Lokale Speicherung',typeof localStorage!=='undefined','Lernstand und Feedback bleiben lokal; Export ist möglich.']
+  ['DATA-01','Lokale Speicherung',typeof localStorage!=='undefined','Lernstand und Feedback bleiben lokal; Export ist möglich.'],
+  ['CORE-01','Guided Training Core',guidedCore?.VERSION==='1.0.0','Der deklarative Führungskern ist versioniert und in die Trainingskasse eingebunden.'],
+  ['CORE-02','Deklarative Pflichtabläufe',(guidedCore?.list?.().length||0)>=5,'Die aktiven Bedienabläufe sind als Studio-bearbeitbare Datensätze registriert.'],
+  ['SECURITY-01','Begrenzte Ausführung',guidedTuv?.architecture?.noEval===true&&guidedTuv?.privacy?.networkAccess===false,'Keine dynamische Codeausführung und kein Netzwerkzugriff im Führungskern.'],
+  ['STUDIO-01','Studio-Schnittstelle',guidedCore?.studioDescriptor?.().codeExecution===false,'Das Studio erhält Schema und erlaubte Operationen, aber keine Codeausführung.']
  ];
  const results=checks.map(([id,name,ok,note])=>({id,name,status:ok?'PASS':'FAIL',note}));
- const fails=results.filter(x=>x.status==='FAIL').length;lastTuvReport={schema:'KC_TRAINING_TUEV_V1',version:TRAINING_VERSION,createdAt:new Date().toISOString(),status:fails?'FAIL':'PASS',results};
- $('tuvOverall').innerHTML=fails?`<strong>FAIL</strong><br>${fails} Fehler`:'<strong>PASS</strong><br>10 von 10 Prüfungen';
+ const fails=results.filter(x=>x.status==='FAIL').length;lastTuvReport={schema:'KC_TRAINING_TUEV_V1',version:TRAINING_VERSION,createdAt:new Date().toISOString(),status:fails?'FAIL':'PASS',guidedTraining:guidedTuv||null,results};
+ $('tuvOverall').innerHTML=fails?`<strong>FAIL</strong><br>${fails} Fehler`:`<strong>PASS</strong><br>${results.length} von ${results.length} Prüfungen`;
  $('tuvResults').innerHTML=results.map(r=>`<div class="tuv-row ${r.status==='PASS'?'pass':'fail'}"><b>${r.status==='PASS'?'✓':'!'}</b><div><strong>${r.id} · ${r.name}</strong><small>${r.note}</small></div><b>${r.status}</b></div>`).join('');
+ if(runBtn)runBtn.disabled=false;
  return lastTuvReport;
 }
-function openTuv(){show('trainingTuv');runTrainingTuv()}
+function openTuv(){show('trainingTuv');requestAnimationFrame(async()=>{try{await runTrainingTuv()}catch(error){$('tuvOverall').innerHTML='<strong>FEHLER</strong><br>Prüflauf abgebrochen';$('tuvResults').innerHTML=`<div class="tuv-row fail"><b>!</b><div><strong>TÜV konnte nicht gestartet werden</strong><small>${escapeHtml(error.message||String(error))}</small></div><b>FAIL</b></div>`;if($('runTuv'))$('runTuv').disabled=false}})}
 function exportTuv(){const report=lastTuvReport||runTrainingTuv();downloadBlob(`KC_Bilderrechner_Schulungs_TUEV_V${TRAINING_VERSION.replaceAll('.','_')}.json`,'application/json;charset=utf-8',JSON.stringify(report,null,2))}
 
 
-window.addEventListener('message',event=>{const m=event.data;if(!m)return;if(m.type==='KC_TRAINING_CUE'){const cueToken=++activeSyncToken;const done=()=>{if(cueToken!==activeSyncToken)return;try{event.source?.postMessage({type:'KC_TRAINING_CUE_DONE',cueId:m.cueId},'*')}catch{}};if(lessonNarrationMode==='sequential'||lessonNarrationMode==='demo')setTimeout(done,250);else if(assistantEnabled&&soundEnabled)speak(addressText(m.text||''),{onend:done});else setTimeout(done,Math.max(1200,String(m.text||'').length*35))}if(m.type==='KC_TRAINING_DEMO_DONE'){demoDone=true;clearTimeout(lessonUnlockTimer);lessonUnlockTimer=null;if(typeof window.__KC_finishCurrentLessonStep==='function')window.__KC_finishCurrentLessonStep()}if(m.type==='KC_TRAINING_DEMO_ERROR'){$('currentAction').textContent='Vorführung konnte nicht vollständig gezeigt werden – Erklärung wird abgeschlossen';demoDone=true;clearTimeout(lessonUnlockTimer);lessonUnlockTimer=null;if(typeof window.__KC_finishCurrentLessonStep==='function')window.__KC_finishCurrentLessonStep()}if(m.type==='KC_TRAINING_SALE_COMPLETED'&&!$('practice').classList.contains('hidden')&&taskIndex===0){passPracticeTask('✓ Bezahlvorgang erfolgreich abgeschlossen. Die nächste Aufgabe startet gleich.');setTimeout(()=>{if(!$('practice').classList.contains('hidden')&&taskIndex===0){taskIndex=1;renderTask();if(assistantEnabled&&soundEnabled)speak(practiceTaskSpeech())}},5500)}});
+window.addEventListener('message',event=>{const m=event.data;if(!m)return;
+ if(m.type==='KC_TRAINING_VISUAL'){const host=$('lessonVisual');if(!host||host.classList.contains('hidden'))return;let layer=$('trainingVisualMirror');if(!layer){layer=document.createElement('div');layer.id='trainingVisualMirror';layer.className='training-visual-mirror';layer.innerHTML='<div class="training-mirror-shade"></div><div class="training-mirror-focus"></div><div class="training-mirror-pointer"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 4 53 36 34 39 24 58Z" fill="#ef1b24" stroke="#fff" stroke-width="5" stroke-linejoin="round"/><path d="m32 39 12 19" stroke="#6d0005" stroke-width="7" stroke-linecap="round"/></svg></div><div class="training-mirror-label"></div>';host.appendChild(layer)}const scale=Number($('lessonPosFrame')?.dataset.fitScale)||1,r=m.rect||{},p=m.pointer||{};layer.classList.remove('hidden','click');const focus=layer.querySelector('.training-mirror-focus'),pointer=layer.querySelector('.training-mirror-pointer'),label=layer.querySelector('.training-mirror-label');focus.style.left=`${Math.max(2,r.x*scale-5)}px`;focus.style.top=`${Math.max(2,r.y*scale-5)}px`;focus.style.width=`${Math.max(24,r.width*scale+10)}px`;focus.style.height=`${Math.max(20,r.height*scale+10)}px`;pointer.style.left=`${p.x*scale}px`;pointer.style.top=`${p.y*scale}px`;pointer.style.setProperty('--mirror-move',`${Math.max(350,Number(m.duration)||900)}ms`);label.textContent=m.label||'Hier ansehen';label.style.left=`${Math.max(6,Math.min(host.clientWidth-280,r.x*scale))}px`;label.style.top=`${Math.max(6,r.y*scale-48)}px`;layer.style.setProperty('--click-x',`${p.x*scale}px`);layer.style.setProperty('--click-y',`${p.y*scale}px`)}
+ if(m.type==='KC_TRAINING_VISUAL_CLICK'){const layer=$('trainingVisualMirror');if(layer){layer.classList.remove('click');void layer.offsetWidth;layer.classList.add('click')}}
+ if(m.type==='KC_TRAINING_VISUAL_CLEAR')$('trainingVisualMirror')?.classList.add('hidden');
+ if(m.type==='KC_TRAINING_ENGINE_STATUS')$('currentAction').textContent=m.ok?`Führungskern ${m.version} bereit · roter Mauszeiger aktiv`:`Führungskern unvollständig · es fehlen: ${(m.missing||[]).join(', ')||'Core-Dateien'}`;
+ if(m.type==='KC_TRAINING_ENGINE_ACTIVE')$('currentAction').textContent=`Führungskern ${m.version} aktiv · rote Klickführung läuft`;
+ if(m.type==='KC_TRAINING_ENGINE_EVENT'&&m.event==='step'){const d=m.detail||{};$('currentAction').textContent=`Geführte Vorführung: Schritt ${Number(d.index||0)+1} · ${d.label||d.op||'Aktion'}`}
+ if(m.type==='KC_TRAINING_CUE'){const cueToken=++activeSyncToken;const done=()=>{if(cueToken!==activeSyncToken)return;try{event.source?.postMessage({type:'KC_TRAINING_CUE_DONE',cueId:m.cueId},'*')}catch{}};$('currentAction').textContent=`Jetzt ansehen: ${m.label||addressText(m.text||'Vorführung')}`;setTimeout(done,lessonNarrationMode==='sequential'?250:1350)}
+ if(m.type==='KC_TRAINING_DEMO_DONE'){demoDone=true;clearTimeout(lessonUnlockTimer);lessonUnlockTimer=null;if(typeof window.__KC_finishCurrentLessonStep==='function')window.__KC_finishCurrentLessonStep()}
+ if(m.type==='KC_TRAINING_DEMO_ERROR'){$('currentAction').textContent=`Vorführung nicht verfügbar: ${m.message||'unbekannter Ladefehler'} – der Text und Extra-Tipp bleiben verfügbar`;demoDone=false;clearTimeout(lessonUnlockTimer);lessonUnlockTimer=null;if(typeof window.__KC_finishCurrentLessonStep==='function')window.__KC_finishCurrentLessonStep()}
+ if(m.type==='KC_TRAINING_SALE_COMPLETED'&&!$('practice').classList.contains('hidden')&&taskIndex===0){passPracticeTask('✓ Bezahlvorgang erfolgreich abgeschlossen. Die nächste Aufgabe startet gleich.');setTimeout(()=>{if(!$('practice').classList.contains('hidden')&&taskIndex===0){taskIndex=1;renderTask();if(assistantEnabled&&soundEnabled)speak(practiceTaskSpeech())}},5500)}
+});
 
 function syncGlobalSettingsUi(){
  const coach=$('globalCoachSelect'),voice=$('globalVoiceSelect'),sound=$('globalSoundToggle');
@@ -666,10 +818,16 @@ $('startTraining').onclick=()=>{
  const mode=document.querySelector('input[name=assistantMode]:checked')?.value||'female';
  profile.name=name;profile.assistant=mode!=='none';profile.gender=mode==='male'?'male':'female';profile.voiceVariant=document.querySelector('input[name=voiceVariant]:checked')?.value||'one';profile.addressMode=document.querySelector('input[name=addressMode]:checked')?.value||'du';profile.skipGreeting=$('skipGreeting').checked;profile.sound=$('startSound').checked;profile.save=$('saveConsent').checked;
  assistantEnabled=profile.assistant;soundEnabled=profile.sound;if(!profile.trainingStartedAt)profile.trainingStartedAt=new Date().toISOString();if(!profile.sessionId)profile.sessionId=`KC-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;saveProfile();
- openFuturaIntro()
+ openSoftwareIntroChoice()
 };
-$('futuraReplay').onclick=playFuturaReasons;$('futuraStartLearning').onclick=()=>{if($('futuraStartLearning').disabled)return;futuraIntroState='started';introRunToken++;stopSpeech();$('futuraStartLearning').classList.remove('ready-pulse');openChapterOverview()};$('futuraSkip').onclick=skipFuturaOpening;$('futuraReasonSkip').onclick=skipFuturaReasons;
-$('chapterOverviewStart').onclick=()=>{stopSpeech();startFirstMandatoryChapter()};$('chapterOverviewSkip').onclick=()=>{stopSpeech();startFirstMandatoryChapter()};$('chapterOverviewSkipBottom').onclick=()=>{stopSpeech();startFirstMandatoryChapter()};
+$('softwareIntroYes').onclick=openSoftwareGuide;
+$('softwareIntroNo').onclick=openPersonalTrainingIntro;
+$('softwareGuideReplay').onclick=runSoftwareGuide;
+$('softwareGuideContinue').onclick=openPersonalTrainingIntro;
+document.querySelectorAll('[data-guide]').forEach(button=>button.onclick=()=>{softwareGuideToken++;stopSpeech();document.querySelectorAll('[data-guide]').forEach(x=>x.classList.remove('active'));button.classList.add('active');$('softwareGuideStatus').textContent=button.dataset.guideText;if(assistantEnabled&&soundEnabled)speak(button.dataset.guideText)});
+$('personalTrainingContinue').onclick=()=>{stopSpeech();$('personalTrainingPulse').classList.remove('speaking');openChapterOverview()};
+$('futuraReplay').onclick=playFuturaReasons;$('futuraStartLearning').onclick=()=>{if($('futuraStartLearning').disabled)return;futuraIntroState='started';introRunToken++;stopSpeech();$('futuraStartLearning').classList.remove('ready-pulse');startFirstMandatoryChapter()};$('futuraSkip').onclick=skipFuturaOpening;$('futuraReasonSkip').onclick=skipFuturaReasons;
+$('chapterOverviewStart').onclick=()=>{stopSpeech();openFuturaIntro()};$('chapterOverviewSkip').onclick=()=>{stopSpeech();openFuturaIntro()};$('chapterOverviewSkipBottom').onclick=()=>{stopSpeech();openFuturaIntro()};
 $('resetProgress').onclick=()=>{profile=fresh();localStorage.removeItem(STORAGE_KEY);loadTrainingImages();hydrateWelcome();$('welcomeMessage').textContent='Lernfortschritt wurde zurückgesetzt.'};
 document.querySelectorAll('[data-module]').forEach(btn=>btn.onclick=()=>btn.dataset.module==='practice'?startPractice():startLesson(btn.dataset.module));
 $('continueBtn').onclick=()=>profile.quick<100?startLesson('quick'):profile.advanced<100?startLesson('advanced'):startPractice();
@@ -678,31 +836,48 @@ $('changeProfile').onclick=()=>{hydrateWelcome();show('welcome')};$('certificate
 $('exitLesson').onclick=dashboard;$('assistantToggle').onchange=syncOptions;$('soundToggle').onchange=syncOptions;
 $('chapterContinue').onclick=()=>{$('chapterChoiceOverlay').classList.add('hidden');if(pendingChapterCompletion)completeLesson();else advanceLesson()};
 
-document.querySelectorAll('.extension-card').forEach(card=>card.onclick=()=>{const key=card.dataset.extension;const ready=key==='reklamation'||key==='jugendschutz';if(!ready&&overall()<100){$('welcomeMessage').textContent='Dieses freiwillige Modul wird nach Abschluss der Pflichtschulung freigeschaltet.';return}if(ready){const module=key==='jugendschutz'?'jugend':'reklamation';const academyUrl=`../academy/index.html?module=${encodeURIComponent(module)}&name=${encodeURIComponent(profile.name||'')}&coach=${profile.gender==='male'?'marc':'laura'}&address=${encodeURIComponent(profile.addressMode||'du')}&return=${encodeURIComponent('../training-video/index.html')}`;location.href=academyUrl;return}openExtensionInfo(key)});
+document.querySelectorAll('.extension-card').forEach(card=>card.onclick=()=>{const key=card.dataset.extension;const ready=key==='reklamation'||key==='jugendschutz';if(!ready&&overall()<100){$('welcomeMessage').textContent='Dieses freiwillige Modul wird nach Abschluss der Pflichtschulung freigeschaltet.';return}if(ready){openAcademyPartTwo(key==='jugendschutz'?'jugend':'reklamation');return}openExtensionInfo(key)});
+$('openAcademyPart2').onclick=()=>openAcademyPartTwo();
+$('partOnePause').onclick=()=>{$('partOneCompleteOverlay').classList.add('hidden');zeigeGlueckskeksMitFolgeaktion(()=>dashboard())};
+$('partTwoContinue').onclick=()=>{$('partOneCompleteOverlay').classList.add('hidden');zeigeGlueckskeksMitFolgeaktion(()=>openAcademyPartTwo())};
 $('extensionInfoBack').onclick=dashboard;
 $('chapterPause').onclick=()=>{profile.lastPausedAt=new Date().toISOString();profile.resumePoint={module:lessonModule,index:lessonIndex,next:true};saveProfile();$('chapterChoiceOverlay').classList.add('hidden');dashboard()};
 $('lessonBack').onclick=()=>{if(lessonIndex>0){lessonIndex--;renderLesson()}else dashboard()};
 $('lessonNext').onclick=()=>{if($('lessonNext').disabled||lessonNarrationMode!=='complete')return;window.AvatarCore?.setState($('coachGuideImage'),'approve').catch(()=>{});setTimeout(()=>window.AvatarCore?.setState($('coachGuideImage'),'neutral').catch(()=>{}),900);const step=(lessonModule==='quick'?quick:advanced)[lessonIndex];openLessonQuiz(step)};
-$('speakBtn').onclick=()=>{const s=(lessonModule==='quick'?quick:advanced)[lessonIndex];speak(addressText(`${s.title}. ${s.text}. ${s.tip}`))};
-$('repeatDemo').onclick=()=>{const key=`${lessonModule}:${lessonIndex}`;profile.lessonStats[key]=profile.lessonStats[key]||{};profile.lessonStats[key].repeats=(profile.lessonStats[key].repeats||0)+1;saveProfile();const s=(lessonModule==='quick'?quick:advanced)[lessonIndex];focusOriginal(s.selector);runDemo(s,soundEnabled?estimatedSpeechLead(s):500);if(soundEnabled)speak(`${s.title}. ${s.text}`)};
+$('speakBtn').onclick=()=>{
+ const s=(lessonModule==='quick'?quick:advanced)[lessonIndex],tip=addressText(s.tip||'').trim();
+ stopSpeech();$('lessonTip').classList.remove('tip-flash','tip-speaking');
+ speak(addressText(`${s.title}. ${s.text}`),{target:$('coachGuideText'),onend:()=>{
+  if(!tip)return;
+  $('lessonTip').classList.add('tip-flash','tip-speaking');
+  $('currentAction').textContent=`Extra-Tipp von ${assistantName()} wird vorgelesen`;
+  speak(tip,{target:$('tipText'),onend:()=>{$('lessonTip').classList.remove('tip-flash','tip-speaking');$('currentAction').textContent='Vorlesen abgeschlossen'}});
+ }});
+};
+$('repeatDemo').onclick=()=>{const key=`${lessonModule}:${lessonIndex}`;profile.lessonStats[key]=profile.lessonStats[key]||{};profile.lessonStats[key].repeats=(profile.lessonStats[key].repeats||0)+1;saveProfile();const s=(lessonModule==='quick'?quick:advanced)[lessonIndex];stopSpeech();closeScenes();focusOriginal(s.selector);startLiveLessonStep(s,lessonRunToken)};
 $('collapseCoach').onclick=()=>{coachDockCollapsed=!coachDockCollapsed;applyCoachDockState()};
 $('exitPractice').onclick=dashboard;$('taskBack').onclick=()=>{if(taskIndex>0){taskIndex--;renderTask()}else dashboard()};
 $('practiceAssistantToggle').onchange=syncPracticeOptions;$('practiceSoundToggle').onchange=syncPracticeOptions;
 $('taskReset').onclick=()=>{try{$('practicePosFrame').contentWindow.KCTrainingAPI?.clearCart?.();$('practicePosFrame').contentWindow.KCTrainingAPI?.closeAllDialogs?.()}catch{};const retry=profile.addressMode==='sie'?'Die Aufgabe wurde zurückgesetzt. Das ist kein Problem. Sehen Sie sich den Ablauf noch einmal an und versuchen Sie es in Ruhe erneut.':'Die Aufgabe wurde zurückgesetzt. Das ist kein Problem. Schau dir den Ablauf noch einmal an und versuche es in Ruhe erneut.';$('feedback').textContent=retry;$('feedback').className='feedback bad';if(assistantEnabled&&soundEnabled)speak(retry)};
 $('checkTask').onclick=()=>{profile.attempts[taskIndex]=(profile.attempts[taskIndex]||0)+1;passPracticeTask('✓ Aufgabe als durchgeführt bestätigt.')};
-$('nextTask').onclick=()=>{if(taskIndex<tasks.length-1){taskIndex++;renderTask();if(assistantEnabled&&soundEnabled)speak(practiceTaskSpeech())}else dashboard()};
+$('nextTask').onclick=()=>{if(taskIndex<tasks.length-1){taskIndex++;renderTask();if(assistantEnabled&&soundEnabled)speak(practiceTaskSpeech())}else if(profile.practice>=100)showPartOneComplete();else dashboard()};
 $('practiceSpeak').onclick=()=>{if(assistantEnabled)speak(practiceTaskSpeech())};
 $('openBonus').onclick=openBonus;$('certificateClassic').onclick=()=>setCertificateStyle('classic');$('certificateModern').onclick=()=>setCertificateStyle('modern');setCertificateStyle(localStorage.getItem('kc-certificate-style')||'classic');$('printCertificate').onclick=()=>window.print();$('downloadCertificate').onclick=()=>{const blob=new Blob([$('certificatePaper').outerHTML],{type:'text/html'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='KC_Bilderrechner_Schulungszertifikat.html';a.click();URL.revokeObjectURL(a.href)};
 $('closeCertificate').onclick=dashboard;
 document.querySelectorAll('[data-story]').forEach(b=>b.onclick=()=>showStory(b.dataset.story));$('storyRead').onclick=readStory;$('storyPause').onclick=()=>{try{speechSynthesis.paused?speechSynthesis.resume():speechSynthesis.pause()}catch{}};$('storyPrint').onclick=printStory;$('storyBack').onclick=()=>{stopSpeech();$('storyViewer').classList.add('hidden');$('bonusChoice').classList.remove('hidden')};$('bonusSkip').onclick=openSurvey;$('bonusFeedback').onclick=openSurvey;$('trainingTuvBtn').onclick=openTuv;$('runTuv').onclick=runTrainingTuv;$('downloadTuv').onclick=exportTuv;$('closeTuv').onclick=dashboard;
 $('feedbackForm').addEventListener('submit',submitFeedback);$('cancelFeedback').onclick=dashboard;$('finishFeedback').onclick=dashboard;$('printFeedback').onclick=printFeedback;$('exportFeedbackJson').onclick=exportFeedbackJson;$('exportFeedbackCsv').onclick=exportFeedbackCsv;
 window.addEventListener('resize',()=>{if(!$('lesson').classList.contains('hidden'))fitFrame('lessonPosFrame',82);if(!$('practice').classList.contains('hidden'))fitFrame('practicePosFrame',54)});
+window.visualViewport?.addEventListener('resize',()=>{if(!$('lesson').classList.contains('hidden'))fitFrame('lessonPosFrame',82);if(!$('practice').classList.contains('hidden'))fitFrame('practicePosFrame',54)});
 $('globalSettingsBtn').onclick=openGlobalSettings;$('globalSettingsClose').onclick=closeGlobalSettings;
+$('trainingHeaderBack').onclick=()=>{stopSpeech();dashboard()};$('trainingHeaderPause').onclick=toggleTrainingHeaderPause;$('trainingHeaderDashboard').onclick=()=>{stopSpeech();dashboard()};$('trainingHeaderRoadmap').onclick=()=>{stopSpeech();openChapterOverview()};renderTrainingDatabases();renderTrainingHeader();setInterval(renderTrainingHeader,1000);
 $('globalSettingsModal').onclick=e=>{if(e.target===$('globalSettingsModal'))closeGlobalSettings()};
+// Number(null) ergibt 0. Fehlende Sprungparameter werden ausdrücklich als NaN markiert,
+// damit ein normaler Teil-1-Aufruf nicht versehentlich direkt in Kapitel 1 springt.
+const normalizedLaunchUrl=new URL(location.href);if(normalizedLaunchUrl.searchParams.get('entry')==='unified'){if(!normalizedLaunchUrl.searchParams.has('chapter'))normalizedLaunchUrl.searchParams.set('chapter','NaN');if(!normalizedLaunchUrl.searchParams.has('task'))normalizedLaunchUrl.searchParams.set('task','NaN');history.replaceState(null,'',normalizedLaunchUrl)}
 $('globalCoachSelect').onchange=applyGlobalSettings;$('globalVoiceSelect').onchange=applyGlobalSettings;$('globalSoundToggle').onchange=applyGlobalSettings;
 $('globalSoundBtn').onclick=()=>{primeSpeechEngine();soundEnabled=!soundEnabled;profile.sound=soundEnabled;if(!soundEnabled)stopSpeech();saveProfile();syncGlobalSettingsUi()};
 $('globalVoiceTest').onclick=()=>{primeSpeechEngine();applyGlobalSettings();if(soundEnabled)speak(addressText(`Hallo. Ich bin ${assistantName()}. So klingt die ausgewählte Stimme.`))};$('trainingAudioTuv').onclick=runTrainingAudioTuv;document.addEventListener('pointerdown',unlockTrainingAudio,{passive:true});document.addEventListener('keydown',unlockTrainingAudio);
-assistantEnabled=profile.assistant!==false;soundEnabled=profile.sound!==false;setTrainingVoiceMonitor(soundEnabled?'ready':'off',soundEnabled?'Ton bereit':'Ton aus');hydrateWelcome();show('welcome');setWelcomeStartReady(false,{pulse:false});syncGlobalSettingsUi();
+assistantEnabled=profile.assistant!==false;soundEnabled=profile.sound!==false;setTrainingVoiceMonitor(soundEnabled?'ready':'off',soundEnabled?'Ton bereit':'Ton aus');hydrateWelcome();const launchParamsTraining=new URLSearchParams(location.search),launchView=launchParamsTraining.get('view'),launchModuleTraining=launchParamsTraining.get('module'),launchChapterTraining=Number(launchParamsTraining.get('chapter')),launchTaskTraining=Number(launchParamsTraining.get('task')),unifiedEntry=launchParamsTraining.get('entry')==='unified';if(unifiedEntry&&profile.name){saveProfile();if((launchModuleTraining==='quick'||launchModuleTraining==='advanced')&&Number.isInteger(launchChapterTraining)&&launchChapterTraining>=0){startLesson(launchModuleTraining);const list=launchModuleTraining==='quick'?quick:advanced;lessonIndex=Math.min(launchChapterTraining,list.length-1);renderLesson()}else if(launchModuleTraining==='quick')openChapterOverview();else if(launchModuleTraining==='advanced')startLesson('advanced');else if(launchModuleTraining==='practice'){startPractice();if(Number.isInteger(launchTaskTraining)&&launchTaskTraining>=0){taskIndex=Math.min(launchTaskTraining,tasks.length-1);renderTask()}}else dashboard()}else if(launchView==='tuv'){openTuv()}else if(launchView==='audio-tuv'){show('welcome');openGlobalSettings();setTimeout(()=>document.querySelector('#trainingAudioTuv')?.focus(),120)}else if(launchView==='dashboard'&&profile.name)dashboard();else{show('welcome');setWelcomeStartReady(false,{pulse:false})}syncGlobalSettingsUi();
 $('firstName').addEventListener('input',()=>{$('identityRow').classList.remove('name-missing');$('welcomeMessage').textContent='';resetWelcomeGreeting();scheduleWelcomeGreeting(false)});
 $('firstName').addEventListener('change',()=>scheduleWelcomeGreeting(true));
 $('startSound').addEventListener('change',()=>{soundEnabled=$('startSound').checked;resetWelcomeGreeting();scheduleWelcomeGreeting(true)});
@@ -711,7 +886,7 @@ if(window.speechSynthesis){speechSynthesis.onvoiceschanged=()=>{updateVoiceOptio
 if(profile.name)setTimeout(()=>scheduleWelcomeGreeting(true),700);
 })();
 
-// Beta 1.6.1: robuster Direktzugang zur KC FUTURA Academy
+// Robuster Direktzugang zur KC FUTURA Academy
 (() => {
   const directButton=document.getElementById('directAcademy');
   if(!directButton)return;

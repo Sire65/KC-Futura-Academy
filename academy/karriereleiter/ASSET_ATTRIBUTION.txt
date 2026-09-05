@@ -1,0 +1,67 @@
+KARRIERELEITER V12 – BILDNACHWEISE / LIZENZEN
+==============================================
+
+Die vorhandenen Mentor-/Projektbilder aus früheren Karriereleiter-Versionen bleiben Projektassets.
+Zusätzlich wurden folgende externe Referenzbilder in assets/real/ integriert:
+
+1) chateaubriand.jpg
+   Titel: Chateaubriand with Bearnaise
+   Autor: FotoosVanRobin / Robin (via Flickr / Wikimedia Commons)
+   Lizenz: CC BY-SA 2.0
+   Quelle: https://commons.wikimedia.org/wiki/File:Chateaubriand_with_Bearnaise.jpg
+   Lizenz: https://creativecommons.org/licenses/by-sa/2.0/
+
+2) caprese.jpg
+   Titel: Salade caprese.jpg
+   Autor: Arnaud 25
+   Lizenz: CC BY-SA 4.0
+   Quelle: https://commons.wikimedia.org/wiki/File:Salade_caprese.jpg
+   Lizenz: https://creativecommons.org/licenses/by-sa/4.0/
+
+3) cooking_pots.jpg
+   Titel: Cooking pots.jpg
+   Autor: Poecus
+   Lizenz: Public Domain
+   Quelle: https://commons.wikimedia.org/wiki/File:Cooking_pots.jpg
+
+4) frying_pan.jpg
+   Titel: Stainless Steel Frying Pan.jpg
+   Autor: Jim Stonos
+   Lizenz: CC BY-SA 4.0
+   Quelle: https://commons.wikimedia.org/wiki/File:Stainless_Steel_Frying_Pan.jpg
+   Lizenz: https://creativecommons.org/licenses/by-sa/4.0/
+
+5) kitchen_knives.jpg
+   Titel: Various cooking knives - Kyocera, Henckels, Mac, Wiltshire.JPG
+   Autor: WLU
+   Lizenz: Public Domain
+   Quelle: https://commons.wikimedia.org/wiki/File:Various_cooking_knives_-_Kyocera,_Henckels,_Mac,_Wiltshire.JPG
+
+6) whisk.jpg
+   Titel: Whisk and rubber scraper in a stainless steel kitchen bowl.jpg
+   Autor: Marc-Lautenbacher
+   Lizenz: CC BY-SA 4.0
+   Quelle: https://commons.wikimedia.org/wiki/File:Whisk_and_rubber_scraper_in_a_stainless_steel_kitchen_bowl.jpg
+   Lizenz: https://creativecommons.org/licenses/by-sa/4.0/
+
+Hinweis: Bei Weitergabe/Veröffentlichung sind die jeweiligen Lizenzbedingungen, insbesondere Namensnennung und ShareAlike bei CC-BY-SA, zu beachten.
+
+
+V13.1 Zusatz-Assets aus Wikimedia Commons (offene Lizenzen / Public Domain, Stand dieser Integration):
+- gas_stove.jpg -> File:Gas stove cooking.jpg
+- induction_cooktop.jpg -> File:Induction Cooktop Rolling Boil.jpg
+- deep_fryer.jpg -> File:Deep-fryer-7.jpg
+- open_microwave_oven.jpg -> File:Open microwave oven.jpg
+- baking_oven.svg -> File:Symbol Baking-oven.svg
+- kitchen_utensils.jpg -> File:Kitchen utensils-01.jpg
+
+Hinweis V13.1: Für die neue Gerätekunde wurden zusätzlich lokale, projektinterne SVG-Gerätesymbole als Offline-Fallback integriert (Gasherd, Induktion, Fritteuse, Mikrowelle, Backofen, Küchenutensilien). Die Netzrecherche zu offenen Referenzbildern wurde dokumentiert, die eingebetteten Fallback-Symbole sind jedoch intern erzeugt und offline nutzbar.
+
+
+V19 Zusatz-Assets (projektinterne SVG-Illustrationen): pig_cuts.svg, cow_cuts.svg, lamb_cuts.svg, chicken_cuts.svg, nudelsalat_plate.svg, koenigsberger_klopse.svg, frikadelle_plate.svg.
+
+V19.2: pig_cuts_professional_learn.png wurde innerhalb des Projekts mit OpenAI-Bildgenerierung erstellt; pig_puzzle_professional.svg ist eine projektinterne Offline-SVG-Fachsilhouette.
+
+V19.5 Zusatz-Assets (projektinterne SVG-Karten): sage_bundle.svg, basil_bundle.svg, rosemary_bundle.svg, thyme_bundle.svg, dill_bundle.svg, parsley_bundle.svg, chives_bundle.svg, tarragon_bundle.svg, mint_bundle.svg, chervil_bundle.svg, spice_paprika.svg, spice_cumin.svg, spice_cinnamon.svg, spice_nutmeg.svg, spice_saffron.svg, spice_juniper.svg.
+
+V19.6 Zusatz-Assets (projektinterne SVG-Illustrationen): cod_fish.svg, salmon_fish.svg, sole_fish.svg, fish_filleting.svg.

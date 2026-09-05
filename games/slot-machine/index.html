@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#3b2416" />
+  <title>KC Einarmiger Bandit</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{
+      --wood:#5a321f; --wood2:#2d170e; --gold:#f4c15d; --gold2:#b97516;
+      --cream:#fff8e8; --red:#c62828; --green:#18864b; --pink:#d94f91; --ink:#2a180e;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top,#7b4a2d 0,#2b150d 60%,#120906 100%);color:var(--cream)}
+    body{display:flex;justify-content:center;align-items:stretch;padding:4px}
+    button{font:inherit;touch-action:manipulation}
+    .machine{width:min(980px,100%);height:100%;border:4px solid var(--gold2);border-radius:20px;background:linear-gradient(135deg,var(--wood),var(--wood2));box-shadow:0 18px 48px #0009,inset 0 0 0 3px #f9d886;overflow:hidden;position:relative;display:grid;grid-template-rows:8px auto minmax(0,1fr) auto auto auto auto}
+    .bulbs{height:8px;background:repeating-linear-gradient(90deg,#ffe07b 0 18px,#8b1b1b 18px 36px);box-shadow:inset 0 -3px 0 #0005}
+    .machine-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 10px;background:linear-gradient(#7a4022,#3c1d10);border-bottom:2px solid #b97516}
+    .machine-title{min-width:0}.machine-title strong{display:block;font-size:clamp(1rem,2.5vw,1.55rem);letter-spacing:.04em;text-shadow:0 2px 0 #0007}.machine-title small{display:block;color:#ffe9af;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .machine-actions{display:flex;gap:7px}.machine-icon{width:44px;height:40px;border:2px solid #f4d176;border-radius:10px;background:#3a1d11;color:#fff7db;font-size:1.35rem;font-weight:900;cursor:pointer}.machine-icon:hover,.machine-icon:focus-visible{background:#6f3a20;outline:3px solid #fff3b0;outline-offset:1px}
+    .content{padding:6px 10px;display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center;min-height:0}
+    .screen{background:#180b06;border:4px solid #d59428;border-radius:16px;padding:8px;box-shadow:inset 0 0 20px #000}
+    .payline-label{text-align:center;font-weight:800;color:#ffd86a;margin-bottom:8px}
+    .reels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;position:relative}
+    .reel{height:clamp(82px,18dvh,145px);overflow:hidden;background:linear-gradient(#fffdf5,#eee2c8,#fffdf5);border:4px solid #6f3f16;border-radius:14px;position:relative;box-shadow:inset 0 0 18px #0004}
+    .reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:28%;z-index:3;pointer-events:none}
+    .reel::before{top:0;background:linear-gradient(#0006,transparent)}
+    .reel::after{bottom:0;background:linear-gradient(transparent,#0006)}
+    .strip{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:transform .2s ease}
+    .symbol{font-size:clamp(3.2rem,10vh,6rem);line-height:1;filter:drop-shadow(0 4px 1px #0003);user-select:none}
+    .symbol.face{display:block;position:relative;overflow:hidden;width:clamp(78px,13vh,122px);height:clamp(78px,13vh,122px);margin:auto;border-radius:50%;border:5px solid #fff8df;box-shadow:0 5px 14px #0007,0 0 0 3px #b77924;background:#dce8ee}.symbol.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--face-focus,50% 15%);transform:scale(var(--face-scale,1.75));transform-origin:var(--face-focus,50% 15%)}
+    .pay-face{width:28px;height:28px;object-fit:cover;object-position:50% 18%;border-radius:50%;border:2px solid #d4a54b;vertical-align:middle;background:#dce8ee}
+    .symbol-name{color:#4b2b17;font-size:clamp(.72rem,2vw,1rem);font-weight:900;margin-top:6px;text-align:center}
+    .payline{position:absolute;left:0;right:0;top:50%;height:5px;background:#d92727;z-index:5;box-shadow:0 0 10px #ff4545}
+    .message{min-height:34px;margin-top:5px;padding:4px 8px;border-radius:10px;background:#2a140a;border:2px solid #7e4b22;text-align:center;font-size:clamp(.78rem,1.8vw,1rem);font-weight:800;display:flex;align-items:center;justify-content:center}
+    .message.win{background:#0f5d35;border-color:#57d88e;animation:pulse .55s ease-in-out 3}
+    .message.lose{background:#681b1b;border-color:#e87575}
+    @keyframes pulse{50%{transform:scale(1.02);filter:brightness(1.3)}}
+    .side{display:flex;flex-direction:column;align-items:center;gap:12px}
+    .lever{width:62px;height:145px;position:relative;cursor:pointer;touch-action:none}
+    .lever-track{position:absolute;left:22px;top:20px;width:18px;height:110px;border-radius:12px;background:linear-gradient(90deg,#777,#eee,#777);border:3px solid #3a210e}
+    .lever-knob{position:absolute;left:5px;top:0;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8f8f,#cc1717 55%,#6c0606);border:5px solid #f2b650;box-shadow:0 6px 10px #0008;transition:top .16s ease}
+    .lever.pulled .lever-knob{top:88px}
+    .start{width:100%;min-height:56px;border-radius:50%;border:4px solid #ffdc6b;background:radial-gradient(circle at 35% 25%,#ff7777,#c51515 58%,#680606);color:white;font-size:1.05rem;font-weight:1000;box-shadow:0 6px 0 #6b310c,0 9px 15px #0008;cursor:pointer}
+    .start:active{transform:translateY(5px);box-shadow:0 3px 0 #6b310c}
+    .start:disabled{filter:grayscale(.8);opacity:.6;cursor:not-allowed}
+    .dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:0 12px 7px}
+    .card{background:#2a140a;border:2px solid #8c5b2c;border-radius:10px;padding:5px;text-align:center;min-height:50px}
+    .card .label{color:#e8c891;font-size:.82rem;font-weight:800}.card .value{font-size:1.35rem;font-weight:1000;margin-top:3px}
+    .controls{padding:0 12px 7px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+    .control{border:2px solid #f0c45a;background:#fff5da;color:#2b170d;border-radius:10px;padding:7px 11px;font-weight:900;cursor:pointer;min-width:120px}
+    .control.risk{background:#ff9b2e}.control.collect{background:#55c879}.control.reset{background:#f0d6d6}.control.sound{background:#d8e8ff}
+    .risk-panel,.settings-panel{display:none;position:absolute;z-index:30;inset:54px max(12px,8%) auto;background:#1f0f09;border:3px solid #da9a2f;border-radius:18px;padding:14px;text-align:center;box-shadow:0 18px 45px #000c}
+    .risk-panel.show,.settings-panel.show{display:block}
+    .risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+    .risk-btn{min-height:72px;border-radius:14px;border:3px solid #fff4ce;font-size:1.25rem;font-weight:1000;color:white;cursor:pointer}.risk-btn.red{background:#bd2020}.risk-btn.black{background:#121212}
+    .paytable{margin:0 10px 5px;background:#fff7df;color:#321a0e;border-radius:10px;padding:5px;border:2px solid #cf9126;min-height:0}
+    .paytable h2{font-size:.86rem;margin:0 0 4px;text-align:center}.paytable-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;font-size:.68rem;font-weight:800}.payitem{background:#f3e4bd;padding:3px;border-radius:7px;text-align:center;min-width:0}.payitem .pay-face{width:20px;height:20px}.payitem .eggpunch-cup{width:16px;height:21px;border-width:2px}
+    .settings-panel h2{margin:0 0 5px;color:#ffe29a}.settings-panel p{margin:0 0 10px}.symbol-options{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:left}.symbol-option{display:flex;align-items:center;gap:9px;background:#fff7df;color:#321a0e;border:2px solid #d6a446;border-radius:10px;padding:9px;font-weight:850}.symbol-option input{width:22px;height:22px}.settings-actions{display:flex;justify-content:center;gap:8px;margin-top:11px}.settings-actions button{border:2px solid #ffe18a;border-radius:9px;padding:8px 13px;font-weight:900;cursor:pointer}.settings-save{background:#45b96f}.settings-close{background:#f0dfbd}.settings-error{min-height:1.2em;color:#ffb5a8;font-weight:800;margin-top:5px}
+    .eggpunch-cup{display:inline-block;position:relative;width:52px;height:65px;border:5px solid #e8edf4;border-top-width:3px;border-radius:5px 5px 14px 14px;background:linear-gradient(to bottom,#fff8d5 0 18%,#f3c623 19% 88%,#d79e00 89%);box-shadow:inset 0 0 0 2px #fff6a0,0 3px 5px #0004;vertical-align:middle}.eggpunch-cup::after{content:"";position:absolute;left:7%;right:7%;top:17%;height:8%;border-radius:50%;background:#fff3a5}
+    .footer{text-align:center;color:#e8c891;font-size:.72rem;padding:0 10px 5px}
+    .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}.confetti i{position:absolute;top:-20px;width:12px;height:18px;background:#ffd54f;animation:fall 1.8s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(760deg)}}
+    @media(max-width:720px){body{padding:2px}.machine{border-width:3px;border-radius:14px}.machine-bar{padding:4px 6px}.machine-icon{width:40px;height:36px}.content{grid-template-columns:1fr 68px;padding:4px 6px;gap:4px}.lever{width:48px;height:105px}.lever-track{left:17px;height:78px;width:14px}.lever-knob{width:42px;height:42px;left:3px}.lever.pulled .lever-knob{top:62px}.start{font-size:.78rem;min-height:44px}.dashboard{padding:0 6px 4px;gap:3px}.card{min-height:42px;padding:3px}.card .label{font-size:.7rem}.card .value{font-size:1.05rem}.controls{padding:0 6px 4px;gap:4px}.control{flex:1;min-width:22%;padding:5px 3px;font-size:.72rem}.paytable{margin:0 6px 4px}.paytable-grid{grid-template-columns:repeat(5,1fr);gap:2px}.payitem{padding:2px;font-size:.59rem}.symbol-options{grid-template-columns:1fr}.settings-panel{inset:45px 8px auto}}
+    @media(max-height:620px){.machine-title small,.footer,.paytable{display:none}.content{padding-top:3px;padding-bottom:3px}.dashboard{padding-bottom:3px}.reel{height:clamp(70px,20dvh,110px)}.side{gap:4px}.lever{height:92px}.lever-track{height:65px}.lever.pulled .lever-knob{top:50px}}
+  </style>
+</head>
+<body>
+  <main class="machine" aria-label="KC Einarmiger Bandit">
+    <div class="bulbs"></div>
+    <div class="machine-bar">
+      <div class="machine-title"><strong>KC EINARMIGER BANDIT</strong><small>Köcheclub Werne · Weihnachtsmarkt-Edition</small></div>
+      <div class="machine-actions">
+        <button id="settingsBtn" class="machine-icon" type="button" title="Walzensymbole auswählen" aria-label="Walzensymbole auswählen">⚙</button>
+        <button id="exitBtn" class="machine-icon" type="button" title="Spiel verlassen" aria-label="Spiel verlassen">🚪</button>
+      </div>
+    </div>
+
+    <section class="content">
+      <div class="screen">
+        <div class="payline-label">Gewinnlinie</div>
+        <div class="reels">
+          <div class="payline"></div>
+          <div class="reel"><div class="strip" id="reel0"><div class="symbol face" style="--face-focus:50% 13%;--face-scale:1.75"><img src="../assets/club-members/mitglied-01.jpg" alt="Mitglied 1"></div><div class="symbol-name">Mitglied 1</div></div></div>
+          <div class="reel"><div class="strip" id="reel1"><div class="symbol face" style="--face-focus:43% 18%;--face-scale:1.8"><img src="../assets/club-members/mitglied-04.jpg" alt="Mitglied 4"></div><div class="symbol-name">Mitglied 4</div></div></div>
+          <div class="reel"><div class="strip" id="reel2"><div class="symbol face" style="--face-focus:55% 11%;--face-scale:1.75"><img src="../assets/club-members/mitglied-10.jpg" alt="Mitglied 10"></div><div class="symbol-name">Mitglied 10</div></div></div>
+        </div>
+        <div id="message" class="message">Zum Spielen START drücken oder den Hebel ziehen.</div>
+      </div>
+      <aside class="side">
+        <div id="lever" class="lever" role="button" aria-label="Hebel ziehen" tabindex="0">
+          <div class="lever-track"></div><div class="lever-knob"></div>
+        </div>
+        <button id="startBtn" class="start">START</button>
+      </aside>
+    </section>
+
+    <section class="dashboard">
+      <div class="card"><div class="label">Punkte</div><div id="credits" class="value">1000</div></div>
+      <div class="card"><div class="label">Spiele</div><div id="games" class="value">0</div></div>
+      <div class="card"><div class="label">Gewinne</div><div id="wins" class="value">0</div></div>
+      <div class="card"><div class="label">Jackpots</div><div id="jackpots" class="value">0</div></div>
+    </section>
+
+    <section id="riskPanel" class="risk-panel">
+      <strong>RISIKO: Rot oder Schwarz?</strong>
+      <div>Richtig: Gewinn wird verdoppelt · Falsch: Gewinn ist weg</div>
+      <div class="risk-grid">
+        <button class="risk-btn red" data-color="red">♥ ROT</button>
+        <button class="risk-btn black" data-color="black">♠ SCHWARZ</button>
+      </div>
+    </section>
+
+    <section id="settingsPanel" class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">Walzensymbole auswählen</h2>
+      <p>Eine oder mehrere Gruppen auswählen. Die Auswahl wird gespeichert.</p>
+      <div class="symbol-options">
+        <label class="symbol-option"><input type="checkbox" value="members"> Echte Köcheclub-Mitglieder</label>
+        <label class="symbol-option"><input type="checkbox" value="avatars"> Academy-Avatare</label>
+        <label class="symbol-option"><input type="checkbox" value="market"> Speisen und Getränke</label>
+        <label class="symbol-option"><input type="checkbox" value="icons"> Weihnachtsmarkt-Symbole</label>
+      </div>
+      <div id="settingsError" class="settings-error" aria-live="polite"></div>
+      <div class="settings-actions">
+        <button id="settingsSave" class="settings-save" type="button">Übernehmen</button>
+        <button id="settingsClose" class="settings-close" type="button">Abbrechen</button>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="riskBtn" class="control risk" disabled>RISIKO</button>
+      <button id="collectBtn" class="control collect" disabled>GEWINN NEHMEN</button>
+      <button id="soundBtn" class="control sound">🔊 Ton an</button>
+      <button id="resetBtn" class="control reset">↺ Zurücksetzen</button>
+    </section>
+
+    <section class="paytable">
+      <h2>Gewinntabelle – drei gleiche Symbole</h2>
+      <div id="paytableGrid" class="paytable-grid"></div>
+    </section>
+
+    <div class="footer">Nur als Unterhaltungsspiel · Keine Einsätze und keine Auszahlung</div>
+  </main>
+  <div id="confetti" class="confetti"></div>
+
+<script>
+(() => {
+  'use strict';
+  const storage=()=>{try{return parent?.KCSecureStorage||localStorage}catch{return localStorage}};
+  const allSymbols = [
+    {id:'member01', group:'members', image:'../assets/club-members/mitglied-01.jpg', name:'Mitglied 1', win:260, weight:8, focus:'50% 13%', scale:1.75},
+    {id:'member02', group:'members', image:'../assets/club-members/mitglied-02.jpg', name:'Mitglied 2', win:250, weight:8, focus:'45% 12%', scale:1.75},
+    {id:'member03', group:'members', image:'../assets/club-members/mitglied-03.jpg', name:'Mitglied 3', win:240, weight:8, focus:'56% 13%', scale:1.7},
+    {id:'member04', group:'members', image:'../assets/club-members/mitglied-04.jpg', name:'Mitglied 4', win:230, weight:9, focus:'43% 18%', scale:1.8},
+    {id:'member05', group:'members', image:'../assets/club-members/mitglied-05.jpg', name:'Mitglied 5', win:220, weight:9, focus:'55% 13%', scale:1.8},
+    {id:'member06', group:'members', image:'../assets/club-members/mitglied-06.jpg', name:'Mitglied 6', win:210, weight:9, focus:'54% 11%', scale:1.75},
+    {id:'member07', group:'members', image:'../assets/club-members/mitglied-07.jpg', name:'Mitglied 7', win:200, weight:10, focus:'55% 10%', scale:1.75},
+    {id:'member08', group:'members', image:'../assets/club-members/mitglied-08.jpg', name:'Mitglied 8', win:190, weight:10, focus:'50% 12%', scale:1.75},
+    {id:'member09', group:'members', image:'../assets/club-members/mitglied-09.jpg', name:'Mitglied 9', win:180, weight:10, focus:'52% 10%', scale:1.75},
+    {id:'member10', group:'members', image:'../assets/club-members/mitglied-10.jpg', name:'Mitglied 10', win:180, weight:10, focus:'55% 11%', scale:1.75},
+    {id:'avatarLaura', group:'avatars', image:'../../academy/assets/avatars_clean/laura.png', name:'Avatar Laura', win:260, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarMarc', group:'avatars', image:'../../academy/assets/avatars_clean/marc.png', name:'Avatar Marc', win:250, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarMichael', group:'avatars', image:'../../academy/assets/avatars_clean/michael.png', name:'Avatar Michael', win:220, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarSabrina', group:'avatars', image:'../../academy/assets/avatars_clean/sabrina.png', name:'Avatar Sabrina', win:220, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarKalle', group:'avatars', image:'../../academy/assets/avatars_clean/kalle.png', name:'Avatar Kalle', win:200, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarHannes', group:'avatars', image:'../../academy/assets/avatars_clean/hannes.png', name:'Avatar Hannes', win:200, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarDetlef', group:'avatars', image:'../../academy/assets/avatars_clean/detlef.png', name:'Avatar Detlef', win:180, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'avatarGisela', group:'avatars', image:'../../academy/assets/avatars_clean/gisela.png', name:'Avatar Gisela', win:180, weight:5, focus:'50% 20%', scale:1.15},
+    {id:'eggpunch', group:'market', icon:'<span class="eggpunch-cup" aria-label="gelber Eierpunsch"></span>', name:'Eierpunsch', win:180, weight:11},
+    {id:'mulled', group:'market', icon:'🍷', name:'Glühwein', win:150, weight:13},
+    {id:'sausage', group:'market', icon:'🌭', name:'Bratwurst', win:120, weight:15},
+    {id:'pan', group:'market', icon:'🍳', name:'Pfannengericht', win:100, weight:16},
+    {id:'hat', group:'icons', icon:'👨‍🍳', name:'Kochmütze', win:250, weight:8},
+    {id:'plate', group:'icons', icon:'🍽️', name:'Teller', win:90, weight:17},
+    {id:'tree', group:'icons', icon:'🎄', name:'Weihnachtsbaum', win:500, weight:5, jackpot:true},
+    {id:'star', group:'icons', icon:'⭐', name:'Goldstern', win:750, weight:3, jackpot:true}
+  ];
+  const reels = [0,1,2].map(i => document.getElementById('reel'+i));
+  const startBtn = document.getElementById('startBtn');
+  const lever = document.getElementById('lever');
+  const msg = document.getElementById('message');
+  const creditsEl = document.getElementById('credits');
+  const gamesEl = document.getElementById('games');
+  const winsEl = document.getElementById('wins');
+  const jackpotsEl = document.getElementById('jackpots');
+  const riskBtn = document.getElementById('riskBtn');
+  const collectBtn = document.getElementById('collectBtn');
+  const riskPanel = document.getElementById('riskPanel');
+  const soundBtn = document.getElementById('soundBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const confetti = document.getElementById('confetti');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const settingsSave = document.getElementById('settingsSave');
+  const settingsClose = document.getElementById('settingsClose');
+  const settingsError = document.getElementById('settingsError');
+  const exitBtn = document.getElementById('exitBtn');
+
+  let state = JSON.parse(storage().getItem('kcFuturaSlotStateV1') || 'null') || {credits:1000,games:0,wins:0,jackpots:0,sound:true,symbolGroups:['members']};
+  if(!Array.isArray(state.symbolGroups)||!state.symbolGroups.length)state.symbolGroups=['members'];
+  let spinning=false, pendingWin=0, audioCtx=null;
+
+  function save(){ storage().setItem('kcFuturaSlotStateV1', JSON.stringify(state)); }
+  function update(){creditsEl.textContent=state.credits;gamesEl.textContent=state.games;winsEl.textContent=state.wins;jackpotsEl.textContent=state.jackpots;soundBtn.textContent=state.sound?'🔊 Ton an':'🔇 Ton aus';save();}
+  function activeSymbols(){const selected=new Set(state.symbolGroups);const pool=allSymbols.filter(s=>selected.has(s.group));return pool.length?pool:allSymbols.filter(s=>s.group==='members')}
+  function pick(){const symbols=activeSymbols(),total=symbols.reduce((a,s)=>a+s.weight,0);let r=Math.random()*total;for(const s of symbols){r-=s.weight;if(r<=0)return s}return symbols[0]}
+  function symbolVisual(s,repeat=false){if(s.image)return repeat?`<img class="pay-face" src="${s.image}" alt="${s.name}">`:`<div class="symbol face" style="--face-focus:${s.focus||'50% 15%'};--face-scale:${s.scale||1.75}"><img src="${s.image}" alt="${s.name}"></div>`;return repeat?s.icon:`<div class="symbol">${s.icon}</div>`}
+  function showSymbol(el,s){el.innerHTML=`${symbolVisual(s)}<div class="symbol-name">${s.name}</div>`}
+  function setMessage(text,type=''){msg.className='message'+(type?' '+type:'');msg.textContent=text}
+  function beep(freq=440,dur=.08,type='sine',vol=.05){if(!state.sound)return;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}catch(e){}}
+  function tick(){beep(180,.035,'square',.025)}
+  function fanfare(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.07),i*120))}
+  function particles(){for(let i=0;i<45;i++){const p=document.createElement('i');p.style.left=Math.random()*100+'vw';p.style.animationDelay=Math.random()*.5+'s';p.style.transform=`rotate(${Math.random()*360}deg)`;p.style.background=['#ffd54f','#ef5350','#66bb6a','#42a5f5','#ab47bc'][i%5];confetti.appendChild(p);setTimeout(()=>p.remove(),2400)}}
+  function clearPending(){pendingWin=0;riskBtn.disabled=true;collectBtn.disabled=true;riskPanel.classList.remove('show')}
+  function renderPaytable(){document.getElementById('paytableGrid').innerHTML=activeSymbols().map(s=>`<div class="payitem">${symbolVisual(s,true)} ${symbolVisual(s,true)} ${symbolVisual(s,true)}<br>${s.name}: ${s.win}</div>`).join('')}
+  function openSettings(){settingsError.textContent='';document.querySelectorAll('.symbol-option input').forEach(input=>input.checked=state.symbolGroups.includes(input.value));settingsPanel.classList.add('show');settingsSave.focus()}
+  function closeSettings(){settingsPanel.classList.remove('show');settingsBtn.focus()}
+  function applySettings(){const groups=[...document.querySelectorAll('.symbol-option input:checked')].map(input=>input.value);if(!groups.length){settingsError.textContent='Bitte mindestens eine Symbolgruppe auswählen.';return}state.symbolGroups=groups;clearPending();save();renderPaytable();reels.forEach(reel=>showSymbol(reel,pick()));setMessage('Symbolauswahl übernommen. Zum Spielen START drücken.');closeSettings()}
+  function exitGame(){try{parent.postMessage({type:'KC_PAUSE_GAME_CLOSE'},'*')}catch(e){}if(parent===window)history.back()}
+
+  async function spin(){
+    if(spinning) return;
+    if(pendingWin>0){setMessage('Nimm zuerst den Gewinn oder spiele Risiko.','lose');return}
+    if(state.credits<10){setMessage('Nicht genug Punkte. Bitte zurücksetzen.','lose');return}
+    spinning=true; startBtn.disabled=true; riskBtn.disabled=true; collectBtn.disabled=true;
+    state.credits-=10; state.games++; update(); setMessage('Die Walzen drehen – bitte warten …');
+    lever.classList.add('pulled');setTimeout(()=>lever.classList.remove('pulled'),350);
+    const finals=[pick(),pick(),pick()];
+    const timers=[];
+    reels.forEach((r,idx)=>{
+      timers[idx]=setInterval(()=>{showSymbol(r,pick());tick()},75+idx*12);
+      setTimeout(()=>{clearInterval(timers[idx]);showSymbol(r,finals[idx]);beep(230+idx*110,.12,'square',.05)},650+idx*450);
+    });
+    setTimeout(()=>finish(finals),1700);
+  }
+  function finish(finals){
+    spinning=false; startBtn.disabled=false;
+    const same=finals.every(s=>s.id===finals[0].id);
+    if(same){
+      const s=finals[0]; pendingWin=s.win; state.wins++; if(s.jackpot)state.jackpots++; update();
+      setMessage(`${s.name} dreimal – Gewinn: ${s.win} Punkte!`,'win');
+      riskBtn.disabled=false;collectBtn.disabled=false;fanfare();particles();
+    }else{
+      const pair=(finals[0].id===finals[1].id)||(finals[1].id===finals[2].id)||(finals[0].id===finals[2].id);
+      if(pair){pendingWin=20;state.wins++;update();setMessage('Zwei gleiche Symbole – 20 Punkte Trostgewinn!','win');riskBtn.disabled=false;collectBtn.disabled=false;beep(660,.2,'triangle',.06)}
+      else setMessage('Leider kein Gewinn. Für eine neue Runde START drücken.','lose');
+    }
+  }
+  function collect(){if(!pendingWin)return;state.credits+=pendingWin;setMessage(`${pendingWin} Punkte gutgeschrieben. Für die nächste Runde START drücken.`,'win');clearPending();update();beep(880,.2,'triangle',.07)}
+  function openRisk(){if(!pendingWin)return;riskPanel.classList.add('show');setMessage(`Risiko um ${pendingWin} Punkte: Rot oder Schwarz?`)}
+  function risk(color){if(!pendingWin)return;const actual=Math.random()<.5?'red':'black';if(color===actual){pendingWin*=2;setMessage(`Richtig! ${actual==='red'?'Rot':'Schwarz'} – Gewinn jetzt ${pendingWin} Punkte.`,'win');collectBtn.disabled=false;riskBtn.disabled=false;beep(990,.25,'triangle',.08);particles()}else{setMessage(`Falsch! Es war ${actual==='red'?'Rot':'Schwarz'}. Der Gewinn ist weg.`,'lose');clearPending();beep(120,.4,'sawtooth',.06)}riskPanel.classList.remove('show')}
+  function reset(){if(!confirm('Spielstand und Statistik wirklich zurücksetzen?'))return;state={credits:1000,games:0,wins:0,jackpots:0,sound:state.sound,symbolGroups:[...state.symbolGroups]};clearPending();update();setMessage('Spielstand zurückgesetzt. Viel Glück!')}
+
+  startBtn.addEventListener('click',spin);lever.addEventListener('click',spin);lever.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();spin()}});
+  collectBtn.addEventListener('click',collect);riskBtn.addEventListener('click',openRisk);resetBtn.addEventListener('click',reset);
+  soundBtn.addEventListener('click',()=>{state.sound=!state.sound;update();if(state.sound)beep(600,.12,'triangle',.06)});
+  settingsBtn.addEventListener('click',openSettings);settingsSave.addEventListener('click',applySettings);settingsClose.addEventListener('click',closeSettings);exitBtn.addEventListener('click',exitGame);
+  document.querySelectorAll('.risk-btn').forEach(b=>b.addEventListener('click',()=>risk(b.dataset.color)));
+
+  renderPaytable();
+  update();
+})();
+</script>
+</body>
+</html>

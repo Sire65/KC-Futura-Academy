@@ -4,9 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <title>KC Bildrechner V0.31.3.6 Repair 11 – Candidate</title>
+  <title>KC MarktKasse · Kasse</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="pos-ui-profile-consumer.css">
+  <link rel="stylesheet" href="event-program-display.css">
+  <link rel="stylesheet" href="time-clock-pos.css">
+  <link rel="stylesheet" href="kc-sync-status-leds.css">
   <script defer src="../cores/notification-core/notification-core.js"></script>
   <script defer src="../cores/product-info-core/product-info-core.js"></script>
   <style id="tablet-critical-css">
@@ -29,7 +33,7 @@
 <div id="app" class="app-shell">
   <header class="app-header">
     <button class="brand-block secret-trigger" id="secretTrigger" aria-label="Köcheclub Werne">
-      <img id="clubLogo" src="data:image/png;base64,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" alt="">
+      <img id="clubLogo" src="assets/kochmuetze-weiss.png" alt="">
       <span class="brand-text">
         <strong id="clubName">Köcheclub Werne</strong>
         <small id="eventName">Weihnachtsmarkt 2026</small>
@@ -37,9 +41,9 @@
     </button>
 
     <div class="header-info">
-      <div class="info-cell"><span>KASSE</span><strong id="registerName">Kasse 1</strong><small id="operatorName">Bediener: Hans</small></div>
-      <div class="info-cell compact"><span>VERSION</span><strong id="version">V0.31.3.6 R11</strong></div>
-      <div class="info-cell date-cell"><strong id="dateText">24.12.2026</strong><small id="timeText">16:32</small></div>
+      <div class="info-cell"><strong id="registerName" class="register-name-solo">Kasse 1</strong><small id="operatorName" style="display:none;"></small></div>
+      <div class="info-cell compact"><span>VERSION</span><strong id="version">V0.31.3.6 R12</strong></div>
+      <div class="info-cell date-cell date-cell-inline"><strong id="dateText">24.12.2026</strong><strong id="timeText">16:32</strong></div>
       <div class="operator-mini-dashboard">
         <span id="shiftStatus">Schicht aktiv</span>
         <span id="cashStatus">Wechselgeld OK</span>
@@ -50,7 +54,11 @@
     <div class="header-status">
       <button id="screenLockBtn" class="header-tool-button screen-lock-button" type="button" title="Bildschirm abdunkeln und sperren" aria-label="Bildschirm abdunkeln und sperren">🔒</button>
       <button id="cashSoundBtn" class="cash-sound-button active" type="button" title="Kassenton ausschalten" aria-label="Kassenton eingeschaltet" aria-pressed="true"><span aria-hidden="true">🔊</span></button>
+      <span class="supabase-led-group" title="Online-Sicherung: noch nicht eingerichtet" aria-label="Online-Sicherung noch nicht eingerichtet">
+        <span class="supabase-led"></span><span class="supabase-led"></span>
+      </span>
       <button class="menu-button" id="menuBtn">☰<small>MENÜ</small></button>
+      <button id="mirrorLayoutBtn" class="header-tool-button mirror-layout-button" type="button" title="Verkaufsfläche spiegeln (für Linkshänder)" aria-label="Verkaufsfläche spiegeln" aria-pressed="false">⇄</button>
       <button id="headerExitBtn" class="header-tool-button header-exit-button" type="button" title="Programm verlassen" aria-label="Programm verlassen">🚪</button>
     </div>
   </header>
@@ -124,8 +132,13 @@
       <h3>BARZAHLUNG</h3>
       <div id="banknotes" class="banknote-row"></div>
       <div id="coins" class="coin-row"></div>
-      <div class="cash-finish-row">
-        <button id="exactCashBtn" class="exact-button" type="button">STIMMT SO · ABSCHLIESSEN ✓</button>
+      <!-- Der BAR-Knopf steht bewusst NEBEN "STIMMT SO": wer normal mit Rückgeld abrechnet,
+           soll dafür einen eigenen Knopf haben und nicht auf "Stimmt so" ausweichen müssen.
+           Er erscheint nur, wenn tatsächlich Geld erfasst und der Betrag gedeckt ist -
+           beim normalen Kassieren ohne Geldeingabe ändert sich an dieser Zeile nichts. -->
+      <div class="cash-finish-row" id="cashFinishRow">
+        <button id="cashChangeBtn" class="change-button" type="button" hidden>BAR · RÜCKGELD</button>
+        <button id="exactCashBtn" class="exact-button" type="button" disabled>STIMMT SO · ABSCHLIESSEN ✓</button>
         <button id="roundUpBtn" class="roundup-button">AUFRUNDEN ⤴</button>
       </div>
     </div>
@@ -135,6 +148,7 @@
         <span>RÜCKGELD</span>
         <button type="button" id="undoCashBtn" class="cash-undo" title="Letzte Auswahl eines Scheins oder einer Münze zurücknehmen" aria-label="Letzte Geld-Auswahl zurücknehmen" disabled><b aria-hidden="true">↶</b><small>LETZTE GELDWAHL</small></button>
       </div>
+      <div class="change-card-divider"></div>
       <strong id="changeDisplay">0,00 €</strong>
       <em id="changePaymentState" class="change-payment-state">Noch kein Zahlbetrag</em>
       <small>Gegeben: <b id="givenDisplay">0,00 €</b></small>
@@ -225,7 +239,11 @@
       <button type="button" data-action="operator">👤 Bediener wechseln</button>
       <button type="button" data-action="tip">Trinkgeld</button>
       <button type="button" data-action="deposit">Pfandrückgabe</button>
-      <button type="button" data-action="withdraw">Entnahme / Reklamation</button>
+      <button type="button" data-action="withdraw">💶 Entnahme</button>
+      <button type="button" data-action="reklamation">↩ Reklamation</button>
+      <button type="button" data-action="vorfuehrung">🎬 Vorführdaten</button>
+      <button type="button" data-action="gutschein">🎁 Gutschein</button>
+      <button type="button" id="tokenPayBtn" data-action="wertmarke">🪙 Wertmarke</button>
       <button type="button" data-action="opening">Eröffnung</button>
       <button type="button" data-action="closing">Tagesabschluss</button>
       <button type="button" data-action="cashdeposit">Bargeldübergabe</button>
@@ -234,6 +252,7 @@
       <button type="button" id="accountBalanceOpen">📊 Kontostände</button>
       <button type="button" data-action="currency">💱 Währungsrechner</button>
       <button type="button" data-action="central">Servicefreigabe</button>
+      <button type="button" id="layoutQuickToggle" class="kc-ansicht-schalter" title="Zwischen bisheriger und neuer Kassenansicht umschalten"><span class="kc-ansicht-punkt" aria-hidden="true"></span><span class="kc-ansicht-text">Neue Ansicht</span></button>
       <button value="close">Schließen</button>
     </div>
   </form>
@@ -299,7 +318,7 @@
     </div>
     <img id="productInfoImage" class="product-info-image" alt="">
     <div id="productInfoContent" class="product-info-content"></div>
-    <div class="dialog-actions product-info-actions"><button type="button" id="productInfoDetailsBtn" class="primary-action">Vollständige Produktinformationen</button><button value="close" class="dialog-close">Schließen</button></div>
+    <div class="dialog-actions product-info-actions"><button type="button" id="productInfoAusverkauftBtn" class="secondary-action">🚫 Als ausverkauft markieren</button><button type="button" id="productInfoDetailsBtn" class="primary-action">Vollständige Produktinformationen</button><button value="close" class="dialog-close">Schließen</button></div>
   </form>
 </dialog>
 
@@ -328,7 +347,7 @@
       <button type="button" data-settings-tab="deposit">Pfandregeln</button>
       <button type="button" data-settings-tab="groups">Warengruppen</button>
       <button type="button" data-settings-tab="articles">Artikel</button>
-      <button type="button" data-settings-tab="packages">📦 Packages</button>
+      <button type="button" data-settings-tab="packages">📦 Kombi</button>
       <button type="button" data-settings-tab="offers">🏷 Angebote & Happy Hour</button>
       <button type="button" data-settings-tab="system" class="superadmin-only">System</button>
       <button type="button" data-settings-tab="transfer" class="superadmin-only">Import / Export</button>
@@ -356,9 +375,16 @@
       <h3>Bedienung und sichtbare Kassentasten</h3>
       <label class="toggle-setting"><span><strong>Bediener vor jedem Verkauf bestätigen</strong><small>Vor dem ersten Artikel Bediener per QR oder Bedienertaste wählen.</small></span><input id="requireOperatorToggle" type="checkbox"></label>
       <label class="toggle-setting"><span><strong>Taste Personal anzeigen</strong></span><input id="showStaffToggle" type="checkbox"></label>
+      <label class="toggle-setting"><span><strong>Neues Kassenlayout</strong><small>Untere Leiste auf einer Höhe, ohne überlappende Knopfbeschriftungen. Ausschalten stellt die bisherige Ansicht unverändert wieder her.</small></span><input id="neuesLayoutToggle" type="checkbox"></label>
       <label class="toggle-setting"><span><strong>Taste Trinkgeld anzeigen</strong></span><input id="showTipToggle" type="checkbox"></label>
       <label class="toggle-setting"><span><strong>Taste Pfandrückgabe anzeigen</strong></span><input id="showDepositToggle" type="checkbox"></label>
       <label class="toggle-setting"><span><strong>Taste Bondruck anzeigen</strong></span><input id="showPrintToggle" type="checkbox"></label>
+      <label class="toggle-setting"><span><strong>Bon nach dem Verkauf drucken</strong><small>Trainingsbons werden nie gedruckt.</small></span>
+        <select id="bonDruckModus">
+          <option value="immer">Immer drucken</option>
+          <option value="fragen">Nach jedem Verkauf fragen</option>
+          <option value="nie">Nie drucken</option>
+        </select></label>
       <p class="setting-help">
         Pro Artikel können Zutaten, Allergene, Inhaltsstoffe, Herkunft, Zubereitungshinweise
         und frei definierte wichtige Hinweise gespeichert werden.
@@ -570,27 +596,27 @@
       <div class="masterdata-head">
         <div>
           <h3>Paket-Konfiguration</h3>
-          <p>Packages werden hier zentral festgelegt. Die Kasse zeigt ausschließlich freigegebene Packages.</p>
+          <p>Kombinationen werden hier zentral festgelegt. Die Kasse zeigt ausschließlich freigegebene Kombinationen.</p>
         </div>
         <span id="packageAiStatus" class="record-status">Noch nicht analysiert</span>
       </div>
 
       <div class="package-control-actions">
-        <button type="button" id="packageNewBtn">＋ Neues Package</button>
+        <button type="button" id="packageNewBtn">＋ Neue Kombination</button>
         <button type="button" id="packageSaveBtn" class="primary-action">💾 Speichern</button>
         <button type="button" id="packageDeleteBtn">🗑 Löschen</button>
         <button type="button" id="packageAnalyzeBtn">✨ Verkaufsdaten analysieren</button>
-        <button type="button" id="packageDailyRefreshBtn">↻ Tages-Packages neu erstellen</button>
+        <button type="button" id="packageDailyRefreshBtn">↻ Tages-Kombinationen neu erstellen</button>
       </div>
 
       <div class="package-control-grid">
         <div class="package-editor-card">
-          <h4>Package bearbeiten</h4>
+          <h4>Kombination bearbeiten</h4>
           <input id="packageId" type="hidden">
           <label><span>Name *</span><input id="packageName" maxlength="80" placeholder="z. B. Grünkohl + Glühwein"></label>
           <label><span>Erster Artikel *</span><select id="packageProduct1"></select></label>
           <label><span>Zweiter Artikel *</span><select id="packageProduct2"></select></label>
-          <label><span>Package-Preis *</span><input id="packagePrice" type="number" min="0" step="0.10"></label>
+          <label><span>Kombipreis (wird gerechnet)</span><input id="packagePrice" type="number" min="0" step="0.10" readonly title="Der Kombipreis ist immer die Summe der beiden Bestandteile. Eine Kombination ist ein Knopf, kein Rabatt."></label>
           <label><span>Bild / Leitartikel</span><select id="packageImageProduct"></select></label>
           <div class="master-form two-column">
             <label class="check-field"><span>Aktiv an Kasse</span><input id="packageActive" type="checkbox" checked></label>
@@ -606,14 +632,14 @@
           <label><span>Analyse-Zeitraum</span>
             <select id="packageAnalysisDays"><option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">90 Tage</option><option value="365">1 Jahr</option></select>
           </label>
-          <label><span>Maximale Tages-Packages</span><select id="packageMaxDaily"><option>2</option><option selected>4</option><option>6</option></select></label>
+          <label><span>Maximale Tages-Kombinationen</span><select id="packageMaxDaily"><option>2</option><option selected>4</option><option>6</option></select></label>
           <div id="packageSuggestionList" class="package-suggestion-list"><p>Noch keine Analyse durchgeführt.</p></div>
         </div>
       </div>
 
       <div class="master-list-wrap">
         <table class="master-table package-table">
-          <thead><tr><th>Package</th><th>Bestandteile</th><th>Einzelpreis</th><th>Packagepreis</th><th>Quelle</th><th>Status</th></tr></thead>
+          <thead><tr><th>Kombination</th><th>Bestandteile</th><th>Einzelpreis</th><th>Kombipreis</th><th>Quelle</th><th>Status</th></tr></thead>
           <tbody id="packageTableBody"></tbody>
         </table>
       </div>
@@ -1031,12 +1057,17 @@
       <div><span class="info-kicker">CLOSINGCORE</span><h2>Tagesabschluss</h2></div>
       <button value="close" class="icon-close">×</button>
     </div>
+    <!-- Erscheint NUR, wenn fuer heute kein Anfangsbestand gebucht ist. Bewusst hier im
+         Abschluss und nicht auf der Verkaufsoberflaeche - die Standbesatzung soll waehrend
+         des Betriebs keine Warnungen sehen. -->
+    <p id="closingOpeningHint" class="closing-hinweis" hidden></p>
     <div class="closing-kpis">
       <article><span>Anfangsbestand + Nachfüllungen</span><strong id="closingCashIn">0,00 €</strong></article>
       <article><span>Barverkäufe</span><strong id="closingCashSales">0,00 €</strong></article>
       <article><span>Bar-Trinkgeld / Aufrundung</span><strong id="closingCashTips">0,00 €</strong></article>
       <article><span>Entnahmen / Auszahlungen</span><strong id="closingCashOut">0,00 €</strong></article>
       <article><span>Erwarteter Bargeldbestand</span><strong id="closingExpected">0,00 €</strong></article>
+      <article><span>Personalverbrauch (kein Bargeld)</span><strong id="closingStaffTotal">0,00 €</strong></article>
     </div>
     <label>Abschlussnotiz<textarea id="closingNote" rows="3" placeholder="z. B. Schichtende Weihnachtsmarkt"></textarea></label>
     <div class="dialog-actions">
@@ -1115,20 +1146,8 @@
     </fieldset>
     <section id="complaintPanel" class="complaint-panel" hidden>
       <div class="complaint-head"><div><span class="info-kicker">RÜCKGABE</span><h3>Reklamationsauszahlung</h3></div><strong id="complaintArticleTotal">0,00 €</strong></div>
-      <label>Bonnummer / Referenz<input id="complaintBonReference" maxlength="40" placeholder="optional"></label>
       <fieldset class="complaint-field">
-        <legend>Zurückgegebene Artikel und Menge</legend>
-        <div class="complaint-article-toolbar">
-          <label>Artikel suchen
-            <input id="complaintArticleSearch" type="search" placeholder="Artikelname eingeben">
-          </label>
-          <button type="button" id="complaintClearSelection">Auswahl leeren</button>
-        </div>
-        <div id="complaintCategoryFilters" class="complaint-category-filters" aria-label="Warengruppen"></div>
-        <div id="complaintArticleList" class="complaint-article-list"></div>
-      </fieldset>
-      <fieldset class="complaint-field">
-        <legend>Reklamationsgrund auswählen</legend>
+        <legend>1. Warum wird reklamiert?</legend>
         <div id="complaintReasonButtons" class="complaint-reason-grid">
           <button type="button" data-complaint-reason="Verdorben">VERDORBEN</button>
           <button type="button" data-complaint-reason="Hat nicht geschmeckt">HAT NICHT GESCHMECKT</button>
@@ -1140,6 +1159,21 @@
           <button type="button" data-complaint-reason="Sonstiges">SONSTIGES</button>
         </div>
       </fieldset>
+      <fieldset class="complaint-field">
+        <legend>2. Welcher Artikel kommt zurück?</legend>
+        <div class="complaint-article-toolbar">
+          <label>Artikel suchen
+            <input id="complaintArticleSearch" type="search" placeholder="Artikelname eingeben">
+          </label>
+          <button type="button" id="complaintClearSelection">Auswahl leeren</button>
+        </div>
+        <div id="complaintCategoryFilters" class="complaint-category-filters" aria-label="Warengruppen"></div>
+        <div id="complaintArticleList" class="complaint-article-list"></div>
+      </fieldset>
+      <details class="complaint-optional">
+        <summary>Bonnummer angeben (optional)</summary>
+        <label>Bonnummer / Referenz<input id="complaintBonReference" maxlength="40" placeholder="optional"></label>
+      </details>
       <p class="complaint-help">Der Artikelwert wird als Auszahlungsbetrag vorgeschlagen. Der Betrag kann bei einer Teilkulanz angepasst werden; die Abweichung wird protokolliert.</p>
     </section>
     <label>Zusatz / Notiz<textarea id="withdrawNote" rows="2" placeholder="optional ergänzen"></textarea></label>
@@ -1244,10 +1278,15 @@
   <form method="dialog" class="dialog-card">
     <h2>Bargeldeinzahlung</h2>
     <p>QR-Code mit dem HID-Scanner einlesen oder den QR-Inhalt einfügen.</p>
-    <p id="cashTransferTestHint" class="test-phase-transfer-hint" hidden><strong>Testphase:</strong> Freigegebenen Übergabecode aus dem Übergabesystem verwenden. Dieser Hinweis wird für den späteren Betrieb zentral ausgeblendet.</p>
+    <p id="cashTransferTestHint" class="test-phase-transfer-hint" hidden><strong>So ist es gedacht:</strong> Hier gehört der freigegebene Übergabecode aus dem Übergabesystem hinein.</p>
     <textarea id="cashDepositPayload" rows="6"></textarea>
     <button type="button" id="applyCashDeposit" class="primary-action">Bargeldbestand übernehmen</button>
     <div id="cashDepositResult"></div>
+    <hr>
+    <p><small>Kein Scanner und Code kann nicht eingefügt werden? Kurzcode von Hand eingeben (Format: 2-1-060000-4):</small></p>
+    <input type="text" id="cashShortCodeInput" placeholder="z. B. 2-1-060000-4" maxlength="12">
+    <button type="button" id="applyCashShortCode">Kurzcode übernehmen</button>
+    <div id="cashShortCodeResult"></div>
     <button value="close">Schließen</button>
   </form>
 </dialog>
@@ -1330,7 +1369,12 @@
 </div>
 
 <script src="../pc-manager/vendor/qrcode-generator.js"></script>
+<!-- Ein QR-Zeichner fuer die ganze Suite: frueher hatte jedes Programm einen eigenen,
+     und derselbe Rundungsfehler musste dreimal repariert werden. -->
+<script src="../shared/kc-qr.js?build=0.1.0"></script>
+<script src="../shared/kc-allergene.js?build=0.1.0"></script>
 <script src="../shared/runtime-flags.js"></script>
+<script src="../shared/event-program-exchange-core-v010.js"></script>
 <script src="../cores/security-core/security-core.js"></script>
 <script src="../cores/audit-core/audit-core.js"></script>
 <div id="coachOverlay" class="coach-overlay" hidden>
@@ -1339,9 +1383,44 @@
 <script src="../cores/sound-core/sound-core.js"></script>
 <script src="../cores/health-core/health-core.js"></script>
 <script src="../cores/message-core/message-core.js"></script>
+<script src="../cores/time-clock-core/time-clock-core.js"></script>
+<script src="../shared/time-clock-duty-roster-adapter-v010.js"></script>
 <script src="../exchange-core-v31/exchange-filter.js"></script>
 <script src="cores/adaptive-layout-core/adaptive-layout-core.js"></script>
-<script src="app.js?build=0.31.3.6-r12"></script>
+<script src="../cores/pos-ui-profile-core/pos-ui-profile-core.js"></script>
+<script src="../shared/kc-krypto.js?build=1.0.0"></script>
+<script src="kc-hash-chain.js?build=0.1.0"></script>
+<script src="kc-sync-connection.js?build=0.2.0"></script>
+<script src="kc-sync-master-data.js?build=1.0.0"></script>
+<script src="kc-sync-remote-command.js?build=1.0.0"></script>
+<script src="kc-spiegel-modus.js?build=1.0.0"></script>
+<script src="kc-ausverkauft.js?build=1.0.0"></script>
+<script src="kc-sync-cash-transfer.js?build=1.0.0"></script>
+<script src="kc-transaction-store.js?build=0.1.0"></script>
+<script src="../shared/kc-artikelnummern-core.js?build=1.0.0"></script>
+<script src="../shared/kc-tastaturlayout.js?build=1.0.0"></script>
+<script>
+  // app.js + die beiden danach folgenden Skripte erst laden, NACHDEM der Stammdaten-Abrufversuch
+  // abgeschlossen ist (Erfolg oder Fehlschlag, siehe kc-sync-master-data.js) - app.js liest beim
+  // eigenen Start dadurch garantiert schon den frischesten verfügbaren Stand. Alle drei Skripte
+  // bewusst NACHEINANDER (nicht gleichzeitig) nachgeladen, um die ursprüngliche Reihenfolge exakt
+  // zu erhalten - kc-startup-check.js/kc-pin-lock.js könnten sonst vor app.js selbst laufen.
+  function ladeNacheinander(pfade) {
+    if (!pfade.length) return;
+    const s = document.createElement('script');
+    s.src = pfade[0];
+    s.onload = () => ladeNacheinander(pfade.slice(1));
+    document.body.appendChild(s);
+  }
+  window.KCMasterDataSync.bereit.finally(() => {
+    ladeNacheinander(['app.js?build=0.31.3.6-r12', '../shared/kc-happyhour.js?build=0.1.0', 'kc-happyhour-pos.js?build=0.1.0', 'kc-meldeweg.js?build=0.1.0', '../shared/kc-security-card.js?build=0.1.0', 'kc-security-card-pos.js?build=0.1.0', 'kc-zahl-zoom.js?build=0.1.0', 'kc-ansicht-umschalter.js?build=0.1.0', 'kc-startup-check.js?build=0.1.0', 'kc-pin-lock.js?build=0.1.0', 'kc-layout-neu.js?build=0.1.0', 'kc-erfassung-getrennt.js?build=0.1.0', 'kc-gutschein.js?build=0.1.0', 'kc-vorfuehrdaten.js?build=0.1.0']);
+  });
+</script>
+<script src="pos-ui-profile-consumer.js?build=0.1.0"></script>
+<script src="event-program-display.js?build=0.2.0"></script>
+<script src="time-clock-pos.js?build=0.1.0"></script>
+<script src="kc-sync-status-leds.js?build=0.2.0"></script>
+<script src="kc-sync-live-event.js?build=0.1.0"></script>
 <script src="training-demo-bridge.js?build=0.27.0"></script>
 
   <div id="screenSaver" class="screen-saver" hidden role="button" tabindex="0" aria-label="Bildschirm gesperrt. Zum Entsperren berühren.">
@@ -1357,5 +1436,49 @@
 <div id="legacyCompatibilityNodes" hidden aria-hidden="true">
   <button id="compactWorkspaceBtn" hidden aria-hidden="true"></button><div id="discountBanner" hidden aria-hidden="true"></div><div id="discountBannerText" hidden aria-hidden="true"></div><button id="exitDiscountModeBtn" hidden aria-hidden="true"></button><button id="exitTrainingModeBtn" hidden aria-hidden="true"></button><button id="professionalWorkspaceBtn" hidden aria-hidden="true"></button><button id="resetWorkspaceBtn" hidden aria-hidden="true"></button><button id="touchWorkspaceBtn" hidden aria-hidden="true"></button><div id="trainingBanner" hidden aria-hidden="true"></div><div id="workspaceEditorList" hidden aria-hidden="true"></div>
 </div>
+
+<dialog id="gutscheinDialog" class="kc-gs-dialog">
+  <div class="kc-gs-card">
+    <h2>Gutschein</h2>
+    <div class="kc-gs-reiter">
+      <button type="button" data-gs-reiter="verkauf" class="aktiv">Verkaufen</button>
+      <button type="button" data-gs-reiter="einloesen">Einlösen</button>
+      <button type="button" data-gs-reiter="liste">Übersicht</button>
+    </div>
+    <section data-gs-bereich="verkauf">
+      <p class="kc-gs-hinweis">Betrag wählen. Der Gutschein ist drei Jahre gültig; das Datum steht auf dem Bon.</p>
+      <div class="kc-gs-betraege" id="gsBetraege"></div>
+      <label class="kc-gs-frei">Anderer Betrag
+        <input type="text" id="gsFreiBetrag" inputmode="none" readonly placeholder="0,00">
+      </label>
+      <div class="kc-gs-ziffern" id="gsZiffern"></div>
+      <div class="kc-gs-aktion"><button type="button" id="gsAusstellen" class="kc-gs-haupt">Gutschein ausstellen und drucken</button></div>
+      <div id="gsErgebnis" class="kc-gs-ergebnis" hidden></div>
+    </section>
+    <section data-gs-bereich="einloesen" hidden>
+      <p class="kc-gs-hinweis">QR-Code scannen oder Nummer eintippen. Das Guthaben wird auf den offenen Bon angerechnet.</p>
+      <label class="kc-gs-frei">Gutscheinnummer
+        <input type="text" id="gsCode" placeholder="GS-2026-0001-42" autocomplete="off">
+      </label>
+      <div class="kc-gs-aktion"><button type="button" id="gsPruefen">Gutschein prüfen</button></div>
+      <div id="gsPruefErgebnis" class="kc-gs-ergebnis" hidden></div>
+    </section>
+    <section data-gs-bereich="liste" hidden>
+      <div class="kc-gs-filter">
+        <input type="text" id="gsSuche" placeholder="Nummer suchen">
+        <select id="gsFilter">
+          <option value="alle">Alle</option>
+          <option value="offen">Nur offene</option>
+          <option value="teilweise">Teilweise eingelöst</option>
+          <option value="eingeloest">Vollständig eingelöst</option>
+          <option value="abgelaufen">Abgelaufen</option>
+        </select>
+        <span id="gsSumme" class="kc-gs-summe"></span>
+      </div>
+      <div id="gsListe" class="kc-gs-liste"></div>
+    </section>
+    <div class="dialog-actions"><button type="button" data-gs-schliessen>Schließen</button></div>
+  </div>
+</dialog>
 </body>
 </html>

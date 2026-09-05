@@ -1,0 +1,53 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mein Merksatz · KC FUTURA</title>
+<style>
+:root{--navy:#0b2942;--gold:#efb13c;--text:#143047;--muted:#5a7080;--line:#cedbe4;--green:#2b9665}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,Arial,sans-serif;color:var(--text);background:linear-gradient(145deg,#071523,#123e61);min-height:100vh}
+.kopf{padding:16px 20px;display:flex;align-items:center;gap:16px;color:#fff}
+.kopf a{color:#dcebf3;text-decoration:none;font-weight:800;padding:8px 12px;border:1px solid #52738b;border-radius:9px}
+.inhalt{max-width:800px;margin:20px auto;padding:0 20px 60px}
+.panel{background:#fff;border-radius:22px;padding:clamp(20px,4vw,40px);box-shadow:0 22px 60px #0006;text-align:center}
+h1{color:var(--navy);margin-top:0}
+.raetsel{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 3px;margin:32px 0;font-size:1.6rem;font-weight:800;line-height:1.9;letter-spacing:.02em}
+.zeichen{display:inline-block;min-width:.85em;text-align:center;border-bottom:3px solid var(--line)}
+.zeichen.frei{border-color:var(--gold);color:var(--navy)}
+.zeichen.gesperrt{color:transparent}
+.leerzeichen{width:.6em;border:0}
+.fortschritt-leiste{height:14px;border-radius:99px;background:#eaf2f7;overflow:hidden;margin:20px 0}
+.fortschritt-leiste i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffe08a);border-radius:inherit;transition:width .4s}
+.hinweis{color:var(--muted);font-size:.95rem}
+.feier{display:none;background:#eafaf1;border:2px solid var(--green);border-radius:16px;padding:24px;margin-top:24px;text-align:left}
+.feier.zeigen{display:block}
+.feier h2{color:var(--green);margin-top:0}
+</style></head><body>
+<header class="kopf"><a href="../index.html">← Zurück</a></header>
+<main class="inhalt"><div class="panel">
+  <h1>Mein Lösungssatz</h1>
+  <p class="hinweis">Für jedes abgeschlossene Kapitel der Kassenschulung und jede abgeschlossene Academy-Folge kann sich irgendwo in deinem persönlichen Satz ein Buchstabe zeigen. Dein Satz ist nur für dich - niemand sonst hat denselben.</p>
+  <div class="fortschritt-leiste"><i id="leiste"></i></div>
+  <p class="hinweis" id="zaehler"></p>
+  <div class="raetsel" id="raetselAnzeige"></div>
+  <div class="feier" id="feier">
+    <h2>🎉 Für deinen Fleiß</h2>
+    <p>Für deinen Fleiß hier in der Schulung und in der KC FUTURA Academy bekommst du deinen persönlichen Merksatz, der dich begleiten soll:</p>
+    <p id="feierSatz" style="font-size:1.3rem;font-weight:800;color:var(--navy)"></p>
+  </div>
+</div></main>
+<script src="../shared/merksatz-pool.js"></script>
+<script src="../shared/merksatz-core.js"></script>
+<script>
+const daten = window.KCMerksatz.fortschritt();
+document.getElementById('raetselAnzeige').innerHTML = daten.anzeige.map(z => {
+  if (z.zeichen === ' ') return '<span class="zeichen leerzeichen"></span>';
+  return `<span class="zeichen ${z.sichtbar ? 'frei' : 'gesperrt'}">${z.sichtbar ? z.zeichen : '_'}</span>`;
+}).join('');
+document.getElementById('leiste').style.width = Math.round((daten.anzahlFrei / daten.gesamt) * 100) + '%';
+document.getElementById('zaehler').textContent = `${daten.anzahlFrei} von ${daten.gesamt} Buchstaben freigeschaltet`;
+if (daten.vollstaendig) {
+  document.getElementById('feier').classList.add('zeigen');
+  document.getElementById('feierSatz').textContent = '„' + daten.satz + '"';
+  window.KCMerksatz.feierAlsGezeigtMarkieren();
+}
+</script>
+</body></html>

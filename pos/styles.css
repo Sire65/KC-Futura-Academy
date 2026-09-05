@@ -10,15 +10,37 @@ body{min-height:100vh}
 button,input{font:inherit}
 button{cursor:pointer}
 .app-shell{min-height:100vh;background:linear-gradient(#f6f3ee,#e8e8e8)}
-.app-header{height:104px;background:linear-gradient(180deg,#07111f,#0c1726);color:white;display:grid;grid-template-columns:32% 50% 18%;align-items:stretch;box-shadow:var(--shadow)}
-.brand-block{border:0;background:transparent;color:white;display:flex;align-items:center;padding:8px 20px;text-align:left}
-.brand-block img{width:90px;height:90px;object-fit:contain;margin-right:15px}
+.app-header{height:82px;background:linear-gradient(180deg,#07111f,#0c1726);color:white;display:grid;grid-template-columns:18% 1fr auto;align-items:stretch;box-shadow:var(--shadow)}
+.brand-block{border:0;border-right:1px solid #273448;background:transparent;color:white;display:flex;align-items:center;padding:6px 6px 6px 10px;text-align:left;min-width:0;overflow:hidden}
+/* BEFUND 31.08.2026: hier stand `filter:brightness(0) invert(1)`.
+   Dieser Kniff macht aus einem Logo eine weisse Silhouette - er funktioniert NUR bei einem
+   Bild mit durchsichtigem Hintergrund. Das Vereinswappen (assets/logo.webp) ist ein volles
+   Rechteck ohne Transparenz; brightness(0) faerbt jeden Bildpunkt schwarz, invert(1) macht
+   daraus WEISS - uebrig blieb ein weisser Kasten. Genau so stand das Logo oben links auf
+   dem Bildschirm, an der Stelle, die man zuerst ansieht.
+   Jetzt wird das Wappen unveraendert gezeigt. Es bringt seinen eigenen dunklen Grund mit
+   und passt damit auf die dunkle Kopfzeile. */
+/* Kochmuetze wie in der KC Verwaltung, weisse Fassung fuer die dunkle Kopfzeile. Das
+   Bild ist breiter als hoch (3:2), deshalb mehr Breite als Hoehe - sonst steht die Muetze
+   in einem quadratischen Kasten und wirkt gequetscht. Kein Rahmen und kein Hintergrund:
+   die Muetze ist freigestellt. */
+.brand-block img{width:76px;height:52px;object-fit:contain;margin-right:12px;border-radius:0}
 .brand-text{display:flex;flex-direction:column}
-.brand-text strong{font-size:2rem;line-height:1}
+.brand-text strong{font-size:1.35rem;line-height:1.15}
 .brand-text small{font-size:1.25rem;color:var(--gold);font-style:italic;margin-top:8px;font-weight:bold}
-.header-info{display:grid;grid-template-columns:1.1fr 1fr .75fr 1.15fr;border-left:1px solid #273448}
-.info-cell{padding:16px 18px;border-right:1px solid #273448;display:flex;flex-direction:column;justify-content:center}
+.header-info{display:grid;grid-template-columns:1.1fr 1fr .75fr 1.15fr;border-left:1px solid #273448;min-width:0;overflow:hidden}
+.register-name-solo{font-size:1.5rem!important}
+.date-cell-inline{display:flex!important;flex-direction:row!important;justify-content:center;gap:8px;align-items:baseline;padding-top:10px}
+.date-cell-inline strong{font-size:1.05rem}
+/* BEFUND (User): die LEDs standen als 2x2-Block da. Ursache: beide LED-Gruppen waren je
+   EINE Spalte mit ZWEI Zeilen - nebeneinandergestellt ergab das den Block. Jetzt liegen
+   alle vier LEDs in einer Reihe, auf gleicher Hoehe wie die Knoepfe daneben. */
+.supabase-led-group{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:0 8px;height:52px}
+.supabase-led{width:20px;height:20px;border-radius:50%;border:2px solid #fff;background:#78848e;display:inline-block}
+.info-cell{padding:16px 18px;border-right:1px solid #273448;display:flex;flex-direction:column;justify-content:center;min-width:0;overflow:hidden}
 .info-cell span{font-size:.85rem;font-weight:bold}
+.info-cell.compact span{font-size:.72rem}
+.info-cell.compact strong{font-size:.82rem}
 .info-cell strong{font-size:1.55rem;margin-top:4px}
 .info-cell small{font-size:1rem;color:#e8edf5;margin-top:4px}
 .info-cell .accent{color:var(--gold);font-size:1.8rem}
@@ -26,6 +48,26 @@ button{cursor:pointer}
 .date-cell small{font-size:1.35rem}
 .header-status{display:flex;justify-content:flex-end}
 .header-status>div,.menu-button{border-left:1px solid #273448;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;background:transparent}
+.header-status #kcProgramStatusBtn{order:1}
+.header-status #screenLockBtn{order:2}
+.header-status #cashSoundBtn{order:3}
+.header-status #timeClockBtn{order:4}
+.header-status .supabase-led-group{order:5;border-left:0!important;margin-left:-1px}
+/* Diese Gruppe ist ein div und wurde deshalb von der allgemeinen Regel weiter oben
+   (.header-status>div{display:flex;flex-direction:column}) in eine SPALTE gezwungen -
+   daher standen ihre beiden LEDs uebereinander. Hier ausdruecklich als Reihe gesetzt,
+   damit alle vier LEDs auf einer Linie mit den Knoepfen liegen. */
+.header-status #kcSyncStatusLeds{order:6;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center;gap:6px;padding:0 8px;height:52px}
+.header-status #menuBtn{order:7}
+/* BEFUND (User): der Spiegeln-Knopf war kleiner als die uebrigen und stand ganz vorne.
+   Ursache: er fehlte in der 52-px-Liste (blieb bei 48 px) UND hatte keine Reihenfolge -
+   ohne order rutscht ein Flex-Kind automatisch an den Anfang. Jetzt gleiche Groesse und
+   sein fester Platz direkt links neben "Programm verlassen". */
+.header-status #mirrorLayoutBtn{order:8}
+.header-status #headerExitBtn{order:9}
+.header-status #screenLockBtn,.header-status #cashSoundBtn,.header-status #timeClockBtn,.header-status #menuBtn,.header-status #headerExitBtn,.header-status #kcProgramStatusBtn,.header-status #mirrorLayoutBtn{width:52px!important;min-width:52px!important;height:52px!important;min-height:52px!important;flex:0 0 52px!important;border-left:0!important;border-radius:9px!important;font-size:1.3rem!important;padding:0!important}
+.header-status #kcProgramStatusBtn{font-size:.6rem!important;line-height:1.1!important;white-space:normal!important}
+.header-status #menuBtn small{display:none}
 .status-icon{font-size:1.7rem}
 .header-status small{font-size:.78rem}
 .header-status b{font-size:.72rem}
@@ -33,6 +75,17 @@ button{cursor:pointer}
 .menu-button{border-top:0;border-right:0;border-bottom:0;font-size:1.8rem;min-width:82px;width:82px}
 .menu-button small{margin-top:5px}
 .main-layout{display:grid;grid-template-columns:58% 42%;gap:10px;padding:12px 14px 8px;height:700px}
+
+/* Spiegel-Modus (Linkshänder-Ansicht) - dreht NUR Verkaufsfläche+Warenkorb, nicht Kopf-/Meldungszeile.
+   Bewusst so gebaut, dass künftige Änderungen INNERHALB dieser beiden Bereiche automatisch mitgespiegelt
+   werden, ohne dass hier je etwas nachgepflegt werden muss: direction:rtl auf dem Rahmen vertauscht nur
+   die Position der zwei Rasterspalten, direction:ltr auf den beiden Bereichen selbst macht ihren ganzen
+   Inhalt (Text, Symbole, Zahlen) sofort wieder normal - als hätte die Spiegelung dort gar nicht stattgefunden. */
+body.kc-spiegel-modus .main-layout{direction:rtl}
+body.kc-spiegel-modus .main-layout>.sales-area,
+body.kc-spiegel-modus .main-layout>.cart-area{direction:ltr}
+.mirror-layout-button.active{background:#176329!important;color:#fff!important;border-color:#176329!important}
+#mirrorLayoutBtn{border-left:1px solid #273448}
 .sales-area{min-width:0}
 .category-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:5px;margin-bottom:10px}
 .category-tabs button{height:56px;border:1px solid #cbd0d7;background:linear-gradient(#fff,#e8e8e8);border-radius:8px;font-weight:800;font-size:1rem;color:#172033;display:flex;align-items:center;justify-content:center;gap:7px;padding:5px 9px}
@@ -80,7 +133,7 @@ button{cursor:pointer}
   align-items:stretch;
   padding:10px 14px 10px;
   border-top:1px solid #c4cbd3;
-  min-height:230px
+  min-height:190px
 }
 .scanner-card,.cash-card,.change-card,.card-payment,.keypad,.main-actions{background:#f9fafb;border:1px solid #cfd4da;border-radius:9px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
 .scanner-card,.cash-card,.change-card,.card-payment,.keypad,.main-actions{min-width:0;min-height:0}
@@ -89,20 +142,24 @@ button{cursor:pointer}
 .scanner-card button{border:1px solid #cbd0d6;background:linear-gradient(#fff,#e5e5e5);border-radius:7px;padding:10px;font-weight:bold}
 .cash-card{grid-area:cash;padding:8px 10px}.cash-card h3{font-size:.9rem;margin:0 0 8px}
 .banknote-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.banknote-button{height:88px;border:1px solid #cfd4d9;border-radius:6px;background:#fff;padding:5px;position:relative}
+.banknote-button{height:105px;border:1px solid #cfd4d9;border-radius:6px;background:#fff;padding:5px;position:relative}
 .banknote-visual{height:54px;border-radius:3px;display:flex;align-items:center;justify-content:center;white-space:nowrap;font-size:clamp(1rem,1.25vw,1.35rem);font-weight:900;border:1px solid rgba(0,0,0,.18);box-shadow:inset 0 0 12px rgba(255,255,255,.6)}
+.banknote-foto{background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#fff;align-items:flex-end;justify-content:flex-start;position:relative}
+.banknote-foto small{background:#00000099;color:#fff;font-size:.72rem;font-weight:900;padding:2px 6px;border-radius:0 4px 0 3px;line-height:1.3}
 .n5{background:linear-gradient(135deg,#d6d9df,#f5f6f7,#aeb5bf)}
 .n10{background:linear-gradient(135deg,#f0a0a0,#f9d0d0,#dd6d6d)}
 .n20{background:linear-gradient(135deg,#7fb3e8,#d9e9f9,#4d8fce)}
 .n50{background:linear-gradient(135deg,#e7b777,#f5ddad,#ca8c32)}
 .n100{background:linear-gradient(135deg,#79c994,#d6f0df,#4eaa70)}
 .banknote-button b{display:block;text-align:center;margin-top:4px;font-size:1.05rem}
-.coin-row{display:flex;justify-content:space-around;gap:4px;margin-top:7px}
+.coin-row{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:7px}
 .coin-button{min-width:0;border:0;background:transparent;font-size:.74rem;font-weight:bold;display:flex;align-items:center;justify-content:center;white-space:nowrap;padding:0 2px}
 .coin{display:inline-flex;flex:0 0 32px;width:32px;height:32px;border-radius:50%;align-items:center;justify-content:center;border:2px solid #9b9b9b;background:radial-gradient(circle at 35% 30%,#fff,#bfc2c5);margin-right:3px}
+.coin-foto{background-size:cover;background-position:center;border-color:#c9ccd0}
 .coin.gold{background:radial-gradient(circle at 35% 30%,#fff0a0,#c99a2c);border-color:#ac7d1a}
-.cash-finish-row{display:grid;grid-template-columns:1.35fr .85fr;gap:7px;margin-top:7px}.exact-button,.roundup-button{width:100%;height:40px;border:1px solid #cbd0d6;border-radius:6px;font-weight:900}.exact-button{background:linear-gradient(#fff,#ececec)}.roundup-button{background:linear-gradient(#ffe29a,#f2b63f);color:#3b2900}
-.change-card{grid-area:change;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px}
+.cash-finish-row{display:grid;grid-template-columns:1.35fr .85fr;gap:7px;margin-top:7px}.exact-button,.roundup-button{width:100%;height:54px;border:1px solid #cbd0d6;border-radius:6px;font-weight:900}.exact-button{background:linear-gradient(#fff,#ececec)}.roundup-button{background:linear-gradient(#ffe29a,#f2b63f);color:#3b2900}
+.change-card{grid-area:change;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px}
+.change-card-divider{width:100%;height:1px;background:#dfe3e8;margin:4px 0}
 .change-card-head{width:100%;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}.change-card-head>span{font-weight:900}.change-card>strong{font-size:2.8rem;color:#667085;margin:10px 0 5px;transition:color .15s ease}.change-card>small{display:flex;justify-content:space-between;width:100%;margin-top:3px}.change-payment-state{width:100%;min-height:29px;display:flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 8px;margin:0 0 5px;background:#eef1f4;color:#667085;font-size:.72rem;font-weight:900;font-style:normal;text-align:center}.change-card.payment-insufficient{border-color:#d8352e;background:#fff5f4;box-shadow:0 0 0 3px rgba(216,53,46,.16)}.change-card.payment-insufficient>strong{color:#c9231f}.change-card.payment-insufficient .change-payment-state{background:#fee2e2;color:#991b1b}.change-card.payment-sufficient{border-color:#159426;background:#f1fbf3;box-shadow:0 0 0 3px rgba(21,148,38,.15)}.change-card.payment-sufficient>strong{color:#128b1c}.change-card.payment-sufficient .change-payment-state{background:#dcfce7;color:#166534}
 .cash-undo{min-width:54px;min-height:48px;border:1px solid #b9c3ce;border-radius:8px;background:linear-gradient(#fff,#e8edf2);color:#173765;display:flex;align-items:center;justify-content:center;gap:5px;padding:4px 8px;font-weight:900}.cash-undo b{font-size:1.75rem;line-height:1}.cash-undo small{font-size:.62rem;line-height:1.05;max-width:58px;text-align:left}.cash-undo:not(:disabled){box-shadow:0 0 0 2px rgba(23,107,176,.18)}.cash-undo:disabled{opacity:.38;cursor:not-allowed}
 .card-payment{grid-area:card;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #cfd4da;font-size:2rem}
@@ -131,8 +188,8 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
 .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .more-grid button{background:#e7e9ec}
 @media(max-width:1500px){
-  .app-header{grid-template-columns:34% 48% 18%}
-  .brand-text strong{font-size:1.55rem}.brand-text small{font-size:1rem}
+  .app-header{grid-template-columns:24% 1fr auto}
+  .brand-text strong{font-size:1.3rem}.brand-text small{font-size:.85rem}
   .bottom-layout{
     grid-template-columns:minmax(360px,1.5fr) minmax(190px,.8fr) minmax(260px,1fr);
     grid-template-areas:"cash change actions" "keypad card scanner";
@@ -151,7 +208,7 @@ dialog::backdrop{background:rgba(0,0,0,.72)}
   .status-footer{flex-wrap:wrap;height:auto;gap:10px;padding:12px}
 }
 
-.option-card{max-width:520px}.option-subtitle{color:#667085;margin-top:-8px}.option-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:18px 0}.option-choice{display:grid;grid-template-columns:54px 1fr auto;align-items:center;gap:12px;border:1px solid #cfd4da;border-radius:10px;background:linear-gradient(#fff,#f0f2f4);padding:12px;text-align:left}.option-choice .option-icon{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#17243a;color:white;font-size:1.4rem}.option-choice strong{display:block;font-size:1.05rem}.option-choice small{color:#667085}.option-choice b{font-size:1.1rem}.dialog-close{width:100%;border:0;border-radius:8px;padding:12px;background:#e5e7eb;font-weight:800}.settings-card{max-width:580px}.setting-line{display:grid;gap:8px;margin:18px 0}.setting-line span{font-weight:900}.setting-line select{padding:12px;border:1px solid #cfd4da;border-radius:8px;background:white}.setting-help{color:#667085;font-size:.9rem;line-height:1.5}.option-tag{display:block;font-size:.78rem;color:#f3b63f;margin-top:2px}.deposit-tag{display:block;font-size:.72rem;color:#fff;background:rgba(0,0,0,.48);padding:2px 5px;border-radius:4px;margin:4px auto 0;width:max-content}.cart-option{display:block;color:#7a4c00;font-size:.78rem;font-weight:700}.cart-deposit{display:block;color:#1264ad;font-size:.76rem}.rule-chip{font-size:.72rem;background:#f3b63f;color:#111827;border-radius:4px;padding:2px 5px;margin-left:5px}
+.option-card{max-width:520px}.option-subtitle{color:#667085;margin-top:-8px}.option-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:18px 0}.option-choice{display:grid;grid-template-columns:54px 1fr auto;align-items:center;gap:12px;border:1px solid #cfd4da;border-radius:10px;background:linear-gradient(#fff,#f0f2f4);padding:12px;text-align:left}.option-choice .option-icon{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#17243a;color:white;font-size:1.4rem}.option-choice strong{display:block;font-size:1.05rem}.option-choice small{color:#667085}.option-choice b{font-size:1.1rem}.dialog-close{width:100%;border:0;border-radius:8px;padding:12px;background:#e5e7eb;font-weight:800}.settings-card{max-width:580px}.setting-line{display:grid;gap:8px;margin:18px 0}.setting-line span{font-weight:900}.setting-line select{padding:12px;border:1px solid #cfd4da;border-radius:8px;background:white}.setting-help{color:#667085;font-size:.9rem;line-height:1.5}.option-tag{display:block;font-size:.78rem;color:#f3b63f;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.deposit-tag{display:block;font-size:.72rem;color:#fff;background:rgba(0,0,0,.48);padding:2px 5px;border-radius:4px;margin:4px auto 0;width:max-content;max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cart-option{display:block;color:#7a4c00;font-size:.78rem;font-weight:700}.cart-deposit{display:block;color:#1264ad;font-size:.76rem}.rule-chip{font-size:.72rem;background:#f3b63f;color:#111827;border-radius:4px;padding:2px 5px;margin-left:5px}
 
 
 /* V0.4.0 – Artikelinformationen und Layoutprofile */
@@ -432,7 +489,7 @@ body:not(.admin-open) .settings-card{visibility:visible}
 .mode-strip button.active{background:#173765;color:#fff}
 .operator-button{display:grid!important;grid-template-columns:1fr;line-height:1.05;min-width:145px;text-align:left}.operator-button span{white-space:nowrap}.operator-button small{font-size:.68rem;color:#176329;margin-top:3px}.operator-button.needs-confirmation{background:#fff2cf;border-color:#d49200}.operator-button.needs-confirmation small{color:#a44900}
 .system-hint{margin-left:auto;padding:7px 11px;border-radius:999px;background:#dff3e3;color:#176329;font-weight:800}
-.operator-mini-dashboard{display:flex;flex-direction:column;justify-content:center;padding:10px 14px;font-size:.72rem;gap:4px}
+.operator-mini-dashboard{display:flex;flex-direction:column;justify-content:center;padding:10px 8px 10px 4px;margin-right:52px;font-size:.72rem;gap:4px;border-right:1px solid #273448}
 .operator-mini-dashboard span{white-space:nowrap}
 .quantity-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:9px;margin:14px 0}
 .quantity-choice-grid button{min-height:65px;border:0;border-radius:8px;background:#173765;color:white;font-size:1.5rem;font-weight:1000}
@@ -726,7 +783,18 @@ body.training-mode .sales-area,body.training-mode .cart-area,body.training-mode 
 body.discount-mode .sales-area,body.discount-mode .cart-area,body.discount-mode .bottom-layout{background-color:#fff8d9!important;transition:background-color .18s ease}
 body.training-mode.discount-mode .sales-area,body.training-mode.discount-mode .cart-area,body.training-mode.discount-mode .bottom-layout{background:linear-gradient(135deg,#eaf5ff 0 50%,#fff8d9 50% 100%)!important}
 body.training-mode{box-shadow:none}
-body.training-mode .app-header{background:inherit}
+/* BEFUND 31.08.2026 (Generalprobe): hier stand `background:inherit`. Die Kopfzeile hat aber
+   WEISSE Schrift - sie ist fuer den dunklen Kopf gemacht. "inherit" holt den hellen
+   Seitenhintergrund herauf, und damit stand im Trainingsmodus weisse Schrift auf fast
+   weissem Grund: Vereinsname, Kassenname, Version, Uhrzeit und der Kassenstatus waren
+   praktisch unsichtbar - ausgerechnet in dem Modus, in dem man ueben will.
+   (Sichtbar wurde das erst, nachdem body.training-mode ueberhaupt rechtzeitig gesetzt wird,
+   siehe applyModes in pos/app.js.)
+   Jetzt bekommt die Kopfzeile im Trainingsmodus einen eigenen, dunklen Braunton: die Schrift
+   bleibt lesbar, und man sieht auf den ersten Blick, dass es nicht der Normalbetrieb ist.
+   Der 8-px-Rahmen um den ganzen Bildschirm bleibt abgeschaltet (Zeile darueber) - er war zu
+   aufdringlich; die Kopfzeile und die blaue Arbeitsflaeche reichen als Signal. */
+body.training-mode .app-header{background:linear-gradient(180deg,#4a3510,#2f2209)}
 .mode-strip #trainingModeBtn{display:initial}
 .main-actions #discountBtn,.main-actions #staffBtn,.main-actions #depositBtn,.main-actions #tipBtn,.main-actions #printBonBtn,.main-actions #trainingModeBtn{display:flex!important;align-items:center;justify-content:center}
 .main-actions{display:grid!important;grid-template-columns:minmax(220px,1.7fr) repeat(3,minmax(118px,1fr));grid-auto-rows:minmax(64px,auto);gap:8px}
@@ -1413,6 +1481,17 @@ html,body{
 .cart-quantity-bar{grid-template-columns:auto repeat(7,minmax(36px,1fr)) minmax(36px,1fr) 44px!important}
 .undo-quantity-button{width:42px!important;min-width:42px!important;height:38px!important;border:2px solid #8aa1b5!important;border-radius:8px!important;background:#eef4f8!important;color:#14354f!important;font-size:1.45rem!important;font-weight:1000!important}
 .undo-quantity-button:disabled{opacity:.35}
+
+/* ½-Portion je Bonzeile. Der Knopf steht in einer eigenen Spalte rechts neben dem
+   Artikelnamen; die Spalte hat immer dieselbe Breite, auch wenn ein Artikel keine halbe
+   Portion kennt - so stehen alle Knoepfe genau untereinander und die Zeilen springen nicht.
+   Eingeschaltet wird er deutlich gruen: am Stand muss man von weitem sehen, welche Zeile
+   eine halbe Portion ist. */
+.half-portion-cell{display:flex;align-items:center;justify-content:center}
+/* Fingergroesse: der Knopf wird am Stand mit Handschuhen getroffen, deshalb deutlich
+   groesser als der Rabattknopf und nicht kleiner als 56x46. */
+.half-portion-button{width:56px;min-width:56px;height:46px;border:2px solid #8aa1b5;border-radius:9px;background:#eef4f8;color:#14354f;font-size:1.7rem;font-weight:1000;line-height:1;cursor:pointer}
+.half-portion-button.active{background:#1f7a3d;border-color:#14532b;color:#ffffff}
 body.rush-mode .main-actions{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(120px,.72fr) minmax(120px,.72fr)!important;grid-template-rows:minmax(82px,1fr) minmax(72px,.88fr)!important;gap:8px!important;overflow:hidden!important}
 body.rush-mode .main-actions #payBtn{grid-column:1!important;grid-row:1 / span 2!important;width:100%!important;min-height:0!important}
 body.rush-mode .main-actions #depositBtn{display:flex!important;grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important}
@@ -1571,7 +1650,7 @@ body.rush-mode .main-actions #moreBtn{grid-column:2 / span 2!important;grid-row:
 
 /* Positionsrabatt direkt hinter jedem Artikel */
 .cart-row{
-  grid-template-columns:48px minmax(0,1fr) auto auto auto auto!important;
+  grid-template-columns:48px minmax(0,1fr) auto auto auto auto auto!important;
 }
 .position-discount-button{
   min-width:76px!important;
@@ -1656,18 +1735,23 @@ body.rush-mode .main-actions #moreBtn{grid-column:2/span 2!important;grid-row:3!
   font-weight:1000;
   letter-spacing:.035em;
 }
+/* Eigene Spalte fuer die halbe Portion, LINKS neben dem Zeilenrabatt. Vorher hatte sie
+   keine Spalte zugewiesen und wurde vom Raster nach oben gesetzt - der Knopf stand ueber
+   dem Rabattknopf statt daneben. Die Spalte ist immer da, auch wenn ein Artikel keine
+   halbe Portion kennt: so stehen alle Knoepfe genau untereinander. */
 .cart-row{
   display:grid!important;
-  grid-template-columns:48px minmax(0,1fr) 92px 112px 104px 42px!important;
+  grid-template-columns:48px minmax(0,1fr) 62px 76px 96px 80px 42px!important;
   gap:8px!important;
   align-items:center!important;
 }
 .cart-row .cart-thumb{grid-column:1}
 .cart-row .cart-name{grid-column:2;min-width:0}
-.cart-row .position-discount-button{grid-column:3}
-.cart-row .qty-box{grid-column:4}
-.cart-row .row-total{grid-column:5;text-align:right;white-space:nowrap}
-.cart-row .delete-row{grid-column:6}
+.cart-row .half-portion-cell{grid-column:3;margin-right:6px}
+.cart-row .position-discount-button{grid-column:4}
+.cart-row .qty-box{grid-column:5}
+.cart-row .row-total{grid-column:6;text-align:right;white-space:nowrap}
+.cart-row .delete-row{grid-column:7}
 .cart-line-price{
   display:flex;
   flex-direction:column;
@@ -1817,6 +1901,9 @@ body.rush-mode .main-actions #moreBtn{grid-column:2/span 2!important;grid-row:3!
 .keypad-display small{color:#e2e8f0;line-height:1.2}
 .keypad-control-mode{border-style:dashed!important}
 .exact-button{background:#166534!important;color:#fff!important;border-color:#14532d!important}
+.exact-button:disabled{background:#d1d5db!important;color:#8a8f98!important;border-color:#b8bcc2!important;cursor:not-allowed;opacity:.85}
+body.training-mode .main-actions .pay{background:linear-gradient(#a855f7,#7c2fd6)!important}
+body.training-mode .exact-button:not(:disabled){background:#7c2fd6!important;border-color:#5b21b6!important}
 @media(max-width:1050px){.keypad-mode-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* AutoBarButton V0.29.0 */
@@ -1947,7 +2034,20 @@ html,body{height:var(--app-height,100dvh);max-height:var(--app-height,100dvh);ov
 .app-shell{height:var(--app-height,100dvh);min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;overflow:hidden}
 .main-layout{height:auto!important;min-height:0;overflow:hidden}
 .sales-area,.cart-area{min-height:0;overflow:hidden}
-.sales-area{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+/* BEFUND (User, Foto vom Stand): in den Stoßzeiten waren die Warengruppen weg - sie lagen
+   platt hinter den Artikelkacheln. URSACHE: die Zeilen waren nach POSITION vergeben
+   (auto / minmax(0,1fr) / auto). Solange die Modus-Zeile ausgeblendet war, passte das zufällig.
+   Sobald sie erscheint - also genau in den Stoßzeiten und im Trainingsmodus - rutschte alles
+   eine Zeile weiter: die Warengruppen landeten auf der flexiblen Zeile und wurden von der
+   Artikelfläche auf 0 Pixel zusammengedrückt (gemessen: 28px / 0px / 548px).
+   JETZT bekommt jedes Element seine EIGENE Zeile zugewiesen. Damit ist es egal, ob die
+   Modus-Zeile da ist oder nicht - die Warengruppen behalten immer ihre natürliche Höhe, und
+   nur die Artikelfläche gibt nach. */
+.sales-area{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}
+.sales-area>.workspace-mode-panel{grid-row:1}
+.sales-area>.category-tabs{grid-row:2}
+.sales-area>.product-grid{grid-row:3}
+.sales-area>.pager{grid-row:4}
 .product-grid{height:auto!important;min-height:0}
 .cart-list{min-height:0;overscroll-behavior:contain}
 
@@ -1990,7 +2090,7 @@ body.rush-mode #rushModeBtn{display:inline-flex!important}
 .bottom-layout .main-actions .pay{min-height:0!important;height:100%!important}
 .bottom-layout .main-actions .pay canvas{width:42px!important;height:42px!important}
 .bottom-layout .banknote-button{height:clamp(45px,6dvh,62px)!important}
-.bottom-layout .coin{width:26px!important;height:26px!important;flex-basis:26px!important}
+.bottom-layout .coin{width:20px!important;height:20px!important;flex-basis:20px!important}
 .bottom-layout .cash-finish-row button{min-height:34px!important}
 @media (min-width:901px) and (max-height:800px){
   .bottom-layout{height:clamp(184px,27dvh,210px)!important;min-height:184px!important}
@@ -2009,8 +2109,8 @@ body.rush-mode #rushModeBtn{display:inline-flex!important}
 .exit-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.exit-action-grid button{min-height:58px;border:1px solid #cbd0d6;border-radius:8px;background:#eef1f4;font-weight:900}.exit-action-grid .danger-action{background:#b91c1c;color:#fff;border-color:#8d1111}
 .ended-screen{position:fixed;inset:0;z-index:100000;background:linear-gradient(145deg,#07111f,#12243d);color:#fff;display:grid;place-items:center;padding:24px}.ended-screen[hidden]{display:none}.ended-screen>div{max-width:620px;text-align:center}.ended-screen span{font-size:5rem}.ended-screen h1{font-size:2rem}.ended-screen p{line-height:1.6;color:#dbe5f2}.ended-screen button{border:0;border-radius:9px;padding:14px 24px;background:#20a53a;color:#fff;font-size:1.05rem;font-weight:1000}
 @media (min-width:901px){
-  body.tablet-compact-height .app-header{height:78px}.tablet-compact-height .brand-block img{width:64px;height:64px}.tablet-compact-height .brand-text strong{font-size:1.45rem}.tablet-compact-height .brand-text small{font-size:.9rem;margin-top:4px}.tablet-compact-height .info-cell{padding:8px 12px}.tablet-compact-height .info-cell strong{font-size:1.15rem}.tablet-compact-height .mode-strip{min-height:42px!important;padding:4px 8px!important}.tablet-compact-height .main-layout{padding:6px 9px 4px;gap:7px}.tablet-compact-height .category-tabs{margin-bottom:5px}.tablet-compact-height .category-tabs button{height:42px;font-size:.86rem}.tablet-compact-height .pager{height:36px;margin-top:2px}.tablet-compact-height .cart-title{min-height:58px}.tablet-compact-height .cart-row{min-height:52px}.tablet-compact-height .summary-meta{min-height:40px}.tablet-compact-height .grand-total{height:58px}.tablet-compact-height .grand-total strong{font-size:2rem}.tablet-compact-height .bottom-layout{padding:6px 9px;gap:7px;height:190px}.tablet-compact-height .banknote-button{height:66px}.tablet-compact-height .banknote-visual{height:38px}.tablet-compact-height .coin{width:27px;height:27px;flex-basis:27px}.tablet-compact-height .status-footer{height:40px;padding:0 14px}
-  body.tablet-very-compact .app-header{height:66px}.tablet-very-compact .brand-block img{width:52px;height:52px}.tablet-very-compact .header-info .info-cell:nth-child(2){display:none}.tablet-very-compact .bottom-layout{height:164px}.tablet-very-compact .scanner-card{display:none}.tablet-very-compact .bottom-layout{grid-template-columns:minmax(360px,2fr) minmax(190px,1fr) minmax(110px,.55fr) minmax(190px,1fr) minmax(300px,1.5fr);grid-template-areas:"cash change card keypad actions"}.tablet-very-compact .banknote-button{height:55px}.tablet-very-compact .cash-card h3{display:none}.tablet-very-compact .cash-finish-row{margin-top:3px}.tablet-very-compact .grand-total{height:52px}.tablet-very-compact .summary-meta{min-height:34px}
+  body.tablet-compact-height .app-header{height:78px}.tablet-compact-height .brand-block img{width:84px;height:56px}.tablet-compact-height .brand-text strong{font-size:1.45rem}.tablet-compact-height .brand-text small{font-size:.9rem;margin-top:4px}.tablet-compact-height .info-cell{padding:8px 12px}.tablet-compact-height .info-cell strong{font-size:1.15rem}.tablet-compact-height .mode-strip{min-height:42px!important;padding:4px 8px!important}.tablet-compact-height .main-layout{padding:6px 9px 4px;gap:7px}.tablet-compact-height .category-tabs{margin-bottom:5px}.tablet-compact-height .category-tabs button{height:42px;font-size:.86rem}.tablet-compact-height .pager{height:36px;margin-top:2px}.tablet-compact-height .cart-title{min-height:58px}.tablet-compact-height .cart-row{min-height:52px}.tablet-compact-height .summary-meta{min-height:40px}.tablet-compact-height .grand-total{height:58px}.tablet-compact-height .grand-total strong{font-size:2rem}.tablet-compact-height .bottom-layout{padding:6px 9px;gap:7px;height:190px}.tablet-compact-height .banknote-button{height:66px}.tablet-compact-height .banknote-visual{height:38px}.tablet-compact-height .coin{width:21px;height:21px;flex-basis:21px}.tablet-compact-height .status-footer{height:40px;padding:0 14px}
+  body.tablet-very-compact .app-header{height:66px}.tablet-very-compact .brand-block img{width:70px;height:46px}.tablet-very-compact .header-info .info-cell:nth-child(2){display:none}.tablet-very-compact .bottom-layout{height:164px}.tablet-very-compact .scanner-card{display:none}.tablet-very-compact .bottom-layout{grid-template-columns:minmax(360px,2fr) minmax(190px,1fr) minmax(110px,.55fr) minmax(190px,1fr) minmax(300px,1.5fr);grid-template-areas:"cash change card keypad actions"}.tablet-very-compact .banknote-button{height:55px}.tablet-very-compact .cash-card h3{display:none}.tablet-very-compact .cash-finish-row{margin-top:3px}.tablet-very-compact .grand-total{height:52px}.tablet-very-compact .summary-meta{min-height:34px}
 }
 @media (display-mode:standalone){.exit-action-grid #enterFullscreenBtn{display:none}}
 
@@ -2064,9 +2164,9 @@ body.public-beta.admin-open #sharedCashControlDialog[open]{display:block!importa
 .bottom-layout{height:150px!important;min-height:150px!important;padding:4px 8px!important;gap:5px!important;overflow:hidden!important}
 .bottom-layout .scanner-card{padding:6px!important}.bottom-layout .scanner-card p{margin:2px 0!important;line-height:1.15!important}.bottom-layout .scanner-card button{padding:4px!important}
 .bottom-layout .cash-card{padding:4px 6px!important}.bottom-layout .cash-card h3{margin:0 0 3px!important;font-size:.72rem!important}
-.bottom-layout .banknote-row{gap:3px!important}.bottom-layout .banknote-button{height:48px!important;padding:2px!important}.bottom-layout .banknote-visual{height:28px!important;font-size:.9rem!important}
-.bottom-layout .coin{width:22px!important;height:22px!important;flex-basis:22px!important;font-size:.62rem!important}.bottom-layout .cash-finish-row{margin-top:2px!important;gap:3px!important}.bottom-layout .cash-finish-row button{min-height:28px!important;padding:2px 5px!important;font-size:.72rem!important}
-.bottom-layout .change-card{padding:6px!important}.bottom-layout .change-card strong{font-size:1.55rem!important}.bottom-layout .change-card small,.bottom-layout .change-card em{font-size:.68rem!important}
+.bottom-layout .banknote-row{gap:3px!important}.bottom-layout .banknote-button{height:60px!important;padding:2px!important}.bottom-layout .banknote-visual{height:38px!important;font-size:.95rem!important}
+.bottom-layout .coin{width:24px!important;height:24px!important;flex-basis:24px!important;font-size:.6rem!important}.bottom-layout .cash-finish-row{margin-top:2px!important;gap:3px!important}.bottom-layout .cash-finish-row button{min-height:40px!important;padding:2px 5px!important;font-size:.85rem!important}
+.bottom-layout .change-card{padding:6px!important}.bottom-layout .change-card strong{font-size:1.55rem!important}.bottom-layout .change-card small,.bottom-layout .change-card em{font-size:1rem!important}
 .bottom-layout .keypad-mode-row{display:none!important}.bottom-layout .keypad-display{padding:3px!important;min-height:28px!important}.bottom-layout .keypad-display small{display:none!important}.bottom-layout .keypad{gap:2px!important;padding:2px!important}.bottom-layout .keypad button{font-size:.9rem!important;min-height:23px!important}
 .bottom-layout .main-actions{gap:3px!important;grid-template-rows:repeat(4,minmax(26px,1fr))!important}.bottom-layout .main-actions button{font-size:.68rem!important;min-height:0!important;padding:2px 4px!important}.bottom-layout .main-actions .pay canvas{width:30px!important;height:30px!important}
 @media (min-width:901px) and (max-height:800px){.bottom-layout{height:128px!important;min-height:128px!important}.bottom-layout .scanner-card{display:none!important}.bottom-layout{grid-template-columns:minmax(330px,2fr) minmax(170px,1fr) minmax(92px,.5fr) minmax(180px,1fr) minmax(280px,1.45fr)!important;grid-template-areas:"cash change card keypad actions"!important}}
@@ -2126,7 +2226,7 @@ body.tablet-fit{overflow:hidden!important}
 body.tablet-fit .app-shell{height:var(--app-height,100dvh)!important;min-height:0!important;display:grid!important;grid-template-rows:auto auto minmax(0,1fr) auto auto!important;overflow:hidden!important}
 body.tablet-fit .app-header{height:58px!important;min-height:58px!important;padding:3px 8px!important;position:static!important}
 body.tablet-fit .brand-block{min-width:210px!important;padding:2px 6px!important;gap:7px!important}
-body.tablet-fit .brand-block img{width:44px!important;height:44px!important}
+body.tablet-fit .brand-block img{width:62px!important;height:42px!important}
 body.tablet-fit .brand-text strong{font-size:1rem!important;line-height:1.05!important}
 body.tablet-fit .brand-text small{font-size:.68rem!important;margin-top:2px!important}
 body.tablet-fit .header-info{min-width:0!important;gap:4px!important}
@@ -2146,7 +2246,7 @@ body.tablet-fit .mode-led{width:9px!important;height:9px!important}
 body.tablet-fit .opening-compact{display:none!important}
 body.tablet-fit .main-layout{min-height:0!important;height:auto!important;padding:4px 6px!important;gap:6px!important;grid-template-columns:minmax(0,1.48fr) minmax(310px,.92fr)!important;overflow:hidden!important}
 body.tablet-fit .sales-area,body.tablet-fit .cart-area{min-height:0!important;height:100%!important;overflow:hidden!important}
-body.tablet-fit .sales-area{display:grid!important;grid-template-rows:auto minmax(0,1fr) 30px!important}
+body.tablet-fit .sales-area{display:grid!important;grid-template-rows:auto auto minmax(0,1fr) 30px!important}
 body.tablet-fit .category-tabs{height:38px!important;min-height:38px!important;margin:0 0 3px!important;gap:4px!important;overflow-x:auto!important;overflow-y:hidden!important}
 body.tablet-fit .category-tabs button{height:36px!important;min-height:36px!important;padding:3px 9px!important;font-size:.72rem!important;white-space:nowrap!important}
 body.tablet-fit .product-grid{min-height:0!important;height:100%!important;gap:5px!important;overflow:hidden!important;align-content:stretch!important}
@@ -2160,12 +2260,14 @@ body.tablet-fit .pager button{min-height:26px!important;height:26px!important;fo
 body.tablet-fit .cart-title{min-height:44px!important;height:44px!important;padding:3px 5px!important;gap:4px!important}
 body.tablet-fit .cart-heading small{display:none!important}
 body.tablet-fit .cart-heading-icon{font-size:1.15rem!important}
-body.tablet-fit .cart-quantity-bar{gap:2px!important;min-width:0!important;overflow:hidden!important}
+body.tablet-fit .cart-quantity-bar{gap:2px!important;min-width:0!important}
 body.tablet-fit .cart-quantity-bar span{display:none!important}
-body.tablet-fit .cart-quantity-bar button{width:30px!important;min-width:30px!important;height:34px!important;min-height:34px!important;padding:0!important;font-size:.76rem!important}
-body.tablet-fit .void-bon{min-width:58px!important;height:34px!important;min-height:34px!important;padding:2px 5px!important;font-size:.66rem!important}
+body.tablet-fit .cart-quantity-bar button{width:auto!important;min-width:22px!important;height:34px!important;min-height:34px!important;padding:0 2px!important;font-size:.68rem!important}
+body.tablet-fit .void-bon{min-width:58px!important;max-width:100px!important;width:auto!important;height:34px!important;min-height:34px!important;padding:2px 5px!important;font-size:.66rem!important}
 body.tablet-fit .cart-list{min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}
-body.tablet-fit .cart-row{min-height:46px!important;padding:2px 3px!important;gap:4px!important}
+body.tablet-fit .cart-row{min-height:46px!important;padding:2px 3px!important;gap:4px!important;grid-template-columns:36px minmax(70px,1fr) 54px 72px 60px 32px!important}
+body.tablet-fit .cart-row .position-discount-button{font-size:.62rem!important;padding:2px 3px!important}
+body.tablet-fit .cart-row .row-total{font-size:.78rem!important}
 body.tablet-fit .cart-thumb{width:32px!important;height:32px!important}
 body.tablet-fit .cart-name strong{font-size:.78rem!important;line-height:1.02!important}
 body.tablet-fit .cart-name small{font-size:.62rem!important}
@@ -2182,13 +2284,13 @@ body.tablet-fit .banknote-row{gap:3px!important}
 body.tablet-fit .banknote-button{height:43px!important;padding:1px!important}
 body.tablet-fit .banknote-visual{height:25px!important;font-size:.78rem!important}
 body.tablet-fit .coin-row{gap:2px!important;margin-top:2px!important}
-body.tablet-fit .coin{width:22px!important;height:22px!important;flex-basis:22px!important;font-size:.58rem!important}
+body.tablet-fit .coin{width:17px!important;height:17px!important;flex-basis:17px!important;font-size:.5rem!important}
 body.tablet-fit .cash-finish-row{margin-top:2px!important;gap:3px!important}
 body.tablet-fit .cash-finish-row button{height:28px!important;min-height:28px!important;padding:2px 4px!important;font-size:.64rem!important}
 body.tablet-fit .change-card{padding:4px!important}
 body.tablet-fit .change-card-head{font-size:.68rem!important}
 body.tablet-fit .change-card strong{font-size:1.35rem!important}
-body.tablet-fit .change-card small,body.tablet-fit .change-card em{font-size:.61rem!important;line-height:1.05!important}
+body.tablet-fit .change-card small,body.tablet-fit .change-card em{font-size:.95rem!important;line-height:1.1!important}
 body.tablet-fit .card-payment{font-size:.68rem!important;padding:3px!important}
 body.tablet-fit .main-actions{grid-template-columns:minmax(0,1.2fr) repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;gap:3px!important}
 body.tablet-fit .main-actions button{font-size:.63rem!important;padding:2px 4px!important;line-height:1!important}
@@ -2208,7 +2310,7 @@ body.tablet-fit .status-footer button{height:18px!important;min-height:18px!impo
 .change-card-head{min-height:0!important}
 .change-card #changeDisplay{align-self:center!important;line-height:1!important;font-size:clamp(1.65rem,2.25vw,2.6rem)!important}
 .change-card .change-payment-state{display:flex!important;align-items:center!important;justify-content:center!important;min-height:30px!important;padding:3px 5px!important;font-size:clamp(.78rem,1vw,1rem)!important;font-weight:1000!important;line-height:1.05!important;text-align:center!important}
-.change-card>small{font-size:clamp(.78rem,.9vw,.95rem)!important;line-height:1.15!important}
+.change-card>small{font-size:clamp(.95rem,1.1vw,1.15rem)!important;line-height:1.15!important}
 .change-card>small b{font-size:1.08em!important}
 .cash-finish-row .exact-button{font-weight:1000!important;line-height:1.05!important}
 
@@ -2216,17 +2318,17 @@ body.tablet-fit .status-footer button{height:18px!important;min-height:18px!impo
 body.tablet-fit .bottom-layout{height:126px!important;min-height:126px!important;padding:3px 6px!important;gap:4px!important;grid-template-columns:minmax(355px,1.78fr) minmax(176px,.86fr) minmax(86px,.4fr) minmax(292px,1.22fr)!important;grid-template-areas:"cash change card actions"!important;align-items:stretch!important}
 body.tablet-fit .cash-card{display:grid!important;grid-template-rows:44px 34px minmax(34px,1fr)!important;align-content:stretch!important;padding:3px 5px!important;overflow:hidden!important}
 body.tablet-fit .banknote-row{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important;min-height:0!important}
-body.tablet-fit .banknote-button{height:42px!important;min-height:42px!important;padding:1px!important}
+body.tablet-fit .banknote-button{height:56px!important;min-height:56px!important;padding:1px!important}
 body.tablet-fit .banknote-visual{height:26px!important;min-height:26px!important;font-size:.8rem!important}
 body.tablet-fit .coin-row{display:flex!important;align-items:center!important;justify-content:center!important;flex-wrap:nowrap!important;gap:5px!important;margin:1px 0!important;min-height:32px!important;overflow:hidden!important}
-body.tablet-fit .coin{width:31px!important;height:31px!important;min-width:31px!important;min-height:31px!important;flex:0 0 31px!important;font-size:.64rem!important}
-body.tablet-fit .cash-finish-row{display:grid!important;grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr)!important;gap:4px!important;margin:1px 0 0!important;min-height:34px!important}
-body.tablet-fit .cash-finish-row button{height:34px!important;min-height:34px!important;padding:2px 5px!important;font-size:.66rem!important;white-space:normal!important}
-body.tablet-fit .change-card{padding:3px 5px!important;grid-template-rows:20px minmax(34px,1fr) 30px 18px 18px!important;overflow:hidden!important}
+body.tablet-fit .coin{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important;font-size:.6rem!important}
+body.tablet-fit .cash-finish-row{display:grid!important;grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr)!important;gap:4px!important;margin:1px 0 0!important;min-height:46px!important}
+body.tablet-fit .cash-finish-row button{height:46px!important;min-height:46px!important;padding:2px 5px!important;font-size:.78rem!important;white-space:normal!important}
+body.tablet-fit .change-card{padding:3px 5px!important;grid-template-rows:20px minmax(30px,1fr) 28px 22px 22px!important;overflow:hidden!important}
 body.tablet-fit .change-card-head{font-size:.7rem!important}
-body.tablet-fit .change-card #changeDisplay{font-size:1.65rem!important}
-body.tablet-fit .change-card .change-payment-state{min-height:28px!important;font-size:.78rem!important;padding:2px 3px!important}
-body.tablet-fit .change-card>small{font-size:.72rem!important;line-height:1.05!important}
+body.tablet-fit .change-card #changeDisplay{font-size:1.5rem!important}
+body.tablet-fit .change-card .change-payment-state{min-height:26px!important;font-size:.76rem!important;padding:2px 3px!important}
+body.tablet-fit .change-card>small{font-size:1.05rem!important;line-height:1.15!important;font-weight:700!important}
 body.tablet-fit .cash-undo{width:29px!important;min-width:29px!important;height:24px!important;min-height:24px!important;padding:0!important}
 body.tablet-fit .cash-undo small{display:none!important}
 body.tablet-fit .card-payment{min-width:0!important;padding:2px!important}
@@ -2242,7 +2344,7 @@ body.tablet-fit .status-footer{height:20px!important;min-height:20px!important}
 body.tablet-fit.adaptive-very-compact .bottom-layout{height:118px!important;min-height:118px!important}
 body.tablet-fit.adaptive-very-compact .cash-card{grid-template-rows:40px 31px minmax(31px,1fr)!important}
 body.tablet-fit.adaptive-very-compact .banknote-button{height:38px!important;min-height:38px!important}
-body.tablet-fit.adaptive-very-compact .coin{width:29px!important;height:29px!important;min-width:29px!important;min-height:29px!important;flex-basis:29px!important}
+body.tablet-fit.adaptive-very-compact .coin{width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;flex-basis:22px!important}
 body.tablet-fit.adaptive-very-compact .cash-finish-row button{height:31px!important;min-height:31px!important}
 
 /* AdaptiveLayoutCore: nur definierte Bereiche dürfen scrollen. */
@@ -2270,13 +2372,1211 @@ body.tablet-fit .mode-strip .message-history-button{height:34px!important;min-he
 
 
 /* Repair 11 · Stimmt-so-Abschluss und ruhige Happy-Hour-Anzeige */
+/* V0.29.0 · Reklamation auf Tablets vollständig erreichbar */
+#withdrawDialog{padding:8px!important;overflow:hidden!important}
+#withdrawDialog .withdraw-card{display:flex!important;flex-direction:column!important;width:min(980px,calc(100vw - 16px))!important;max-height:calc(100dvh - 16px)!important;overflow:hidden!important;margin:auto!important}
+#withdrawDialog .complaint-panel{min-height:120px;flex:1 1 auto;overflow-y:auto!important;overscroll-behavior:contain;padding-right:6px;scrollbar-gutter:stable}
+#withdrawDialog .dialog-actions{position:sticky!important;bottom:0!important;z-index:8!important;flex:0 0 auto;background:#fff!important;border-top:2px solid #b9c8d3!important;padding-top:10px!important}
+#withdrawDialog .dialog-actions button,#withdrawDialogCloseX{min-height:44px!important}
+@media(max-height:760px){#withdrawDialog .withdraw-card>h2{margin:0!important}#withdrawDialog .withdraw-card>p{display:none}#withdrawDialog .withdraw-card{padding:12px!important;gap:6px!important}#withdrawDialog .complaint-help{display:none}}
 .change-card.tip-settlement .change-payment-state{background:#f3e8ff;color:#6b21a8;font-weight:1000}
 .change-card.tip-settlement #changeDisplay{color:#15803d}
 
-/* FUTURA 3.01.1: Bilderrechner bleibt vollständig im Schulungsfenster. */
-html.embedded-training-mode,body.embedded-training-mode{overflow:auto!important;height:auto!important;min-height:100%!important}
-body.embedded-training-mode #screenSaver,body.embedded-training-mode #fullscreenGate{display:none!important;visibility:hidden!important;pointer-events:none!important}
-body.embedded-training-mode.screen-saver-active{overflow:auto!important}
-body.embedded-training-mode.screen-saver-active>*:not(#screenSaver){filter:none!important;pointer-events:auto!important}
-body.embedded-training-mode.fullscreen-active{width:auto!important;height:auto!important}
-body.embedded-training-mode #enterFullscreenBtn,body.embedded-training-mode #leaveFullscreenBtn{display:none!important}
+/* Ausverkauft-Markierung */
+.kc-ausverkauft-markiert .product-tile{opacity:.4;filter:grayscale(85%);pointer-events:none;cursor:not-allowed}
+/* Ausverkauft-Markierung: rotes Kreuz ueber die GANZE Kachel (vorher nur ein schmaler roter
+   Balken oben). Die beiden Balken werden ueber die volle Flaeche gedreht, dadurch passt sich
+   das Kreuz automatisch jeder Knopfgroesse und jedem Bildschirmmodus an. */
+.kc-ausverkauft-kreuz{position:absolute;inset:0;z-index:5;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-radius:inherit;font-size:0}
+.kc-ausverkauft-kreuz::before,.kc-ausverkauft-kreuz::after{content:"";position:absolute;top:50%;left:-12%;width:124%;height:9px;background:#dc2626;border-radius:5px;box-shadow:0 0 0 2px rgba(255,255,255,.72);transform-origin:center}
+.kc-ausverkauft-kreuz::before{transform:translateY(-50%) rotate(32deg)}
+.kc-ausverkauft-kreuz::after{transform:translateY(-50%) rotate(-32deg)}
+.kc-ausverkauft-kreuz .kc-ausverkauft-text{position:relative;z-index:1;margin-bottom:6px;background:#b91c1c;color:#fff;font-weight:900;font-size:.74rem;letter-spacing:.03em;padding:3px 9px;border-radius:5px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+
+/* Personal-Knopf gesperrt: im Bon liegt ein Artikel, fuer den "Personalverbrauch erlaubt"
+   abgewaehlt ist (z.B. Alkohol). Knopf bleibt sichtbar, ist aber deutlich abgeblendet
+   und nicht klickbar - der Grund steht in der Kurzinfo des Knopfes. */
+.main-actions button.staff.staff-blocked{opacity:.42;filter:grayscale(70%);cursor:not-allowed}
+
+/* Personal-Knopf wieder sichtbar machen.
+   HINWEIS: gilt nur fuer das ALTE Layout (:not(.kc-layout-neu)). Im neuen Layout setzt der
+   Layoutblock am Dateiende die Platzierung selbst - ohne diese Ausnahme gewinnen die Regeln
+   hier, weil sie mehr Klassen enthalten, und die Knoepfe landen in einer dritten Reihe.
+   BEFUND: seit der Layout-Umstellung V0.24.0 stand in styles.css eine UNBEDINGTE Regel
+   (.main-actions #staffBtn{display:none!important}) - der Knopf war dadurch dauerhaft
+   ausgeblendet, voellig unabhaengig von der Einstellung "Taste Personal anzeigen". Die
+   Einstellung selbst war intakt, konnte sich gegen diese spaetere !important-Regel aber
+   nicht durchsetzen. Deshalb "fehlte" der Knopf.
+   LOESUNG: Zeile 3 der Aktionsleiste wird geteilt - AUF KONTO links, PERSONAL rechts,
+   genau so, wie Zeile 1 bereits zwischen PFANDRUECKGABE und TRINKGELD geteilt ist.
+   Keine zusaetzliche Zeile, keine andere Zeile veraendert, nichts verschoben.
+   Beide bestehenden Ausblend-Wege bleiben ausdruecklich erhalten: die Einstellung
+   (body.hide-staff) und der Stossbetrieb (body.rush-mode) blenden weiter aus - und dann
+   nimmt AUF KONTO wieder die volle Breite ein wie bisher. */
+body:not(.kc-layout-neu):not(.hide-staff):not(.rush-mode) .bottom-layout .main-actions #staffBtn{display:flex!important;align-items:center!important;justify-content:center!important;grid-column:3!important;grid-row:3!important;font-size:.7rem!important}
+/* Beide Knoepfe in Zeile 3 teilen sich jetzt die Breite - Schrift entsprechend kleiner,
+   damit die Beschriftung vollstaendig lesbar bleibt und nicht abgeschnitten wird
+   (gemessen bei 1024/1280/1366/1920 px). */
+body:not(.kc-layout-neu):not(.hide-staff):not(.rush-mode) .bottom-layout .main-actions #accountChargeBtn{grid-column:2!important;grid-row:3!important;font-size:.7rem!important}
+
+/* Sammel-Fenster fuer die Ausverkauft-Meldung: oben die anklickbaren Suchwoerter, darunter
+   die betroffenen Artikel (alle vorausgewaehlt). Bewusst grosszuegige Klickflaechen - wird
+   am Stand mit dem Finger auf dem Tablet bedient. */
+#kcAusverkauftSammelDialog{max-width:560px}
+.kc-sammel-karte{max-height:86vh;overflow:auto}
+.kc-sammel-hinweis{margin:.2rem 0 1rem;color:#475569;font-size:.9rem;line-height:1.45}
+.kc-sammel-woerter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e2e8f0}
+.kc-sammel-frage{font-weight:800;font-size:.86rem;color:#334155;margin-right:2px}
+.kc-sammel-wort{min-height:42px;padding:8px 14px;border:2px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#1e293b;font-weight:800;font-size:.88rem;cursor:pointer}
+.kc-sammel-wort.aktiv{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.kc-sammel-liste{display:grid;gap:4px;max-height:38vh;overflow:auto}
+.kc-sammel-zeile{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:.95rem}
+.kc-sammel-zeile:hover{background:#eff6ff}
+.kc-sammel-zeile input{width:22px;height:22px;flex:0 0 22px}
+.kc-sammel-leer{color:#64748b;font-style:italic;padding:10px 2px}
+.kc-sammel-zaehler{margin:12px 0 0;font-weight:800;color:#0f172a}
+#kcAusverkauftSammelDialog .dialog-actions button{min-height:48px;padding:0 18px;border-radius:9px;font-weight:900;border:1px solid #cbd5e1;background:#f1f5f9;color:#0f172a;cursor:pointer}
+#kcAusverkauftSammelDialog .dialog-actions button.primary{background:#b91c1c;border-color:#b91c1c;color:#fff}
+#kcAusverkauftSammelDialog .dialog-actions button:disabled{opacity:.45;cursor:not-allowed}
+
+/* =========================================================================================
+   NEUES KASSENLAYOUT - Stufe 1: untere Leiste
+   =========================================================================================
+   Greift NUR, wenn am body die Klasse kc-layout-neu steht (Schalter in den Einstellungen).
+   Ohne die Klasse ist dieser ganze Block wirkungslos und die Kasse sieht aus wie bisher.
+
+   WARUM FLEX STATT RASTER: die bisherige Leiste arbeitet mit festen Pixelbreiten
+   (279px 180px 105px 270px 310px). Passen die nicht in die Fensterbreite, bricht ein Block
+   in eine zweite Reihe um und legt sich ueber alles darunter - genau das passiert auf
+   1180px. Mit Flex und Anteilen kann das nicht mehr vorkommen: die Bloecke schrumpfen
+   gemeinsam bis zu ihrer Mindestbreite, statt umzubrechen (flex-wrap:nowrap).
+   align-items:stretch sorgt dafuer, dass alle Bloecke exakt gleich hoch sind - vorher waren
+   es 91px und 198px nebeneinander.
+
+   Die vorhandenen Regeln arbeiten stellenweise mit !important, deshalb muessen die neuen
+   Regeln das ebenfalls tun, um sie zu uebersteuern. Das ist hier kein Nachlaessigkeitszeichen,
+   sondern noetig, um den alten Regelsatz unberuehrt lassen zu koennen.
+   ========================================================================================= */
+
+body.kc-layout-neu .bottom-layout{
+  display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;
+  gap:8px!important;padding:6px 8px 8px!important;
+  height:auto!important;min-height:0!important;overflow:visible!important;
+  grid-template-columns:none!important;grid-template-rows:none!important;
+}
+/* Scanner-Karte ist bereits im Bestand ausgeblendet - hier ausdruecklich aus dem Fluss nehmen,
+   damit sie keine Luecke erzeugt. */
+body.kc-layout-neu .bottom-layout>.scanner-card{display:none!important}
+
+/* EC-Karte: NICHT geloescht, nur ausgeblendet solange sie nicht freigeschaltet ist.
+   Die Kennzeichnung card-payment-disabled steckt schon im Bestand. Faellt sie weg, weil die
+   Kartenzahlung scharfgeschaltet wird, erscheint der Block automatisch wieder in der Reihe
+   und die uebrigen Bloecke ruecken von selbst zusammen - ohne erneuten Umbau. */
+body.kc-layout-neu .bottom-layout>#cardBtn.card-payment-disabled{display:none!important}
+body.kc-layout-neu .bottom-layout>#cardBtn{flex:0.55 1 96px!important;min-width:88px!important;margin:0!important}
+
+/* Anteile der vier Bloecke. Die Mindestbreiten sind so gewaehlt, dass sie zusammen mit den
+   Abstaenden auch auf 1024px noch hineinpassen (270+160+190+320+Abstaende = rund 972px). */
+body.kc-layout-neu .bottom-layout>.cash-card{flex:1.55 1 340px!important;min-width:270px!important}
+body.kc-layout-neu .bottom-layout>.change-card{flex:0.9 1 200px!important;min-width:160px!important}
+body.kc-layout-neu .bottom-layout>.keypad-shell{flex:1 1 230px!important;min-width:190px!important}
+body.kc-layout-neu .bottom-layout>.main-actions{flex:1.9 1 380px!important;min-width:340px!important}
+
+/* Alle Bloecke gleich hoch und innen sauber ausgerichtet */
+body.kc-layout-neu .bottom-layout>div{
+  height:auto!important;min-height:0!important;align-self:stretch!important;
+  display:flex!important;flex-direction:column!important;overflow:hidden!important;
+}
+
+/* --- Zahlknopf und Sondertasten -------------------------------------------------------
+   Der Zahlknopf liegt im Bestand INNERHALB der Knopfleiste. Statt ihn im HTML zu verschieben
+   (was andere Stellen brechen koennte), wird die Leiste hier in zwei Spalten geteilt:
+   links der Zahlknopf ueber die volle Hoehe, rechts die sechs Sondertasten als 3x2-Feld. */
+/* Vier Spalten: ganz links der Zahlknopf ueber beide Zeilen, daneben die sechs Sondertasten
+   als 3x2-Feld. Die Auswahl von .main-actions muss hier genauso tief gestaffelt sein wie die
+   allgemeine Regel fuer die Bloecke daruber (.bottom-layout>div), sonst gewinnt diese und
+   macht aus dem Raster wieder eine Spalte. */
+body.kc-layout-neu .bottom-layout>.main-actions{
+  display:grid!important;
+  /* minmax(0,...) ist hier entscheidend: mit einer Mindestbreite groesser als 0 weigern sich
+     die Spalten zu schrumpfen, und die Knoepfe wachsen ueber den Rand hinaus statt schmaler
+     zu werden. Genau das war im ersten Foto zu sehen - REKLAMATION und MEHR standen halb
+     ausserhalb des Bildschirms. Die Untergrenze regelt stattdessen die Mindestbreite des
+     ganzen Blocks (flex-basis weiter oben). */
+  grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))!important;
+  min-width:0!important;max-width:100%!important;
+  grid-template-rows:1fr 1fr!important;gap:6px!important;padding:0!important;
+}
+body.kc-layout-neu .bottom-layout>.main-actions>#payBtn{grid-column:1!important;grid-row:1/3!important;margin:0!important}
+body.kc-layout-neu .bottom-layout>.main-actions>#depositBtn{grid-column:2!important;grid-row:1!important}
+body.kc-layout-neu .bottom-layout>.main-actions>#tipBtn{grid-column:3!important;grid-row:1!important}
+body.kc-layout-neu .bottom-layout>.main-actions>#complaintBtn{grid-column:4!important;grid-row:1!important}
+body.kc-layout-neu .bottom-layout>.main-actions>#accountChargeBtn{grid-column:2!important;grid-row:2!important}
+/* Personal-Knopf: die Sichtbarkeit muss auch im neuen Layout ausdruecklich gesetzt werden.
+   Die unbedingte Ausblendregel aus dem Layoutumbau V0.24.0 (.main-actions #staffBtn{display:none})
+   gilt weiterhin und wuerde den Knopf sonst wieder verschwinden lassen. Die beiden bekannten
+   Ausblendwege bleiben dabei erhalten: Einstellung (hide-staff) und Stossbetrieb (rush-mode). */
+body.kc-layout-neu:not(.hide-staff):not(.rush-mode) .bottom-layout>.main-actions>#staffBtn{
+  display:flex!important;grid-column:3!important;grid-row:2!important;
+}
+body.kc-layout-neu .bottom-layout>.main-actions>#moreBtn{grid-column:4!important;grid-row:2!important}
+/* Alle Sondertasten gleich gross und mittig beschriftet */
+body.kc-layout-neu .bottom-layout>.main-actions>button{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  text-align:center!important;line-height:1.15!important;padding:4px 6px!important;
+  min-height:0!important;height:auto!important;width:auto!important;
+}
+
+/* --- Neues Layout: Schriftgroessen so, dass nichts abgeschnitten wird ---------------------
+   Gemessen ueber 1024 bis 1920px. Die Sondertasten sind im 3x2-Feld schmaler als vorher,
+   deshalb kleinere Schrift und Umbruch erlaubt statt Abschneiden. */
+body.kc-layout-neu .bottom-layout>.main-actions>button{
+  font-size:clamp(.62rem,1.05vw,.86rem)!important;white-space:normal!important;
+  overflow-wrap:anywhere!important;letter-spacing:0!important;
+}
+/* Zahlknopf: nur noch "BAR" gross, der Zusatztext entfaellt - der QR-Code darunter bleibt. */
+body.kc-layout-neu #payBtn .pay-label small{display:none!important}
+body.kc-layout-neu #payBtn .pay-label b{font-size:clamp(1.1rem,2vw,1.8rem)!important;letter-spacing:.04em!important}
+body.kc-layout-neu #payBtn{flex-direction:column!important;gap:4px!important;padding:6px!important;overflow:hidden!important}
+/* Der QR-Code hat eine feste Zeichenflaeche von 116px. Bei 1024px ist die Spalte schmaler,
+   und die feste Breite laesst den Knopf ueberlaufen. min-width:0 erlaubt dem Bild, mit der
+   Spalte zu schrumpfen, statt sie aufzuspreizen. */
+body.kc-layout-neu #payBtn .pay-qr-canvas{
+  width:auto!important;height:auto!important;min-width:0!important;
+  max-width:100%!important;max-height:96px!important;flex:0 1 auto!important;
+}
+body.kc-layout-neu #payBtn .pay-label{min-width:0!important;max-width:100%!important}
+/* Geldkarte: Muenz- und Scheinbeschriftungen kleiner, damit sie vollstaendig lesbar bleiben */
+/* Muenzen: statt die Schrift immer weiter zu verkleinern, bekommen sie zwei Reihen zu vier.
+   Platz dafuer ist da - die Geldkarte ist im neuen Layout rund 210px hoch. Dadurch bleibt die
+   Beschriftung ("50 ct") bis 1024px vollstaendig lesbar und die Muenzbilder bleiben gross
+   genug, um sie mit dem Finger sicher zu treffen. */
+body.kc-layout-neu .cash-card .coin-row{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:3px 4px!important;align-content:center!important;
+}
+body.kc-layout-neu .cash-card .coin-button{
+  font-size:clamp(.58rem,.95vw,.76rem)!important;gap:3px!important;
+  min-height:0!important;padding:1px 2px!important;
+}
+body.kc-layout-neu .cash-card{justify-content:space-between!important;gap:4px!important}
+body.kc-layout-neu .cash-card .banknote-button{font-size:clamp(.55rem,.9vw,.75rem)!important}
+/* Zuruecknehmen-Knopf. ACHTUNG bei kuenftigen Aenderungen: dieser Knopf sitzt NICHT in der
+   Geldkarte, sondern im Kopf der Rueckgeld-Box (.change-card-head) - eine Regel ueber
+   .cash-card trifft ihn nicht. Er wird deshalb ueber seine Kennung angesprochen.
+   Die Schriftgroesse aus dem Bestand (16px) braucht 81px Breite, die Spalte gibt aber nur
+   58px her; darum kleinere Schrift statt Abschneiden. */
+body.kc-layout-neu #undoCashBtn{
+  font-size:clamp(.5rem,.82vw,.7rem)!important;white-space:nowrap!important;
+  padding:2px 4px!important;gap:3px!important;min-width:0!important;width:100%!important;
+  min-height:34px!important;overflow:hidden!important;
+}
+body.kc-layout-neu #undoCashBtn small{font-size:inherit!important;letter-spacing:0!important}
+body.kc-layout-neu #undoCashBtn b{font-size:inherit!important}
+
+/* =========================================================================================
+   NEUES KASSENLAYOUT - Stufe 2: Artikelflaeche und Warenkorb
+   =========================================================================================
+   BEFUND VORHER (gemessen bei 1366px):
+   - Der Warenkorb ist 331px hoch, die eigentliche Bonliste bekommt davon aber nur 83px:
+     Kopf (Bon-Zeile + Mengenleiste) 114px und Fuss (Zusammenfassung + GESAMT) 132px fressen
+     den Rest. Ergebnis: schon ab drei Positionen muss gescrollt werden, obwohl daneben Platz
+     frei steht - 373px Inhalt in 83px Sichtfenster.
+   - Unter den Artikelkacheln stehen 142px ungenutzt, die Kacheln fuellen nur eine Reihe.
+   Beides wird hier behoben. Alles wieder ausschliesslich unter body.kc-layout-neu.
+   ========================================================================================= */
+
+/* --- Warenkorb: die Liste bekommt allen verbleibenden Platz --------------------------- */
+body.kc-layout-neu .cart-area{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+/* Kopf und Fuss behalten ihre natuerliche Hoehe, schrumpfen aber nicht die Liste weg. */
+body.kc-layout-neu .cart-area>.cart-title{flex:0 0 auto!important}
+body.kc-layout-neu .cart-area>.cart-summary{flex:0 0 auto!important}
+/* Die Bonliste nimmt den ganzen Rest und scrollt erst, wenn sie wirklich voll ist. */
+body.kc-layout-neu .cart-area>.cart-list{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}
+
+/* Die GESAMT-Zeile bleibt beim Scrollen immer sichtbar. Sie ist die Zahl, die dem Kunden
+   angesagt wird - sie darf nie aus dem Bild rutschen, auch nicht bei zwoelf Positionen.
+   Die Zusammenfassung sitzt ohnehin unter der Liste; hier wird sie zusaetzlich festgehalten. */
+/* Die Zusammenfassung sitzt als eigener Block UNTER der Liste (die Liste bekommt ihren Platz
+   ueber flex). Ein zusaetzliches sticky ist hier falsch: es hat die letzte Bonzeile
+   ueberdeckt, statt sie sichtbar zu lassen - im Foto war "Feuerzangenbowle" halb verschluckt.
+   Der Fussbereich ist ohnehin immer sichtbar, weil er nicht mitscrollt. */
+body.kc-layout-neu .cart-area>.cart-summary{background:#fbfbfc!important;box-shadow:0 -2px 6px rgba(0,0,0,.08)!important}
+/* Zusammenfassungszeile: Zaehler und Rabattknopf lagen uebereinander ("POSITIONEN MIT PFAND"
+   verschwand hinter dem Rabattknopf). Als Zeile mit Umbruch statt ueberlappender Anordnung. */
+body.kc-layout-neu .summary-meta{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;column-gap:8px!important;font-size:.72rem!important;padding:1px 8px!important;overflow:hidden!important}
+body.kc-layout-neu .summary-meta #positionCount{display:flex!important;flex-wrap:wrap!important;gap:0 8px!important;min-width:0!important;line-height:1.25!important}
+body.kc-layout-neu .summary-meta .discount-inline{position:static!important;flex:0 0 auto!important;display:flex!important;align-items:center!important;gap:6px!important}
+
+/* --- Artikelkacheln: Platz nach unten nutzen, kein Blaettern -------------------------- */
+/* Das Gitter fuellt die Hoehe des Artikelbereichs aus, statt bei einer Reihe aufzuhoeren.
+   Die Spaltenzahl richtet sich nach der verfuegbaren Breite; die Untergrenze von 118px
+   sorgt dafuer, dass die Kacheln auch bei vielen Artikeln mit dem Finger sicher zu treffen
+   bleiben - lieber eine zweite Reihe als Briefmarken. */
+body.kc-layout-neu .sales-area{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+body.kc-layout-neu .sales-area>.category-tabs{flex:0 0 auto!important}
+body.kc-layout-neu .sales-area>.pager{flex:0 0 auto!important}
+/* FEHLER, den der Betrieb gezeigt hat: mit 1fr als Zeilenhoehe hat EINE Reihe die ganze
+   verfuegbare Hoehe eingenommen - bei fuenf Getraenken wurden die Kacheln 129 breit und
+   546 hoch, also schmale Tuerme. Die Zeilenhoehe bekommt jetzt eine Obergrenze; der Rest
+   bleibt frei, statt die Kacheln zu strecken. Bei vielen Artikeln entstehen dadurch mehrere
+   Reihen statt einer ueberhohen. */
+body.kc-layout-neu .sales-area>.product-grid{
+  flex:1 1 auto!important;height:auto!important;min-height:0!important;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr))!important;
+  grid-template-rows:none!important;grid-auto-rows:minmax(105px,1fr)!important;
+  align-content:start!important;overflow-y:auto!important;
+}
+
+/* --- Warenkorb: Kopf und Fuss straffen, damit die Bonliste Platz bekommt ---------------
+   Gemessen war die Aufteilung 114 (Kopf) / 83 (Liste) / 132 (Fuss) bei 331px Gesamthoehe.
+   Der Kopf besteht aus Bon-Zeile (48), Mengenleiste (44) und "Bon verwerfen" (23), der Fuss
+   aus Zusammenfassung (57) und GESAMT (74). Nichts davon faellt weg - alles wird nur enger
+   gesetzt, sodass die Liste rund das Doppelte bekommt.
+   Die GESAMT-Zeile bleibt bewusst die groesste Flaeche im Fuss: sie ist die Zahl, die dem
+   Kunden angesagt wird. */
+body.kc-layout-neu .cart-title{padding-top:2px!important;padding-bottom:2px!important;gap:3px!important}
+body.kc-layout-neu .cart-heading{min-height:0!important;height:38px!important}
+body.kc-layout-neu .cart-heading-icon{height:34px!important;width:34px!important}
+body.kc-layout-neu .cart-quantity-bar{min-height:0!important;padding:1px 4px!important;gap:3px!important}
+body.kc-layout-neu .cart-quantity-bar button{min-height:34px!important;height:34px!important;padding:0 6px!important}
+body.kc-layout-neu .void-bon{min-height:0!important;padding:0 6px!important;font-size:.72rem!important}
+body.kc-layout-neu .summary-meta{min-height:0!important;padding:2px 8px!important;gap:4px!important;font-size:.78rem!important}
+body.kc-layout-neu .summary-meta #positionCount{min-height:0!important;height:auto!important}
+body.kc-layout-neu .summary-meta .discount-inline{min-height:0!important;height:auto!important}
+body.kc-layout-neu .grand-total{height:62px!important;min-height:62px!important;padding:0 12px!important}
+
+/* --- Bonzeile: kompakter, damit mehr Positionen gleichzeitig sichtbar sind -------------
+   BEFUND: eine Zeile war 119px hoch, obwohl die Mindesthoehe 65px betraegt. Ursache war die
+   Namensspalte - sie bekam nur 69px Breite, sodass schon "Gluehwein rot" auf drei Zeilen
+   umbrach und die ganze Zeile aufblies. Der Warenkorb ist dabei 490px breit.
+   Hier wird die Namensspalte deutlich verbreitert und die uebrigen Spalten enger gesetzt.
+   Es faellt nichts weg: Bild, Name, Pfandhinweis, Rabattknopf, Mengenwahl, Summe und der
+   Loeschknopf bleiben alle erhalten - sie stehen nur platzsparender nebeneinander. */
+body.kc-layout-neu .cart-row{
+  grid-template-columns:38px minmax(0,1fr) 74px 88px auto 34px!important;
+  gap:6px!important;min-height:52px!important;padding:2px 5px!important;align-items:center!important;
+}
+/* Auf schmalen Bildschirmen ist der Warenkorb nur rund 367px breit. Dort reicht die feste
+   Aufteilung nicht - der Name bricht wieder mehrzeilig um und die Zeile waechst auf 145px.
+   Deshalb werden die Nebenspalten hier zusaetzlich schmaler und der Rabattknopf zeigt nur
+   noch sein Symbol. Der Name behaelt dadurch genug Breite fuer eine, hoechstens zwei Zeilen. */
+@media (max-width:1200px){
+  body.kc-layout-neu .cart-row{
+    grid-template-columns:32px minmax(0,1fr) 44px 76px auto 30px!important;gap:4px!important;
+  }
+  body.kc-layout-neu .cart-row .cart-thumb{width:30px!important;height:30px!important}
+  body.kc-layout-neu .cart-row .position-discount-button{font-size:0!important;padding:0!important;width:44px!important}
+  body.kc-layout-neu .cart-row .position-discount-button::before{content:"%"!important;font-size:.9rem!important;font-weight:900!important}
+  body.kc-layout-neu .cart-row .qty-box button{width:24px!important}
+  body.kc-layout-neu .cart-row .cart-name strong{font-size:.84rem!important}
+}
+body.kc-layout-neu .cart-row .cart-thumb{width:36px!important;height:36px!important}
+body.kc-layout-neu .cart-row .cart-name{min-width:0!important;line-height:1.2!important}
+body.kc-layout-neu .cart-row .cart-name strong{font-size:.92rem!important;line-height:1.2!important;display:block!important}
+body.kc-layout-neu .cart-row .cart-name .cart-deposit{font-size:.68rem!important;line-height:1.15!important}
+body.kc-layout-neu .cart-row .cart-name small{font-size:.68rem!important;line-height:1.15!important}
+body.kc-layout-neu .cart-row .position-discount-button{min-height:32px!important;height:32px!important;font-size:.68rem!important;padding:0 4px!important}
+body.kc-layout-neu .cart-row .qty-box button{min-height:30px!important;height:30px!important;width:28px!important}
+body.kc-layout-neu .cart-row .delete-row{min-height:32px!important;height:32px!important;width:32px!important}
+
+/* =========================================================================================
+   NEUES KASSENLAYOUT - Stufe 2b: Kopfzeile auf eine Zeile
+   =========================================================================================
+   BEFUND VORHER (gemessen): die Kopfzeile bestand aus zwei Zeilen, 82px Kopf plus 79px
+   Bedienstreifen, zusammen mit Abstaenden 173px von 768px Bildschirmhoehe. Dieser Platz fehlt
+   unten beim Warenkorb, wo lange Bons nicht vollstaendig sichtbar sind.
+   Ausserdem war einiges schief: das Datum war bei JEDER Breite abgeschnitten (100 von 147
+   noetigen Pixeln - daher stand "8.2026 05" auf dem Bildschirm statt "27.8.2026 05:54"), bei
+   1024px wurde "Kasse 1" auf 42 statt 89 Pixel gequetscht und die Versionszelle ganz
+   plattgedrueckt. Die neun Elemente rechts hatten drei verschiedene Breiten (52/48/40).
+
+   LOESUNG: beide Zeilen werden zu einer zusammengelegt. Nichts wird geloescht - Suchfeld,
+   Bediener und die drei Umschalter wandern in dieselbe Zeile wie die Werkzeuge.
+   ========================================================================================= */
+
+/* Beide Zeilen nebeneinander statt uebereinander. Der Bedienstreifen wird per negativem
+   Versatz in die Kopfzeile gezogen; dadurch bleibt die HTML-Reihenfolge unangetastet. */
+body.kc-layout-neu .app-header{
+  height:auto!important;min-height:0!important;padding:4px 8px!important;
+  display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;gap:10px!important;
+}
+body.kc-layout-neu .brand-block{height:auto!important;min-height:0!important;padding:0!important;gap:8px!important}
+body.kc-layout-neu .brand-block img{width:62px!important;height:42px!important}
+body.kc-layout-neu .brand-text strong{font-size:1.02rem!important;line-height:1.15!important}
+body.kc-layout-neu .brand-text small{font-size:.68rem!important;line-height:1.1!important}
+
+/* Info-Zellen: gleichmaessig, nichts wird mehr gequetscht. Die Versionszelle entfaellt in der
+   Zeile (steht weiterhin im Mehr-Fenster und im Selbsttest), das Datum bekommt endlich die
+   Breite, die es braucht. */
+body.kc-layout-neu .header-info{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  gap:12px!important;height:auto!important;min-height:0!important;min-width:0!important;overflow:hidden!important;
+}
+body.kc-layout-neu .header-info .info-cell{height:auto!important;min-height:0!important;padding:0 4px!important;border:0!important;flex:0 0 auto!important}
+body.kc-layout-neu .header-info .info-cell.compact{display:none!important}
+body.kc-layout-neu .header-info .date-cell{display:flex!important;flex-direction:row!important;gap:6px!important;white-space:nowrap!important;flex:0 0 auto!important}
+body.kc-layout-neu .header-info .date-cell strong{font-size:.82rem!important;line-height:1.15!important}
+body.kc-layout-neu .header-info #registerName{font-size:1.02rem!important;line-height:1.15!important}
+body.kc-layout-neu .operator-mini-dashboard{display:flex!important;flex-direction:row!important;gap:10px!important;font-size:.68rem!important;line-height:1.15!important;flex:0 1 auto!important;min-width:0!important;overflow:hidden!important;white-space:nowrap!important}
+
+/* Werkzeuge rechts: alle exakt gleich gross - vorher 52, 48 und 40 nebeneinander. */
+body.kc-layout-neu .header-status{gap:5px!important;align-items:center!important}
+body.kc-layout-neu .header-status>button{width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;padding:0!important;font-size:1.05rem!important}
+body.kc-layout-neu .header-status .menu-button small{display:none!important}
+
+/* --- Bedienstreifen in die Kopfzeile ziehen -------------------------------------------
+   Der Streifen bleibt im HTML, wo er ist (damit nichts anderes bricht), wird aber optisch
+   schmal gesetzt und mit der Kopfzeile zu einem Band verbunden. Suchfeld und Bediener
+   bleiben in voller Groesse erhalten - sie werden am Stand staendig gebraucht.
+   Die drei Umschalter werden zu Symbolknoepfen mit LED; die Beschriftung steht weiter in
+   der Kurzinfo und wird beim Antippen als Meldung angezeigt. */
+body.kc-layout-neu .mode-strip{
+  min-height:0!important;height:auto!important;padding:3px 8px!important;gap:8px!important;
+  align-items:center!important;
+}
+/* Der Bediener-Knopf traegt zwei Zeilen (Name und Zustand). In 42px Hoehe wurde die zweite
+   Zeile abgeschnitten - im Foto stand "Team" halb ueber "aktiv". Enger gesetzt statt gekuerzt,
+   damit beide Angaben erhalten bleiben. */
+body.kc-layout-neu .mode-strip>.operator-button{min-height:0!important;height:42px!important;padding:1px 10px!important;
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;
+  gap:0!important;line-height:1.05!important;overflow:hidden!important}
+body.kc-layout-neu .mode-strip>.operator-button>span{font-size:.86rem!important;line-height:1.1!important}
+body.kc-layout-neu .mode-strip>.operator-button small{font-size:.58rem!important;line-height:1!important}
+body.kc-layout-neu .mode-strip>.product-search-wrap{min-height:0!important;height:42px!important;padding:0 10px!important}
+body.kc-layout-neu .mode-strip>.product-search-wrap input{height:38px!important;font-size:.92rem!important}
+body.kc-layout-neu .mode-quick-switches{gap:6px!important}
+/* Umschalter kompakt: LED bleibt, Text wird kleiner statt zu verschwinden - ganz ohne Text
+   waere am Stand nicht mehr erkennbar, was gerade aktiv ist. */
+body.kc-layout-neu .mode-quick-button{min-height:0!important;height:42px!important;padding:0 10px!important;font-size:.76rem!important;gap:6px!important}
+body.kc-layout-neu .mode-quick-button .mode-led{width:11px!important;height:11px!important;flex:0 0 11px!important}
+body.kc-layout-neu .mode-message-center{min-height:0!important;height:42px!important;align-items:center!important}
+body.kc-layout-neu .notification-bar{min-height:0!important;height:38px!important;display:flex!important;align-items:center!important;font-size:.82rem!important;padding:0 10px!important}
+body.kc-layout-neu .message-history-button,body.kc-layout-neu .opening-compact{min-height:0!important;height:38px!important;padding:0 8px!important;font-size:.74rem!important}
+
+/* --- Verbindungs-LEDs: drei klar getrennte Gruppen -------------------------------------
+   BEFUND VORHER: vier LEDs in zwei Gruppen, mitten zwischen den Werkzeugknoepfen und mit
+   abweichenden Breiten (40 und 41 statt 52) - daher das schiefe Bild. Und es gab KEINE
+   eigene Anzeige fuer die lokale Datenbank: die untere Sync-LED war mit "lokale Speicherung /
+   Netzwerkverkehr" doppelt belegt. Klemmt im Betrieb etwas, war daran nicht zu erkennen, ob
+   das Tablet nicht speichert oder nur die Verbindung fehlt.
+   NEU: ein zusammenhaengender Block mit gleich breiten Gruppen und Platz fuer weitere
+   Anbindungen. Jede Gruppe: oben Zustand, unten Aktivitaet, darunter ein Kuerzel. */
+body.kc-layout-neu .app-header .header-status>#kcLedBlock,
+body.kc-layout-neu .kc-led-block{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;align-self:center!important;gap:0!important;
+  height:40px!important;min-height:40px!important;max-height:40px!important;
+  width:auto!important;flex:0 0 auto!important;
+  padding:2px 3px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:8px!important;
+  background:rgba(255,255,255,.06)!important}
+body.kc-layout-neu .kc-led-gruppe{display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:2px!important;width:38px!important;min-width:38px!important;flex:0 0 38px!important;
+  height:100%!important;padding:1px 0!important}
+body.kc-layout-neu .kc-led-gruppe+.kc-led-gruppe{border-left:1px solid rgba(255,255,255,.16)!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-punkt{width:11px!important;height:11px!important;flex:0 0 11px!important;border-radius:50%!important;
+  background:#64748b!important;box-shadow:inset 0 0 3px rgba(0,0,0,.45)!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-punkt.gut{background:#22c55e!important;box-shadow:0 0 6px rgba(34,197,94,.7)!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-punkt.warn{background:#f59e0b!important;box-shadow:0 0 6px rgba(245,158,11,.7)!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-punkt.aus{background:#ef4444!important;box-shadow:0 0 6px rgba(239,68,68,.6)!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-name{font-size:.48rem!important;font-weight:800!important;letter-spacing:.02em!important;
+  color:rgba(255,255,255,.82)!important;line-height:1!important;text-transform:uppercase!important}
+/* Die beiden alten LED-Gruppen weichen dem neuen Block. Sie bleiben im HTML erhalten,
+   damit nichts, was sie ansteuert, ins Leere greift. */
+body.kc-layout-neu .header-status .supabase-led-group,
+body.kc-layout-neu .header-status #kcSyncStatusLeds{display:none!important}
+
+/* KORREKTUR: die Werkzeugleiste rechts hatte keinen Umbruchschutz. Mit dem zusaetzlichen
+   LED-Block passten die neun Knoepfe nicht mehr in eine Reihe, sie sind in DREI Reihen
+   umgebrochen und haben die Kopfzeile von 82 auf 148px aufgeblaeht - das Gegenteil des Ziels.
+   Deshalb: kein Umbruch, kleinere Knoepfe, und die Info-Spalte darf mitschrumpfen.
+   Die Auswahl ist hier tiefer gestaffelt als vorher, sonst gewinnen die Bestandsregeln. */
+body.kc-layout-neu .app-header .header-status{
+  display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+  gap:4px!important;flex:0 0 auto!important;
+}
+body.kc-layout-neu .app-header .header-status>button,
+body.kc-layout-neu .header-status #screenLockBtn,
+body.kc-layout-neu .header-status #cashSoundBtn,
+body.kc-layout-neu .header-status #timeClockBtn,
+body.kc-layout-neu .header-status #menuBtn,
+body.kc-layout-neu .header-status #headerExitBtn,
+body.kc-layout-neu .header-status #kcProgramStatusBtn,
+body.kc-layout-neu .header-status #mirrorLayoutBtn,
+body.kc-layout-neu .header-status .menu-button,
+body.kc-layout-neu .header-status .cash-sound-button,
+body.kc-layout-neu .header-status .header-tool-button{
+  width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;
+  flex:0 0 40px!important;padding:0!important;font-size:.95rem!important;line-height:1!important;
+}
+/* Die Leiste selbst darf nicht mehr hoch sein als ihre Knoepfe. */
+body.kc-layout-neu .app-header .header-status{height:auto!important;min-height:0!important;max-height:46px!important}
+body.kc-layout-neu .app-header .header-status>button img,
+body.kc-layout-neu .app-header .header-status>button svg{max-width:22px!important;max-height:22px!important}
+body.kc-layout-neu .kc-led-block{flex:0 0 auto!important}
+
+/* Die Info-Spalte gibt Platz ab, statt die Werkzeuge zu verdraengen. */
+body.kc-layout-neu .app-header .header-info{flex:1 1 auto!important;min-width:0!important;flex-wrap:nowrap!important}
+body.kc-layout-neu .app-header .brand-block{flex:0 0 auto!important;max-width:210px!important}
+
+/* Meldungszeile: der Text ist eine laufende Meldung ("Feuerzangenbowle - Menge jetzt 2") und
+   kann beliebig lang werden. Auf schmalen Bildschirmen wurde er hart abgeschnitten. Statt
+   ihn abzuschneiden, wird er jetzt mit Auslassungspunkten gekuerzt - so ist erkennbar, dass
+   die Meldung weitergeht, und der vollstaendige Text steht in der Kurzinfo. */
+body.kc-layout-neu .notification-bar{
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important;
+}
+body.kc-layout-neu .mode-message-center{min-width:0!important;overflow:hidden!important}
+
+/* Wenn die Bonliste laenger ist als das Sichtfenster, wird die letzte Zeile am unteren Rand
+   angeschnitten. Das ist beabsichtigt - es zeigt, dass es weitergeht. Damit man es nicht fuer
+   einen Darstellungsfehler haelt, bekommt der Rand einen weichen Verlauf. */
+body.kc-layout-neu .cart-area>.cart-list{position:relative!important}
+body.kc-layout-neu .cart-area>.cart-summary{border-top:2px solid #cbd5e1!important}
+
+/* Auf schmalen Bildschirmen ist rechts zu wenig Platz fuer die Kuerzel unter den LEDs -
+   "KASSE MANAGER CLOUD" lief ohne Abstand ineinander. Dort bleiben nur die Punkte; welche
+   Gruppe gemeint ist, steht in der Kurzinfo, und die Reihenfolge ist immer dieselbe. */
+/* Die Kuerzel brauchen mehr Platz als die LED-Punkte, sonst stossen sie aneinander und
+   lesen sich als ein Wort. Gemessen: "MANAGER" braucht rund 46px. */
+body.kc-layout-neu .kc-led-gruppe{width:58px!important;min-width:58px!important;flex:0 0 58px!important}
+body.kc-layout-neu .kc-led-gruppe .kc-led-name{padding:0 2px!important;max-width:100%!important;overflow:hidden!important;text-overflow:clip!important}
+@media (max-width:1200px){
+  body.kc-layout-neu .kc-led-gruppe .kc-led-name{display:none!important}
+  body.kc-layout-neu .kc-led-gruppe{width:26px!important;min-width:26px!important;flex:0 0 26px!important;gap:3px!important}
+  body.kc-layout-neu .app-header .header-status{gap:3px!important}
+}
+
+/* =========================================================================================
+   NEUES KASSENLAYOUT - Stufe 3: Warengruppenreiter und Stossbetrieb
+   ========================================================================================= */
+
+/* --- Warengruppenreiter ----------------------------------------------------------------
+   Vorher: 62px hoch, nur ein kleines Symbol und eine Zahl. "🍴 7" sagt auf einen Blick nicht,
+   worum es geht. Jetzt: hoeher, groesseres Symbol, dazu der Name der Warengruppe.
+   Der Name kommt aus dem vorhandenen data-cat-Attribut - dadurch muss am Erzeugen der Reiter
+   nichts geaendert werden und es bleibt auch nach jedem Neuzeichnen erhalten. */
+body.kc-layout-neu .category-tabs{gap:6px!important;flex:0 0 auto!important;max-height:70px!important;align-items:center!important}
+body.kc-layout-neu .category-tabs button{
+  min-height:66px!important;height:66px!important;max-height:66px!important;
+  display:grid!important;grid-template-rows:auto auto!important;
+  align-content:center!important;justify-items:center!important;gap:1px!important;
+  padding:4px 10px!important;position:relative!important;
+}
+/* Symbol, Name und Anzahl der Warengruppen sind jetzt fuer BEIDE Ansichten gleich geregelt -
+   siehe Block "Warengruppen-Knoepfe" am Ende dieser Datei. Die frueheren Sonderregeln nur fuer
+   diese Ansicht (Name per ::after, Zahl in der Ecke, Emoji-Ersatz per content) sind entfallen:
+   verbessert wurde damit immer nur eine der beiden Ansichten, die andere blieb zurueck. */
+
+/* --- Stossbetrieb ----------------------------------------------------------------------
+   Im Trubel bleiben nur die drei Tasten sichtbar, die dann wirklich gebraucht werden:
+   PFAND, TRINKGELD und MEHR. Sie ruecken in EINE Reihe und werden dadurch etwa doppelt so
+   gross - besser zu treffen, wenn es schnell gehen muss.
+   Personal, Konto und Reklamation werden nur AUSGEBLENDET, nicht gesperrt: sie bleiben ueber
+   MEHR erreichbar. Gerade Reklamation ist der Weg, eine Fehlbuchung wieder herauszunehmen -
+   und Fehlbuchungen passieren im Trubel am haeufigsten. */
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#accountChargeBtn,
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#staffBtn,
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#complaintBtn{display:none!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions{grid-template-rows:1fr!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#payBtn{grid-row:1!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#depositBtn{grid-column:2!important;grid-row:1!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#tipBtn{grid-column:3!important;grid-row:1!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>#moreBtn{grid-column:4!important;grid-row:1!important}
+body.kc-layout-neu.rush-mode .bottom-layout>.main-actions>button{font-size:clamp(.8rem,1.35vw,1.05rem)!important}
+
+/* =========================================================================================
+   NEUES KASSENLAYOUT - Reklamations-/Entnahmefenster
+   =========================================================================================
+   BEFUND (gemessen bei 1180 und 1024): das Fenster war BREITER als der Bildschirm - der
+   Betragsknopf, "AUSWAHL LEEREN" und der gruene Bestaetigungsknopf hoerten mitten im Wort auf.
+   Zusaetzlich musste gescrollt werden (820px Inhalt in 754px Fenster), und ausgerechnet der
+   Bestaetigungsknopf lag unten ausserhalb.
+   Der Reklamationsteil selbst ist mit 188px winzig; gross ist das Fenster drumherum: der
+   Knopf REKLAMATION oeffnet in Wahrheit die Bargeldentnahme und waehlt darin den Grund aus.
+   Deshalb sieht man erst Betrag und sechs Entnahmegruende und dann erst das Eigentliche.
+   Hier wird die Darstellung in Ordnung gebracht - der Ablauf bleibt unveraendert, damit an
+   der Buchungslogik nichts kaputtgeht. */
+
+body.kc-layout-neu #withdrawDialog{
+  width:min(1080px,96vw)!important;max-width:96vw!important;padding:0!important;
+  margin:auto!important;border:0!important;
+}
+body.kc-layout-neu #withdrawDialog .withdraw-card{
+  width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+  max-height:92vh!important;height:auto!important;
+  display:flex!important;flex-direction:column!important;
+  overflow:hidden!important;padding:12px 14px!important;gap:6px!important;
+}
+/* Alles zwischen Ueberschrift und Knopfleiste scrollt gemeinsam - statt dass das ganze
+   Fenster scrollt und dabei die Knopfleiste aus dem Bild wandert. */
+body.kc-layout-neu #withdrawDialog .withdraw-card>*{flex:0 0 auto!important;min-width:0!important;max-width:100%!important}
+body.kc-layout-neu #withdrawDialog .withdraw-card>.withdraw-reason-field,
+body.kc-layout-neu #withdrawDialog .withdraw-card>#complaintPanel{flex:0 1 auto!important;overflow-y:auto!important;min-height:0!important}
+/* Die Knopfleiste bleibt immer sichtbar, ganz unten. */
+body.kc-layout-neu #withdrawDialog .dialog-actions{
+  flex:0 0 auto!important;position:sticky!important;bottom:0!important;z-index:4!important;
+  background:#fff!important;padding-top:8px!important;margin-top:2px!important;
+  border-top:2px solid #e2e8f0!important;display:flex!important;gap:8px!important;
+}
+body.kc-layout-neu #withdrawDialog .dialog-actions button{min-height:52px!important;flex:1 1 auto!important;font-size:.95rem!important}
+body.kc-layout-neu #withdrawDialog .dialog-actions button[value="cancel"]{flex:0 0 140px!important}
+
+/* Nichts darf mehr breiter werden als das Fenster - das war die Ursache der abgeschnittenen
+   Knoepfe am rechten Rand. */
+body.kc-layout-neu #withdrawDialog .withdraw-reason-grid,
+body.kc-layout-neu #withdrawDialog .complaint-reason-grid{
+  display:grid!important;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))!important;
+  gap:6px!important;min-width:0!important;width:100%!important;
+}
+body.kc-layout-neu #withdrawDialog .withdraw-reason-grid button,
+body.kc-layout-neu #withdrawDialog .complaint-reason-grid button{
+  min-height:46px!important;font-size:.78rem!important;padding:4px 6px!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+body.kc-layout-neu #withdrawDialog .complaint-article-toolbar{
+  display:flex!important;flex-wrap:wrap!important;gap:6px!important;align-items:end!important;min-width:0!important;
+}
+body.kc-layout-neu #withdrawDialog .complaint-article-toolbar>label{flex:1 1 220px!important;min-width:0!important}
+body.kc-layout-neu #withdrawDialog .complaint-article-toolbar>button{flex:0 0 auto!important;min-height:40px!important;white-space:nowrap!important}
+body.kc-layout-neu #withdrawDialog .complaint-article-list{max-height:32vh!important;overflow-y:auto!important;min-width:0!important}
+body.kc-layout-neu #withdrawDialog .complaint-category-filters{display:flex!important;flex-wrap:wrap!important;gap:5px!important;min-width:0!important}
+/* Ueberschriften und Zwischenraeume knapper - das Fenster wird dadurch spuerbar kuerzer. */
+body.kc-layout-neu #withdrawDialog h2{font-size:1.1rem!important;margin:0 0 2px!important}
+body.kc-layout-neu #withdrawDialog h3{font-size:1rem!important;margin:0!important}
+body.kc-layout-neu #withdrawDialog fieldset{padding:6px 8px!important;margin:2px 0!important}
+body.kc-layout-neu #withdrawDialog legend{font-size:.76rem!important}
+body.kc-layout-neu #withdrawDialog textarea{min-height:38px!important}
+
+/* --- Getrennte Fenster fuer Entnahme und Reklamation -----------------------------------
+   Es bleibt EIN Fenster mit EINER Buchungslogik; sichtbar ist je nach Zweck nur, was
+   dazugehoert. Vorher sah man beim Reklamieren zuerst "Bargeldentnahme", ein Betragsfeld und
+   sechs Entnahmegruende - und erst danach das Eigentliche. */
+
+/* Reklamation: kein Betragsfeld (der Betrag ergibt sich aus den Artikeln) und keine
+   Entnahmegruende (Reklamation ist bereits gewaehlt). */
+body.kc-layout-neu #withdrawDialog.kc-modus-reklamation>.withdraw-card>label:first-of-type,
+body.kc-layout-neu #withdrawDialog.kc-modus-reklamation .withdraw-reason-field,
+body.kc-layout-neu #withdrawDialog.kc-modus-reklamation #kcBetragBlock{display:none!important}
+/* Entnahme: kein Reklamationsteil, und "Reklamation" faellt als Grund weg - dafuer gibt es
+   den eigenen Knopf. */
+body.kc-layout-neu #withdrawDialog.kc-modus-entnahme #complaintPanel{display:none!important}
+body.kc-layout-neu #withdrawDialog.kc-modus-entnahme [data-withdraw-reason="Reklamation"]{display:none!important}
+
+/* Hinweis auf die Verrechnung mit einem offenen Bon */
+body.kc-layout-neu .kc-verrechnung-hinweis{
+  margin:4px 0!important;padding:8px 10px!important;border-radius:8px!important;
+  background:#fff7ed!important;border:1px solid #fdba74!important;color:#7c2d12!important;
+  font-size:.84rem!important;font-weight:700!important;line-height:1.3!important;
+}
+
+/* --- Ziffernblock fuer den Entnahmebetrag ----------------------------------------------
+   Der Betrag war das einzige Feld, fuer das zwingend die Bildschirmtastatur aufgehen musste.
+   Am Stand mit kalten Fingern ist das der unangenehmste Teil - deshalb grosse Tasten. */
+body.kc-layout-neu .kc-betrag-block{display:grid!important;gap:6px!important;margin:4px 0 6px!important}
+body.kc-layout-neu .kc-betrag-schnell{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:6px!important}
+body.kc-layout-neu .kc-betrag-schnell button{min-height:46px!important;font-size:.95rem!important;font-weight:900!important;
+  border:2px solid #cbd5e1!important;border-radius:9px!important;background:#f1f5f9!important;color:#0f172a!important;cursor:pointer!important}
+body.kc-layout-neu .kc-betrag-tasten{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+body.kc-layout-neu .kc-betrag-tasten button{min-height:52px!important;font-size:1.25rem!important;font-weight:900!important;
+  border:2px solid #cbd5e1!important;border-radius:9px!important;background:#fff!important;color:#0f172a!important;cursor:pointer!important}
+body.kc-layout-neu .kc-betrag-tasten button:active{background:#e2e8f0!important}
+body.kc-layout-neu .kc-betrag-loeschen{background:#fee2e2!important;border-color:#fca5a5!important;color:#7f1d1d!important}
+/* Das Betragsfeld selbst bleibt gross und lesbar, wird aber nur noch angezeigt statt betippt. */
+body.kc-layout-neu #withdrawDialog.kc-modus-entnahme #withdrawAmount{
+  font-size:1.5rem!important;font-weight:900!important;text-align:right!important;min-height:52px!important;
+}
+
+/* =========================================================================================
+   Zahlenblock mit sichtbaren Betriebsarten
+   =========================================================================================
+   BEFUND: der Zahlenblock kann sechs Dinge - Bargeld, Menge, Rabatt, Artikel, Bon und Preis.
+   Alles fertig eingebaut. Gemessen war aber: die sechs Umschaltknoepfe, die Modusanzeige und
+   das Anzeigefeld hatten HOEHE 0, die Hilfezeile war ganz ausgeblendet. Uebrig blieben die
+   16 Zifferntasten ohne erkennbaren Zweck.
+   Ursache: eine Regel gibt dem Block nur einen einzigen Bereich ("keypad") - fuer alles
+   andere bleibt kein Platz.
+   NUTZEN: Menge und Rabatt sind am Stand die zwei haeufigsten Korrekturen. Bisher musste man
+   dafuer die Position im Bon antippen und dort suchen.
+   AUSWAHL: die drei taeglichen Betriebsarten stehen sichtbar nebeneinander. Artikel, Bon und
+   Preis sind Ausnahmefaelle (Barcode laeuft ueber den Scanner, Preisaenderung braucht
+   Berechtigung) und ruecken in eine zweite, kleinere Zeile. */
+body.kc-layout-neu .bottom-layout>.keypad-shell{
+  display:grid!important;
+  grid-template-areas:"modi" "anzeige" "keypad"!important;
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  gap:4px!important;padding:4px!important;height:100%!important;max-height:100%!important;
+}
+body.kc-layout-neu .bottom-layout>.keypad-shell>.keypad-mode-row{grid-area:modi!important;height:auto!important;min-height:0!important}
+/* ABWAEGUNG: die eigene Anzeigezeile kostet Tastenhoehe - gemessen 30px mit, 37px ohne.
+   Bei einem Kassensystem, das im Winter mit Handschuhen bedient wird, ist die Tastengroesse
+   wichtiger als eine zweite Anzeige. Der eingetippte Wert steht deshalb direkt auf dem
+   aktiven Modusknopf ("x MENGE 3"), und beim Bargeld ohnehin schon in der Rueckgeld-Box.
+   So bleibt jederzeit erkennbar, was das Tippen gerade bewirkt. */
+body.kc-layout-neu .bottom-layout>.keypad-shell>.keypad-display{display:none!important}
+body.kc-layout-neu .bottom-layout>.keypad-shell{grid-template-areas:"modi" "keypad"!important;grid-template-rows:auto minmax(0,1fr)!important}
+body.kc-layout-neu .keypad-mode-row button.active{font-size:.64rem!important;white-space:normal!important;line-height:1.05!important;overflow-wrap:anywhere!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important}
+body.kc-layout-neu .bottom-layout>.keypad-shell>.keypad{grid-area:keypad!important;min-height:0!important}
+
+/* Drei taegliche Betriebsarten gross, drei Ausnahmen klein darunter. */
+body.kc-layout-neu .keypad-mode-row{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3px!important;
+}
+body.kc-layout-neu .keypad-mode-row button{
+  min-height:34px!important;height:34px!important;font-size:.68rem!important;padding:0 2px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+/* Artikel, Bon und Preis sind Ausnahmefaelle: Barcodes laufen ueber den Scanner, Bonsuche und
+   Preisaenderung kommen im Verkauf so gut wie nie vor (Preis braucht ausserdem eine
+   Serviceberechtigung). Sie brauchten eine zweite Knopfreihe, und die kostete genau den Platz,
+   den die Zifferntasten fuer eine sichere Bedienung brauchen - gemessen waren die Tasten
+   dadurch auf 27px geschrumpft. Deshalb bleiben hier die drei taeglichen Betriebsarten
+   sichtbar; die drei Ausnahmen sind weiterhin ueber die Tastatur und den Scanner erreichbar. */
+body.kc-layout-neu .keypad-mode-row button[data-keypad-mode="article"],
+body.kc-layout-neu .keypad-mode-row button[data-keypad-mode="bon"],
+body.kc-layout-neu .keypad-mode-row button[data-keypad-mode="price"]{display:none!important}
+/* Anzeige knapp, aber lesbar: der aktive Modus und der eingetippte Wert muessen erkennbar
+   sein, damit nie unklar ist, was das Tippen gerade bewirkt. Die Hilfezeile bleibt aus -
+   bei klarem Moduskopf braucht sie niemand und sie kostet die Haelfte der Hoehe. */
+
+body.kc-layout-neu .keypad-display span{font-size:.58rem!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body.kc-layout-neu .keypad-display strong{font-size:.98rem!important;line-height:1!important;white-space:nowrap!important}
+body.kc-layout-neu .keypad-display small{display:none!important}
+body.kc-layout-neu .keypad{gap:4px!important}
+body.kc-layout-neu .keypad button{min-height:0!important;font-size:1.05rem!important}
+
+/* Schmaler Ansichts-Umschalter im Mehr-Fenster.
+   Bewusst nur halb so hoch wie ein normaler Knopf: er wird selten gebraucht und soll keinen
+   Platz von den taeglichen Funktionen nehmen. Der Punkt links zeigt den Zustand.
+   Gilt in BEIDEN Ansichten - man muss ja auch aus der neuen wieder herausfinden. */
+.more-grid .kc-ansicht-schalter{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:30px!important;height:30px;padding:0 10px;margin-top:2px;
+  font-size:.76rem;font-weight:800;letter-spacing:.02em;
+  border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#475569;cursor:pointer;
+}
+.more-grid .kc-ansicht-schalter .kc-ansicht-punkt{
+  width:10px;height:10px;border-radius:50%;background:#94a3b8;flex:0 0 10px;
+}
+.more-grid .kc-ansicht-schalter.an{background:#eff6ff;border-color:#1d4ed8;color:#1e3a8a}
+.more-grid .kc-ansicht-schalter.an .kc-ansicht-punkt{background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.7)}
+
+/* Warnung, wenn die Kasse ohne Manager laeuft. Bewusst auffaellig und ueber allem:
+   ohne Manager gibt es nur EINE Kopie der Buchungen, und das darf niemandem entgehen. */
+.kc-ohne-manager{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99998;
+  display:flex;flex-direction:column;gap:6px;max-width:min(560px,92vw);
+  padding:12px 16px;border-radius:12px;background:#7f1d1d;color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:.9rem;line-height:1.4}
+.kc-ohne-manager strong{font-size:1rem;letter-spacing:.01em}
+.kc-ohne-manager button{align-self:flex-end;min-height:38px;padding:0 16px;border:0;border-radius:8px;
+  background:#fff;color:#7f1d1d;font-weight:900;cursor:pointer}
+
+/* --- Gutscheinfenster --------------------------------------------------------------------
+   Sonderfall, deshalb nur im Menue erreichbar und nicht in der Hauptoberflaeche. */
+.kc-gs-dialog{border:0;border-radius:14px;padding:0;max-width:min(720px,96vw);width:min(720px,96vw)}
+.kc-gs-card{padding:16px 18px;display:flex;flex-direction:column;gap:10px;max-height:88vh;overflow:hidden}
+.kc-gs-card h2{margin:0}
+.kc-gs-reiter{display:flex;gap:6px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}
+.kc-gs-reiter button{flex:1;min-height:42px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;
+  font-weight:800;font-size:.88rem;cursor:pointer}
+.kc-gs-reiter button.aktiv{background:#1d4ed8;color:#fff;border-color:#1e40af}
+.kc-gs-card section{overflow-y:auto;min-height:0}
+.kc-gs-hinweis{margin:0 0 8px;color:#475569;font-size:.86rem;line-height:1.45}
+.kc-gs-betraege{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.kc-gs-betraege button{min-height:62px;border:2px solid #cbd5e1;border-radius:10px;background:#fff;
+  font-size:1.15rem;font-weight:900;cursor:pointer}
+.kc-gs-betraege button.aktiv{background:#dbeafe;border-color:#1d4ed8;color:#1e3a8a}
+.kc-gs-frei{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:.84rem;font-weight:700}
+.kc-gs-frei input{min-height:48px;padding:6px 10px;border:2px solid #cbd5e1;border-radius:8px;font-size:1.05rem;font-weight:800}
+.kc-gs-aktion{margin-top:10px}
+.kc-gs-haupt{width:100%;min-height:54px;border:0;border-radius:10px;background:#166534;color:#fff;
+  font-size:1rem;font-weight:900;cursor:pointer}
+.kc-gs-ergebnis{margin-top:10px;padding:10px 12px;border-radius:9px;font-size:.9rem;line-height:1.5}
+.kc-gs-gut{background:#f0fdf4;border:1px solid #86efac;color:#14532d}
+.kc-gs-warn{background:#fffbeb;border:1px solid #fcd34d;color:#78350f}
+.kc-gs-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.kc-gs-filter input,.kc-gs-filter select{min-height:40px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:7px;font-size:.86rem}
+.kc-gs-summe{flex:1 1 100%;font-weight:800;font-size:.86rem;color:#0f172a}
+.kc-gs-liste{display:grid;gap:5px}
+.kc-gs-zeile{display:grid;grid-template-columns:auto 80px 80px 1fr auto;gap:8px;align-items:center;
+  padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.84rem;background:#fff}
+.kc-gs-code{font-family:ui-monospace,monospace;font-weight:800}
+.kc-gs-rest{font-weight:900}
+.kc-gs-zustand{font-weight:700}
+.kc-gs-datum{font-size:.76rem;color:#64748b;white-space:nowrap}
+.kc-gs-offen{border-left:4px solid #16a34a}
+.kc-gs-teilweise{border-left:4px solid #d97706}
+.kc-gs-eingeloest{border-left:4px solid #94a3b8;opacity:.75}
+.kc-gs-abgelaufen{border-left:4px solid #dc2626;background:#fef2f2}
+.kc-gs-leer{color:#64748b;font-style:italic;padding:14px}
+
+/* --- Münzknöpfe: ausgerichtet und größer -------------------------------------------------
+   BEFUND aus dem Betrieb: Münzbild und Text standen frei nebeneinander. Weil "2 €" kürzer ist
+   als "50 ct", saß der Text in jeder Zeile woanders - die Knöpfe wirkten unruhig und nicht
+   untereinander ausgerichtet. Gemessen waren sie ausserdem nur 26px hoch, während die Scheine
+   daneben 60px haben. Fuer eine Kasse, die mit Handschuhen bedient wird, ist das zu klein.
+   Jetzt: feste Spalten (Bild | Text), damit alle Zeilen bündig stehen, und deutlich höher. */
+body.kc-layout-neu #coins button.coin-button{
+  display:grid!important;grid-template-columns:34px 1fr!important;align-items:center!important;
+  gap:7px!important;min-height:38px!important;height:38px!important;
+  padding:2px 8px!important;text-align:left!important;font-size:.92rem!important;font-weight:800!important;
+}
+body.kc-layout-neu #coins button.coin-button .coin{
+  width:27px!important;height:27px!important;flex:0 0 27px!important;
+  background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;
+  margin:0!important;
+}
+body.kc-layout-neu #coins{gap:7px!important;align-content:center!important}
+/* Auf schmalen Bildschirmen bleibt Platz das knappste Gut - dort etwas kleiner, aber immer
+   noch deutlich groesser als die bisherigen 26px. */
+@media (max-width:1200px){
+  body.kc-layout-neu #coins button.coin-button{min-height:38px!important;height:38px!important;
+    grid-template-columns:28px 1fr!important;gap:6px!important;font-size:.84rem!important}
+  body.kc-layout-neu #coins button.coin-button .coin{width:26px!important;height:26px!important;flex:0 0 26px!important}
+}
+
+/* Ziffernblock im Gutscheinfenster. Auf dem Tablet gibt es keinen, und die
+   Bildschirmtastatur verdeckt das halbe Fenster - deshalb ein eigener, mit Tasten, die man
+   auch mit Handschuhen trifft. */
+.kc-gs-ziffern{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.kc-gs-ziffern button{min-height:52px;border:2px solid #cbd5e1;border-radius:9px;background:#fff;
+  font-size:1.2rem;font-weight:900;cursor:pointer;color:#0f172a}
+.kc-gs-ziffern button:active{background:#e2e8f0}
+.kc-gs-weg{background:#fee2e2!important;border-color:#fca5a5!important;color:#7f1d1d!important}
+.kc-gs-komma{background:#f1f5f9!important}
+
+/* Kachelhoehe begrenzen statt der Reihe: bei fuenf Artikeln in einer Reihe entstehen so keine
+   schmalen Tuerme, bei neun Artikeln passen trotzdem zwei Reihen ins Bild. */
+body.kc-layout-neu .sales-area>.product-grid>.product-tile-wrap{max-height:235px!important}
+body.kc-layout-neu .sales-area>.product-grid>.product-tile-wrap>.product-tile{max-height:235px!important}
+
+/* Die Kacheln tragen aus dem Bestand eine feste Mindesthöhe. Dadurch ragten zwei Reihen aus
+   dem sichtbaren Bereich, statt sich den Platz zu teilen. Im neuen Layout bestimmt allein das
+   Gitter die Höhe - so passen zwei Reihen ins Bild, ohne dass gescrollt werden muss. */
+body.kc-layout-neu .sales-area>.product-grid>.product-tile-wrap,
+body.kc-layout-neu .sales-area>.product-grid>.product-tile-wrap>.product-tile{
+  min-height:0!important;height:100%!important;
+}
+
+/* Rückfrage "Bon drucken?" nach dem Verkauf. Klein und am Rand, damit sie den Blick auf das
+   Rückgeld nicht verdeckt - und sie verschwindet nach 12 Sekunden von selbst. */
+.kc-bon-frage{position:fixed;right:18px;bottom:18px;z-index:99997;display:grid;gap:8px;
+  padding:12px 14px;border-radius:12px;background:#0f172a;color:#fff;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);font-size:.92rem}
+.kc-bon-frage div{display:flex;gap:8px}
+.kc-bon-frage button{min-height:42px;padding:0 16px;border:0;border-radius:8px;font-weight:900;cursor:pointer}
+.kc-bon-frage [data-ja]{background:#16a34a;color:#fff}
+.kc-bon-frage [data-nein]{background:#e2e8f0;color:#0f172a}
+
+/* ===== Vergrößerte Warenkorb-Ansicht (User-Wunsch) - rein additiv, keine Basis-Regel verändert =====
+
+   AUFBAU (vom Nutzer vorgegeben): vier Spalten nebeneinander, unten eine Favoritenleiste.
+
+     |  Warengruppen  |            |              |  Rückgeld    |
+     |  Artikeltasten |  Warenkorb | Sondertasten |  Barzahlung  |
+     |  (scrollt)     |  (bis unten)|  (BAR groß) |  Zahlenblock |
+     |----------------+------------+--------------+--------------|
+     |                |   Favoriten (kleine Knöpfe, schnelles Kassieren)   |
+
+   Vorher lagen Rückgeld und Barzahlung UNTER dem Warenkorb und der Zahlenblock lag
+   quer darunter - verdeckt von der Barzahlungskarte und damit unbedienbar. Alles steht
+   jetzt nebeneinander, nichts liegt mehr übereinander.
+
+   Die Kopfzeile bleibt frei: alle Blöcke beginnen bei max(8vh,58px). Auf flachen
+   Bildschirmen greift der Pixelwert, auf hohen der Prozentwert - eine feste vh-Zahl
+   allein würde die Kopfzeile auf kleinen Tablets überdecken. */
+#kcCartExpandOverlay{display:none;position:fixed;inset:0;background:rgba(7,17,31,.72);z-index:9000}
+body.kc-cart-expanded #kcCartExpandOverlay{display:block}
+
+/* ---- Spalte 1 links: Warengruppen oben, Artikeltasten darunter nach unten ---- */
+body.kc-cart-expanded #categories{position:fixed!important;top:max(8vh,58px)!important;left:1vw!important;
+  width:17vw!important;right:auto!important;z-index:9001;display:grid!important;
+  grid-template-columns:repeat(3,1fr);gap:5px;background:transparent;padding:0!important;
+  /* BEFUND beim Nachmessen: das neue Kassenlayout begrenzt die Reiterzeile auf 70px Hoehe -
+     hier standen dadurch nur 3 der 6 Warengruppen, der Rest war unerreichbar. Zwei Reihen
+     sind ausdruecklich erlaubt; kommen spaeter mehr Gruppen dazu, scrollt der Block, statt
+     in die Artikelspalte darunter zu laufen. */
+  height:auto!important;max-height:154px!important;min-height:0!important;overflow-y:auto!important}
+/* min-height muss mit gesetzt werden: eine spaetere Regel des neuen Layouts gibt den Reitern
+   eine Mindesthoehe von 66px - eine reine height-Angabe verliert dagegen, die zweite Reihe
+   passte dadurch nicht in den Block. */
+body.kc-cart-expanded #categories button{height:46px!important;min-height:46px!important;
+  max-height:46px!important;min-width:0!important;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+
+#kcCartExpandProducts{display:none}
+body.kc-cart-expanded #kcCartExpandProducts{display:flex;flex-direction:column;position:fixed;
+  top:calc(max(8vh,58px) + 102px);bottom:12vh;left:1vw;width:17vw;z-index:9001;background:#fff;
+  border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow-y:auto;padding:6px;gap:6px}
+.kc-cep-head{font-weight:900;font-size:.8rem;padding:4px 2px;color:#173765;position:sticky;top:0;background:#fff;z-index:1}
+.kc-cep-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.kc-cep-item{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid #d8dde3;
+  border-radius:8px;padding:4px;background:#fff;min-width:0}
+.kc-cep-item img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px}
+.kc-cep-item span{font-size:.62rem;line-height:1.1;text-align:center;overflow-wrap:anywhere;max-height:2.3em;overflow:hidden}
+.kc-cep-item b{font-size:.82rem}
+
+/* ---- Spalte 2: Warenkorb, breit und durchgehend bis zur Favoritenleiste ---- */
+body.kc-cart-expanded .cart-area{position:fixed!important;top:max(8vh,58px)!important;left:18.5vw!important;
+  width:38vw!important;height:auto!important;bottom:12vh!important;max-height:none!important;z-index:9001;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);border-radius:14px;background:#fff;overflow:auto}
+body.kc-cart-expanded .cart-area .cart-list{max-height:none!important}
+body.kc-cart-expanded .cart-row{min-height:62px!important;font-size:1rem!important}
+
+/* ---- Spalte 3: Sondertasten, BAR deutlich größer ---- */
+body.kc-cart-expanded .bottom-layout>.main-actions{position:fixed!important;top:max(8vh,58px)!important;left:57vw!important;
+  width:14vw!important;right:auto!important;bottom:12vh!important;height:auto!important;max-height:none!important;
+  z-index:9001;box-shadow:0 20px 60px rgba(0,0,0,.4);border-radius:14px;overflow:auto;
+  display:flex!important;flex-direction:column!important;gap:6px!important;padding:6px!important}
+body.kc-cart-expanded .bottom-layout>.main-actions .pay{flex:0 0 30%!important;border-radius:12px}
+body.kc-cart-expanded .bottom-layout>.main-actions .pay .pay-label b{font-size:1.5rem!important}
+body.kc-cart-expanded .bottom-layout>.main-actions>*:not(.pay){flex:1 1 auto!important;min-height:0!important;
+  border-radius:8px;font-size:.68rem!important;line-height:1.15!important;overflow-wrap:anywhere}
+
+/* ---- Spalte 4 rechts: Rückgeld groß, darunter Barzahlung, darunter der Zahlenblock ---- */
+body.kc-cart-expanded .bottom-layout>.change-card{position:fixed!important;top:max(8vh,58px)!important;left:72vw!important;
+  width:27vw!important;height:19vh!important;max-height:none!important;bottom:auto!important;z-index:9001;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);border-radius:14px;overflow:auto}
+body.kc-cart-expanded .bottom-layout>.change-card>strong{font-size:2.4rem!important}
+body.kc-cart-expanded .bottom-layout>.change-card>small{font-size:1rem!important}
+body.kc-cart-expanded .bottom-layout>.change-card .change-payment-state{font-size:.9rem!important;min-height:30px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card{position:fixed!important;top:calc(max(8vh,58px) + 20vh)!important;left:72vw!important;
+  width:27vw!important;height:30vh!important;max-height:none!important;bottom:auto!important;z-index:9001;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);border-radius:14px;background:#fff;overflow:auto;padding:6px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card .banknote-row{gap:5px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card .banknote-button{height:48px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card .coin-row{gap:8px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card .coin{width:26px!important;height:26px!important;flex-basis:26px!important}
+body.kc-cart-expanded .bottom-layout>.cash-card .cash-finish-row button{height:38px!important;font-size:.8rem!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell{position:fixed!important;top:calc(max(8vh,58px) + 51vh)!important;
+  left:72vw!important;width:27vw!important;bottom:12vh!important;height:auto!important;max-height:none!important;
+  z-index:9001;box-shadow:0 20px 60px rgba(0,0,0,.4);border-radius:14px;background:#fff;overflow:auto;
+  padding:6px!important;display:flex!important;flex-direction:column!important;gap:5px!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-mode-row{flex:0 0 auto!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-mode-row button{font-size:.62rem!important;padding:4px 2px!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-display{flex:0 0 auto!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad{flex:1 1 auto!important;min-height:0!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad button{min-height:0!important;height:100%!important;font-size:1.05rem!important}
+
+/* ---- Favoritenleiste unten: kleinere Knöpfe für schnelles Kassieren ---- */
+#kcCartExpandFavorites{display:none}
+body.kc-cart-expanded #kcCartExpandFavorites{display:flex;position:fixed;left:18.5vw;right:1vw;bottom:1.5vh;
+  height:9vh;z-index:9001;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);
+  padding:6px;gap:6px;align-items:stretch;overflow-x:auto}
+.kc-cef-titel{display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#b8860b;padding:0 4px;flex:0 0 auto}
+.kc-cef-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  border:1px solid #d8dde3;border-radius:9px;background:#f8fafc;padding:2px 8px;min-width:92px;flex:1 1 0}
+.kc-cef-item span{font-size:.66rem;line-height:1.1;text-align:center;overflow-wrap:anywhere}
+.kc-cef-item b{font-size:.9rem}
+
+body.kc-cart-expanded .cart-heading-icon{outline:3px solid #159426;outline-offset:2px;border-radius:8px;cursor:pointer}
+#kcCartExpandClose{display:none;position:absolute;top:8px;right:8px;z-index:9002;background:#c9231f;color:#fff;
+  border:0;border-radius:8px;padding:8px 14px;font-weight:900;font-size:.85rem;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+body.kc-cart-expanded #kcCartExpandClose{display:block}
+
+/* Schmale Bildschirme (Tablet quer, 1024px): die vier Spalten brauchen etwas andere Anteile,
+   sonst wird die Sondertasten-Spalte zu schmal für ihre Beschriftungen. */
+@media (max-width:1200px){
+  /* Auf 1024px war der Warenkorb mit 34vw zu schmal: die Artikelzeilen brachen um und die
+     Zusammenfassung lief auf drei Zeilen. Der Warenkorb bekommt hier den meisten Platz,
+     die drei anderen Spalten geben je etwas ab. */
+  body.kc-cart-expanded #categories,
+  body.kc-cart-expanded #kcCartExpandProducts{width:15vw!important}
+  body.kc-cart-expanded #categories button{height:42px!important;min-height:42px!important;max-height:42px!important}
+  body.kc-cart-expanded #categories{max-height:142px!important}
+  body.kc-cart-expanded #kcCartExpandProducts{top:calc(max(8vh,58px) + 94px)}
+  body.kc-cart-expanded .cart-area{left:16.5vw!important;width:40vw!important}
+  body.kc-cart-expanded .cart-row{min-height:54px!important;font-size:.85rem!important}
+  body.kc-cart-expanded .bottom-layout>.main-actions{left:57.5vw!important;width:13vw!important}
+  body.kc-cart-expanded .bottom-layout>.change-card,
+  body.kc-cart-expanded .bottom-layout>.cash-card,
+  body.kc-cart-expanded .bottom-layout>.keypad-shell{left:71vw!important;width:28vw!important}
+  body.kc-cart-expanded #kcCartExpandFavorites{left:16.5vw}
+  body.kc-cart-expanded .bottom-layout>.main-actions .pay .pay-label b{font-size:1.2rem!important}
+}
+
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-display{display:flex!important;flex-direction:column;align-items:center;padding:4px!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-display strong{font-size:1.25rem!important}
+body.kc-cart-expanded .bottom-layout>.keypad-shell>.keypad-display small{font-size:.6rem!important;text-align:center}
+
+/* ===== Vergrößerte Zahlabwicklung (nur beim Herausgeben von Rückgeld) =================
+   KEINE andere Ansicht: die gewählte Anordnung bleibt darunter unverändert. Es werden nur
+   die Dinge groß, die in diesem Moment zählen - Geldknöpfe, Rückgeldbetrag, Warenkorb.
+   Die Artikeltasten verschwinden solange, damit beim Geldzählen nichts danebengetippt wird. */
+body.kc-zahl-zoom #categories,
+body.kc-zahl-zoom #productGrid,
+body.kc-zahl-zoom .product-grid{opacity:0;pointer-events:none;transition:opacity .15s}
+body.kc-zahl-zoom .bottom-layout>.cash-card{position:fixed!important;left:1vw!important;
+  top:max(8vh,58px)!important;width:56vw!important;height:auto!important;bottom:2vh!important;
+  max-height:none!important;z-index:9500;box-shadow:0 20px 60px rgba(0,0,0,.45);border-radius:14px;
+  background:#fff;overflow:auto;padding:10px!important}
+body.kc-zahl-zoom .bottom-layout>.cash-card .banknote-button{height:96px!important}
+body.kc-zahl-zoom .bottom-layout>.cash-card .coin-row{gap:14px!important}
+body.kc-zahl-zoom .bottom-layout>.cash-card .coin-button{font-size:1.15rem!important;padding:10px!important}
+/* BEFUND aus dem Durchlauf: das neue Kassenlayout schreibt die Muenzgroesse mit hoeherer
+   Spezifitaet fest (body.kc-layout-neu #coins button.coin-button .coin) - meine Regel verlor
+   und die Muenzen blieben klein. Dieselbe Kette hier ansprechen, sonst wirkt es nicht.
+   Dasselbe beim Rueckgeldbetrag: dort greift die id (#changeDisplay). */
+body.kc-zahl-zoom #coins button.coin-button .coin{width:48px!important;height:48px!important;flex:0 0 48px!important}
+body.kc-zahl-zoom #coins button.coin-button{min-height:66px!important;height:66px!important;
+  grid-template-columns:52px 1fr!important;font-size:1.05rem!important}
+body.kc-zahl-zoom .bottom-layout>.change-card>#changeDisplay{font-size:4rem!important;line-height:1.05}
+body.kc-zahl-zoom .bottom-layout>.cash-card .cash-finish-row button{height:64px!important;font-size:1.05rem!important}
+body.kc-zahl-zoom .bottom-layout>.change-card{position:fixed!important;left:58vw!important;
+  top:max(8vh,58px)!important;width:41vw!important;height:auto!important;bottom:52vh!important;
+  max-height:none!important;z-index:9500;box-shadow:0 20px 60px rgba(0,0,0,.45);border-radius:14px;
+  overflow:auto}
+body.kc-zahl-zoom .bottom-layout>.change-card>strong{font-size:4rem!important;line-height:1.05}
+body.kc-zahl-zoom .bottom-layout>.change-card .change-payment-state{font-size:1.1rem!important}
+body.kc-zahl-zoom .cart-area{position:fixed!important;left:58vw!important;top:calc(max(8vh,58px) + 47vh)!important;
+  width:41vw!important;bottom:2vh!important;height:auto!important;max-height:none!important;
+  z-index:9500;box-shadow:0 20px 60px rgba(0,0,0,.45);border-radius:14px;background:#fff;overflow:auto}
+/* Im vergrößerten Zustand ist der Warenkorb zum MITLESEN da - nicht zum Ändern. */
+body.kc-zahl-zoom .cart-area .position-discount-button,
+body.kc-zahl-zoom .cart-area .delete-row,
+body.kc-zahl-zoom .cart-area .qty-box{pointer-events:none;opacity:.45}
+
+/* Hinweis in der Kopfzeile - steht NUR da, wenn die Ansicht nicht auf Normal steht. */
+.kc-ansicht-hinweis{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;
+  background:#b45309;color:#fff;font-size:.72rem;font-weight:800;vertical-align:middle}
+.kc-ansicht-symbol{font-size:1.15rem;line-height:1}
+
+/* ===== Reklamationsfenster: eine Bildschirmseite statt zwei Scrollbereiche ==============
+   BEFUND auf Tablethöhe (1280x800): Die Artikelliste scrollte in sich selbst UND das Fenster
+   scrollte - wer den Reklamationsgrund suchte, blieb in der Artikelliste hängen und fand ihn
+   nie. Die Gründe stehen jetzt oben; die Artikelliste bekommt eine feste, an die
+   Bildschirmhöhe gekoppelte Höhe, damit darunter noch etwas Platz bleibt. */
+#complaintPanel .complaint-reason-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#complaintPanel .complaint-reason-grid button{min-height:52px;font-size:.86rem;line-height:1.15;
+  white-space:normal;padding:6px 8px}
+#complaintPanel .complaint-article-list{max-height:min(34vh,260px);overflow-y:auto}
+#complaintPanel .complaint-optional{margin-top:8px;font-size:.88rem}
+#complaintPanel .complaint-optional summary{cursor:pointer;color:#44546a;padding:6px 0}
+#complaintPanel .complaint-help{font-size:.8rem;line-height:1.35;margin:6px 0 0}
+/* Auf niedrigen Bildschirmen die Gründe zweizeilig und die Liste flacher. */
+@media (max-height:820px){
+  #complaintPanel .complaint-reason-grid button{min-height:46px;font-size:.8rem}
+  #complaintPanel .complaint-article-list{max-height:min(26vh,200px)}
+  #complaintPanel .complaint-head h3{font-size:1.05rem}
+}
+
+/* Hinweis im Tagesabschluss (Anfangsbestand fehlt / aus Geldkassette). Bewusst nur hier im
+   Abschlussfenster - auf der Verkaufsoberflaeche erscheint nichts davon. */
+.closing-hinweis{margin:0 0 12px;padding:11px 14px;border-radius:9px;font-size:.9rem;line-height:1.45;font-weight:700}
+.closing-hinweis-offen{background:#fff4e5;border-left:5px solid #d98a1f;color:#6b4106}
+.closing-hinweis-info{background:#eaf3fb;border-left:5px solid #2f6fa8;color:#123c60}
+
+/* BAR-Knopf im Rückgeldfall: steht neben "STIMMT SO", damit der normale Weg mit Rückgeld
+   genauso erreichbar ist. Gleiche Höhe wie die Nachbarn - beim normalen Kassieren ohne
+   Geldeingabe ist er ausgeblendet und die Zeile sieht aus wie bisher. */
+.cash-finish-row.mit-rueckgeld{grid-template-columns:1.15fr 1.15fr .7fr}
+/* WICHTIG: display:flex wuerde das hidden-Attribut ueberstimmen - der Knopf blieb dadurch mit
+   altem Betrag stehen, obwohl kein Bon offen war (echter Fund im Betrieb). */
+.change-button[hidden]{display:none!important}
+.change-button{width:100%;height:54px;border:1px solid #14532d;border-radius:6px;font-weight:900;
+  background:linear-gradient(#1e7a44,#14532d);color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;line-height:1.1;gap:1px;cursor:pointer}
+.change-button b{font-size:.95rem;letter-spacing:.01em}
+.change-button small{font-size:.82rem;font-weight:800;opacity:.92}
+.bottom-layout .cash-finish-row .change-button{min-height:34px!important}
+
+
+/* --- Warengruppen-Knoepfe (gilt fuer BEIDE Ansichten) ------------------------------------
+   Wuensche vom Stand: Farben nicht so dunkel, Symbole groesser und erkennbar, die Anzahl der
+   Artikel ganz nach rechts aussen und schmaler - sie ist die unwichtigste der drei Angaben.
+   Flaeche, Schrift- und Symbolfarbe werden in app.js aus der im PC-Manager gewaehlten
+   Gruppenfarbe berechnet (gruppenFarben), damit jede Farbe lesbar bleibt. */
+.category-tabs button{
+  display:grid!important;
+  grid-template-columns:auto 1fr auto!important;
+  grid-template-rows:none!important;
+  align-items:center!important;
+  justify-items:start!important;
+  gap:9px!important;
+  padding:0 10px 0 11px!important;
+  text-align:left!important;
+  background:var(--group-flaeche,#e4e9f0)!important;
+  color:var(--group-vorder,#172033)!important;
+  border:2px solid rgba(0,0,0,.14)!important;
+}
+.category-tabs button.active{
+  background:var(--group-color,#173765)!important;
+  color:var(--group-aktiv-vorder,#fff)!important;
+}
+.kategorie-symbol{display:flex;align-items:center;justify-content:center}
+.kategorie-bild{width:34px;height:34px;display:block}
+.kategorie-kuerzel{font-size:1.1rem;font-weight:1000;letter-spacing:.02em}
+.kategorie-name{
+  font-size:.86rem;font-weight:900;line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+/* Bewusst schmal und zurueckhaltend: die Zahl soll da sein, aber nicht mit Symbol und Name
+   um Aufmerksamkeit konkurrieren. */
+.category-tabs button .category-count{
+  position:static!important;
+  min-width:0!important;width:auto!important;height:20px!important;
+  padding:0 6px!important;
+  border-radius:10px!important;
+  font-size:.72rem!important;font-weight:900!important;
+  background:rgba(0,0,0,.15)!important;
+  color:inherit!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+}
+.category-tabs button.active .category-count{background:rgba(255,255,255,.9)!important;color:#0b315d!important}
+/* Farbmodus aus: dann bestimmt nicht die Gruppenfarbe die Flaeche, sondern ein neutraler Ton -
+   die Aufteilung Symbol / Name / Zahl bleibt aber dieselbe. */
+body:not(.group-color-mode) .category-tabs button{background:linear-gradient(#fff,#e8e8e8)!important;color:#172033!important}
+body:not(.group-color-mode) .category-tabs button.active{background:linear-gradient(#173765,#071d3d)!important;color:#fff!important}
+/* Auf schmalen Bildschirmen zaehlt der Platz: dann Symbol und Zahl, Name faellt weg. */
+@media(max-width:900px){
+  .category-tabs button{grid-template-columns:auto auto!important;justify-content:center!important;gap:7px!important}
+  .kategorie-name{display:none!important}
+  .kategorie-bild{width:30px;height:30px}
+}
+
+
+/* --- Artikelkacheln: Rand in der Warengruppenfarbe ---------------------------------------
+   Wunsch vom Stand (Vorschlag A): der Rand zeigt die Warengruppe, und der dunkle Balken soll
+   NICHT den Grossteil des Artikels bedecken. Vorher lag der schwarze Verlauf ueber der ganzen
+   unteren Haelfte (ab 44 %, bis 92 % Schwarz) - das Foto sackte genau dort ab, wo bei vielen
+   Bildern das Motiv sitzt. Jetzt liegt er nur noch unter Name und Preis. */
+.product-tile{border:4px solid var(--gruppen-rand,#315d8d)!important}
+.product-tile:after{inset:60% 0 0!important;background:linear-gradient(transparent,rgba(0,0,0,.42) 38%,rgba(0,0,0,.86))!important}
+/* Bei den reinen Farbkacheln (ohne Foto) bleibt es wie bisher - dort gibt es kein Bild, das
+   verdeckt werden koennte. */
+.product-tile.mode-color:after{inset:0!important;background:none!important}
+.product-tile.mode-mixed:after{inset:56% 0 0!important;background:linear-gradient(transparent,var(--tile-color,#315d8d) 38%)!important}
+
+/* Modusanzeige in der Kopfzeile (TÜV-Befund: sie zeigte immer "Normalbetrieb").
+   Der Trainingsmodus muss auf einen Blick erkennbar sein - dort zählt kein echter Umsatz. */
+#modeStatus.modus-training{background:#ffe08a;color:#6b4300;font-weight:900;border-radius:6px;padding:1px 8px}
+#modeStatus.modus-stoss{background:#d7ebff;color:#0d3c66;font-weight:800;border-radius:6px;padding:1px 8px}
+
+/* BEFUND aus der TÜV-Prüfung: unterhalb von etwa 1280x800 brach die Artikelfläche zusammen.
+   Gemessen bei 1024x600: die Fläche war nur noch 80 px hoch, die Kacheln aber 126 px - es
+   passte KEINE einzige Kachel mehr ganz hinein, sie wurden mittendurch abgeschnitten und
+   die Blätterleiste lag darüber. Ursache ist die feste Kachelhöhe, die sich nicht
+   mitverkleinert (derselbe Fallstrick wie schon bei den Stoßzeiten).
+   Jetzt geben auf flachen Bildschirmen zuerst die unwichtigen Höhen nach - Warengruppen-
+   leiste, Blätterleiste, Kachelhöhe - damit die Artikel ganz sichtbar und tippbar bleiben. */
+/* Beim Nachmessen praeziser gefasst: die Rasterzeilen wurden bei 1280x800 auf 78 px
+   gerechnet, waehrend eine Kachel 126 px hoch ist - die Kacheln der zweiten Reihe lagen
+   dadurch 38 px UEBER denen der ersten. Deshalb greift die Anpassung schon ab 900 px
+   Hoehe, und die Zeilen bekommen eine echte Mindesthoehe, damit sich nie wieder
+   Kacheln ueberlappen koennen. */
+@media (max-height:900px){
+  .product-grid{grid-template-rows:repeat(2,minmax(96px,1fr))!important}
+  .product-tile{min-height:0!important}
+}
+@media (max-height:760px){
+  .product-grid{grid-template-rows:repeat(2,minmax(72px,1fr))!important}
+  .product-tile{min-height:72px!important}
+  .category-tabs button{min-height:44px!important;padding-top:4px;padding-bottom:4px}
+  .sales-area>.pager{min-height:0}
+  .pager button{min-height:38px!important;padding-top:4px;padding-bottom:4px}
+  .product-tile .tile-name,.product-tile b{font-size:.86rem}
+}
+@media (max-height:660px){
+  .product-grid{grid-template-rows:minmax(64px,1fr)!important;grid-template-columns:repeat(6,1fr)!important}
+  .product-tile{min-height:64px!important}
+  .category-tabs button{min-height:38px!important}
+  .pager button{min-height:32px!important}
+}
+
+/* Zweiter Teil desselben Befunds: bei 1024 px Breite stand die rechte Knopfspalte
+   (Pfandrückgabe, Trinkgeld, Reklamation, Auf Konto, Mehr) 56 px über den Bildschirmrand
+   hinaus - gemessen: Zahlbereich 1088 px breit bei 1024 px Fenster. Die Knöpfe waren also
+   nur zum Teil erreichbar. Ursache sind die festen Mindestbreiten der Spalten.
+   Unter 1100 px werden die Mindestbreiten kleiner, damit alles im Bild bleibt. */
+@media (max-width:1100px){
+  .bottom-layout{
+    grid-template-columns:minmax(0,1.3fr) minmax(120px,.7fr) minmax(72px,.34fr) minmax(190px,.9fr) minmax(210px,1.05fr)!important;
+    gap:6px!important;
+  }
+  .main-actions button{font-size:.82rem!important;padding-left:6px;padding-right:6px}
+  .keypad button{font-size:1.15rem!important}
+  .cash-buttons button{padding-left:4px;padding-right:4px}
+}
+/* Die Mengenleiste im Warenkorb (1,2,3 ... Rückgängig) hatte ebenfalls feste Mindest-
+   breiten und schob den Rückgängig-Knopf bei 1024 px aus dem Bild. */
+@media (max-width:1100px){
+  .cart-quantity-bar{grid-template-columns:auto repeat(7,minmax(26px,1fr)) minmax(26px,1fr) 36px!important;gap:2px!important;min-width:0!important}
+  .cart-quantity-bar button{font-size:.9rem!important;padding:0!important}
+}
+
+/* Folge der verkleinerten Kacheln auf flachen Bildschirmen (beim Nachmessen aufgefallen):
+   der 50 px große Varianten-Knopf "+" deckte auf einer 80 px hohen Kachel fast die ganze
+   Mitte ab - ein Tipp auf den Artikel öffnete dann die Varianten statt zu verkaufen.
+   Auf flachen Bildschirmen schrumpft er deshalb mit. Dasselbe gilt für den Info-Knopf. */
+@media (max-height:760px){
+  .product-variant-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;
+    border-radius:10px!important;border-width:2px!important;font-size:1rem!important;right:4px!important;bottom:4px!important}
+  .product-info-button{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;font-size:.85rem!important}
+}
+@media (max-height:660px){
+  .product-variant-button{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;font-size:.85rem!important}
+  .product-info-button{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important}
+}
+
+/* GRUNDSÄTZLICHE FASSUNG des Kachel-Befunds (die Höhen-Regeln oben behandeln nur einzelne
+   Bildschirmgrößen): das Artikelraster vergab feste Zeilenanteile (repeat(3,1fr)). Wurde
+   der Anteil kleiner als eine Kachel hoch ist, schrumpfte die Zeile - die Kachel aber
+   nicht. Ergebnis: die Kacheln der zweiten Reihe lagen ÜBER denen der ersten (gemessen bei
+   1280x800: 38 px Überdeckung, bei 800x1280 hochkant: 15 px). Man tippt dann auf einen
+   Artikel und verkauft einen anderen.
+   Mit min-content als Untergrenze kann eine Zeile nie mehr kleiner werden als ihr Inhalt.
+   Reicht der Platz nicht, blättert man - statt sich überlagernder Kacheln.
+   Dies ist derselbe wiederkehrende Fallstrick wie bei den Stoßzeiten: feste Größen im
+   Kassenlayout.
+
+   ERSTER VERSUCH VERWORFEN: mit minmax(min-content,1fr) verschwand zwar die Überlappung,
+   aber auf grossen Bildschirmen verteilte sich der freie Platz auf die zwei belegten Zeilen
+   - die Kacheln wurden riesig und die letzte fiel unten heraus. Auf 1920x1080, also der
+   Groesse am Stand, war das eine Verschlechterung.
+   RICHTIGE LOESUNG: die Zeilen bleiben gleich gross (1fr), aber die KACHEL darf mitschrumpfen.
+   Sie war vorher inhaltsbedingt 126 px hoch und damit hoeher als ihre Zeile. */
+.product-grid .product-tile-wrap,.product-grid .product-tile{min-height:0!important}
+.product-tile{overflow:hidden}
+/* Damit eine zu hohe Zeile nicht über die Blätterleiste und den Warenkorb hinausläuft:
+   die Artikelfläche schneidet ab und lässt sich schieben, statt andere Bedienelemente
+   zu überdecken. Lieber blättern als danebentippen. */
+.product-grid{overflow:auto;overscroll-behavior:contain}
+/* Auf sehr flachen Bildschirmen werden die Kacheln zusätzlich schlank: das Bild tritt
+   zurück, Name und Preis bleiben - damit passt wieder eine ganze Reihe ins Bild. */
+@media (max-height:700px){
+  .product-tile img{height:52%!important}
+  .product-tile{font-size:.82rem}
+  .product-tile:after{inset:52% 0 0!important}
+}
+/* Hochkant (Breite unter 900 px) setzte eine eigene Regel grid-auto-rows:160px, waehrend die
+   Zeilenvorlage 90 px vorgab - dort ueberlappten sich die Kacheln weiterhin. Auch hier gilt:
+   die Zeilenhoehe bestimmt die Kachel, nicht umgekehrt. */
+@media(max-width:900px){
+  .product-grid{grid-auto-rows:minmax(96px,1fr)!important;grid-template-rows:repeat(3,minmax(96px,1fr))!important}
+}
+
+/* --- Sichtprüfung vor der Präsentation, 31.08.2026 ---------------------------------- */
+/* GEMESSEN UND BEWUSST SO GELASSEN: die Taste "♻ PFANDRÜCKGABE" braucht 143 px Text in
+   einem 140 px breiten Feld. Durchgerechnet, was helfen würde:
+     - Innenrand auf 0:            reicht nicht (dann 140 statt 130 px, nötig sind 143)
+     - Spalte verbreitern:         selbst bei gleich breiten Spalten blieben nur 145 px,
+                                   und die Taste BAR KASSIEREN würde dafür schmaler
+     - Schrift verkleinern:        müsste auf 11,9 px herunter - am Stand zu klein
+     - Beschriftung kürzen:        ginge, ändert aber einen eingeführten Begriff
+   Auf dem Bild ist NICHTS abgeschnitten: die fehlenden 3 px sind der Nachraum hinter dem
+   letzten Buchstaben, kein Zeichen. Der Text steht nur eng an beiden Rändern. Deshalb
+   bleibt es, wie es ist - eine Änderung wäre hier schlechter als der Zustand.
+   Wer die Beschriftung doch kürzen will: PC-Manager → Arbeitsplatz-Tasten. */
+
+/* Kombi-Kachel: zwei Artikelbilder auf einer Kachel, schraeg getrennt.
+   Das Getraenk liegt oben links, das Essen unten rechts - so, wie eine Kombination am Stand
+   auch ausgegeben wird. Die Linie ist ein SVG mit non-scaling-stroke, damit sie auf jeder
+   Kachelgroesse gleich dick bleibt und genau auf der Diagonalen sitzt (ein CSS-Verlauf
+   trifft die Diagonale bei nicht-quadratischen Kacheln nicht). */
+.product-tile .kombi-bild{position:relative;display:block;width:100%;height:100%;overflow:hidden}
+.product-tile .kombi-bild img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.product-tile .kombi-bild .kombi-oben{clip-path:polygon(0 0,100% 0,0 100%);object-position:32% 28%}
+.product-tile .kombi-bild .kombi-unten{clip-path:polygon(100% 0,100% 100%,0 100%);object-position:68% 72%}
+.product-tile .kombi-bild .kombi-linie{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.product-tile .kombi-bild .kombi-linie line{stroke:#fff;stroke-width:3}
+.product-tile-wrap.package-tile .product-label strong:before{content:"";font-size:1em}

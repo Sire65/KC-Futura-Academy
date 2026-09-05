@@ -6,7 +6,7 @@ const now=()=>new Date().toISOString();
 const ROLE_LEVEL={user:1,admin:2,superadmin:3,studio:4,tuev:5};
 const defaults={
  'general.language':'de-DE','general.addressMode':'du','general.coach':'laura','general.profile':'standard',
- 'academy.autoGreeting':true,'academy.showIntro':true,'academy.quizShuffle':true,'academy.autoContinue':false,
+ 'academy.autoGreeting':true,'academy.showIntro':true,'academy.quizShuffle':true,'academy.quizDifficultyMode':'auto','academy.autoContinue':false,
  'voice.enabled':true,'voice.rate':1,'voice.volume':1,'voice.provider':'browser',
  'database.syncEnabled':true,'database.autoSync':true,'database.syncInterval':60,'database.routingMode':'primary_mirror','database.failoverEnabled':true,
  'updates.autoCheck':true,'updates.channel':'beta','updates.retryCount':3,
@@ -22,6 +22,7 @@ const schema=[
  ['academy.autoGreeting','Academy','Persönliche Begrüßung automatisch','boolean',null,'user',false,'user'],
  ['academy.showIntro','Academy','Einführung anzeigen','boolean',null,'admin',false,'application'],
  ['academy.quizShuffle','Academy','Quizantworten mischen','boolean',null,'admin',false,'application'],
+ ['academy.quizDifficultyMode','Academy','Quiz-Schwierigkeit','enum',['auto','beginner','advanced','expert'],'admin',false,'application'],
  ['academy.autoContinue','Academy','Automatisch fortfahren','boolean',null,'user',false,'user'],
  ['voice.enabled','Audio & Sprache','Sprachausgabe aktiv','boolean',null,'user',false,'user'],
  ['voice.rate','Audio & Sprache','Sprechgeschwindigkeit','number',[0.5,2,0.1],'user',false,'user'],

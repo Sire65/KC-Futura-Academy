@@ -99,6 +99,7 @@ body[data-theme="contrast"] .panel,body[data-theme="contrast"] .dashboard-card,b
 
 /* Beta 1.0.3 – echter Audio-Monitor und Audio-TÜV */
 .voice-monitor{min-width:174px;height:38px;padding:5px 9px;border:1px solid #397854;border-radius:9px;background:#050a07;color:#6cff98;display:flex;align-items:center;gap:8px;box-shadow:inset 0 0 12px #00ff5522;font-size:.72rem;font-weight:900;white-space:nowrap}
+.voice-monitor{visibility:hidden;opacity:0;transition:opacity .15s}.voice-monitor.is-speaking,.voice-monitor.is-pending,.voice-monitor.is-error{visibility:visible;opacity:1}
 .voice-scope{width:88px;height:24px;display:flex;align-items:center;justify-content:center;gap:3px;overflow:hidden;border-right:1px solid #1b6d38;padding-right:7px}
 .voice-scope i{display:block;width:3px;height:2px;min-height:2px;border-radius:3px;background:#42ff74;box-shadow:0 0 6px #33ff66;transform-origin:center;animation:none}
 .voice-monitor.is-speaking .voice-scope i{animation:voiceScopeWave .62s ease-in-out infinite alternate}
@@ -242,6 +243,19 @@ body[data-theme="contrast"] .panel,body[data-theme="contrast"] .dashboard-card,b
 .kc-update-banner{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;max-width:min(92vw,760px);padding:12px 16px;border:2px solid #d59b00;border-radius:14px;background:#fff8dc;color:#17283a;box-shadow:0 8px 28px rgba(0,0,0,.22)}
 .kc-update-banner[hidden]{display:none}.kc-update-banner span{flex:1;font-size:.92rem}.kc-update-banner button{white-space:nowrap}
 @media (pointer:coarse) and (min-width:700px){button,.primary,.secondary,input,select{min-height:48px}.choice-card{min-height:92px}.welcome-grid{gap:20px}.modal-card{max-width:min(94vw,980px)}.diagnostics-modal{max-width:720px}.system-status-grid{gap:14px}.system-status-grid>article{padding:16px}.actions{gap:14px}.settings-note{font-size:.96rem}}
+
+/* Immersion V2: optionale Szenenerklärung und verlässlicher Quizablauf */
+.scene-explanation{margin-top:10px;padding:12px;border:1px solid #b8d8ed;border-radius:12px;background:#f7fbfe;color:#173b56;line-height:1.45}
+.scene-explanation>b{display:block;margin-bottom:6px;color:var(--navy)}
+.scene-explanation p{margin:0 0 10px}
+.scene-explanation-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.scene-explanation-actions button{min-height:42px;padding:7px 8px;font-size:.78rem}
+.scene-explanation-actions button.active{background:#dff3e7;border-color:#48a873}
+.choice{display:grid!important;grid-template-columns:32px minmax(0,1fr);align-items:center;text-align:left;column-gap:9px}
+.choice-letter{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#173b56;color:#fff;font-weight:1000}
+.quiz-countdown.ready{width:150px!important;height:52px!important;right:0!important;opacity:1!important}
+.quiz-countdown.ready small{position:static!important;margin:0!important;min-width:0!important;background:transparent!important;box-shadow:none!important;font-size:.82rem!important;white-space:normal!important}
+@media(max-width:820px){.scene-explanation-actions{grid-template-columns:1fr}.coach-response{min-height:auto}.quiz-countdown.ready{width:125px!important}}
 @media (max-width:900px) and (orientation:landscape){.welcome-grid{grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr)}.welcome-card{padding:20px}.club-card{align-self:stretch}.start-actions{flex-wrap:wrap}}
 
 .first-run-modal{max-width:520px}.first-run-badge{display:inline-block;background:#123b60;color:#fff;border-radius:999px;padding:7px 13px;font-weight:900;margin-bottom:8px}.first-run-name{display:grid;gap:7px;font-weight:900;margin:18px 0 8px}.first-run-name input{min-height:54px;border:2px solid #4c718f;border-radius:12px;padding:10px 13px;font-size:1.15rem}.first-run-modal .primary{width:100%;min-height:52px}.release-progress{height:12px;border-radius:999px;background:#dce7ee;overflow:hidden}.release-progress>div{height:100%;width:0;background:#178ac0;transition:width .2s}.release-result-list{margin-top:10px}.release-result-list p{margin:5px 0;font-weight:700}
@@ -264,3 +278,43 @@ body[data-theme="contrast"] .panel,body[data-theme="contrast"] .dashboard-card,b
 
 .traffic-led.is-maintenance{background:#248cff;box-shadow:0 0 11px #248cff;animation:dbMaintenancePulse 1s ease-in-out infinite}@keyframes dbMaintenancePulse{50%{opacity:.35}}
 .udc-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.udc-head p{max-width:760px}.udc-network{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}.udc-adapter-card{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;border:1px solid #c5d5e1;border-radius:12px;padding:11px;background:#f8fbfd}.udc-adapter-card div:nth-child(2){display:grid;gap:2px}.udc-adapter-card small,.udc-adapter-card span{font-size:.86rem;color:#52677a}.udc-adapter-card button{border:1px solid #9eb4c3;border-radius:8px;background:#fff;padding:7px 9px;font-weight:800}.udc-led{width:13px;height:13px;border-radius:50%;background:#8a969f}.udc-led.ok{background:#20b765;box-shadow:0 0 8px #20b765}.udc-led.error{background:#d84545;box-shadow:0 0 8px #d84545}.udc-led.busy{background:#248cff;box-shadow:0 0 8px #248cff}.udc-led.off{background:#9aa5ad}.udc-panel{border:1px solid #cad9e4;border-radius:12px;padding:12px;margin-top:10px;background:#fff}.udc-panel table{width:100%;border-collapse:collapse}.udc-panel th,.udc-panel td{text-align:left;border-bottom:1px solid #e2eaf0;padding:7px}.udc-form{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.udc-form label{display:grid;gap:5px;font-weight:800}.udc-form select{border:1px solid #adc1cf;border-radius:8px;padding:8px}
+
+/* Beta 2.6.0 – adaptive Quizstufen */
+.quiz-level-editor{border:1px solid #b9c9d5;border-radius:12px;padding:12px;background:#f8fbfd}.quiz-level-editor legend{font-weight:900;color:#173b56}.quiz-level-editor .compact{gap:8px;flex-wrap:wrap}.quiz-level-editor .compact button{min-height:42px}
+
+
+/* Beta 2.6.1 – bedienerfreundlicher Quiz-Autoreneditor */
+.quiz-author-card{border:1px solid #b9cbd8;border-radius:16px;padding:16px;background:#f8fbfd;margin:14px 0}.quiz-author-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}.quiz-author-head h4,.quiz-author-head p{margin:0}.quiz-auto-badge{background:#e8f5ed;color:#176331;border:1px solid #abd7bb;border-radius:999px;padding:6px 10px;font-weight:900;font-size:.8rem}.quiz-level-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:13px 0}.quiz-level-tabs button{min-height:46px;border:1px solid #9db3c2;border-radius:11px;background:#fff;font-weight:900;color:#173b56}.quiz-level-tabs button.active{background:#173b56;color:#fff;border-color:#173b56}.quiz-level-summary{display:flex;justify-content:space-between;align-items:center;border-left:5px solid #d8b400;background:#fff8d9;border-radius:9px;padding:9px 12px}.quiz-level-summary span{color:#5d6e7c;font-weight:800}.quiz-choice-editor{display:grid;gap:9px;margin:12px 0}.quiz-choice-row{display:grid;grid-template-columns:28px 30px 1fr 42px;gap:8px;align-items:center}.quiz-choice-row>span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#e7eef3;font-weight:900}.quiz-choice-row input[type=text],.quiz-choice-row input:not([type]){min-height:44px;border:1px solid #a9bdca;border-radius:9px;padding:8px 10px}.quiz-choice-row button{min-height:40px;border:1px solid #d0a5a5;background:#fff5f5;color:#8b2222;border-radius:8px;font-size:1.2rem}.quiz-add-answer{justify-self:start}.quiz-copy-actions{margin-top:10px}.quiz-quality-panel{margin-top:12px;padding:11px 13px;border:1px solid #c7d6df;background:#fff;border-radius:11px}.quiz-quality-panel b,.quiz-quality-panel small{display:block}.quiz-quality-panel ul{margin:7px 0;padding-left:20px}.quiz-quality-panel small{margin-top:6px;color:#607487}@media(max-width:720px){.quiz-level-tabs{grid-template-columns:1fr}.quiz-choice-row{grid-template-columns:26px 28px 1fr}.quiz-choice-row button{grid-column:3;justify-self:end;width:42px}.quiz-copy-actions button{width:100%}}
+
+/* Folge 23 – interaktiver Tagesabschluss */
+.episode-checklist{margin:16px 0;padding:14px;border:2px solid #b8cddd;border-radius:14px;background:#f7fbfe}.episode-checklist legend{padding:0 8px;font-weight:900;color:#173b56}.episode-checklist p{margin:0 0 10px;color:#52677a}.episode-checklist>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.episode-checklist label{display:flex;align-items:center;gap:9px;min-height:42px;padding:8px 10px;border:1px solid #cbd9e3;border-radius:9px;background:#fff;font-weight:750;cursor:pointer}.episode-checklist input{width:20px;height:20px;accent-color:#159447}.episode-checklist label:has(input:checked){border-color:#55ad74;background:#e8f7ed;color:#116b37}.episode-checklist small{display:block;margin-top:10px;font-weight:900;color:#52677a}.episode-checklist.complete{border-color:#28a65d;box-shadow:0 0 0 4px rgba(40,166,93,.12)}.episode-checklist.complete small{color:#116b37}@media(max-width:720px){.episode-checklist>div{grid-template-columns:1fr}}
+.academy-reward{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 14px;padding:14px 18px;border:2px solid #dca716;border-radius:16px;background:linear-gradient(100deg,#fff8d7,#fff);box-shadow:0 5px 18px #173d5714}.academy-reward h3,.academy-reward p{margin:3px 0}.academy-reward button{white-space:nowrap}@media(max-width:720px){.academy-reward{align-items:stretch;flex-direction:column}.academy-reward button{width:100%}}
+
+/* 02.09.2026 (Betreiber): "Wenn etwas aktiviert werden kann wie Buttons, dann sollen sie
+   gruen leuchten und pulsieren - sonst weiss man nicht, wie und wo es weitergeht."
+   Anlass war die Szenenerklaerung: dort sind "Szene vorlesen" und "Ueberspringen" die
+   einzigen bedienbaren Knoepfe, sehen aber grau und unscheinbar aus, waehrend der
+   Weiter-Knopf gesperrt und ebenfalls grau ist. Auf dem Bildschirm zeigt also nichts,
+   wo es weitergeht.
+   Regel ab jetzt: Was jetzt gedrueckt werden kann, traegt .jetzt-dran und leuchtet gruen
+   und pulsiert. Was gesperrt ist, bleibt grau und ruhig. Ein gesperrter Knopf verliert das
+   Leuchten immer - auch wenn die Klasse versehentlich stehen bleibt. */
+button.jetzt-dran:not(:disabled){
+  background:linear-gradient(135deg,#2e8b61,#1e6848);
+  color:#fff;font-weight:900;border-color:#1e6848;
+  box-shadow:0 8px 20px #21704e47;
+  animation:pulse 1.55s infinite;
+}
+button.jetzt-dran:disabled{animation:none}
+/* Antwortknoepfe pulsieren NICHT: drei gruen pulsierende Antworten wuerden aussehen, als
+   waeren alle drei richtig. Sie bekommen stattdessen einen gruenen Rand, sobald sie
+   waehlbar sind - sichtbar, aber ohne falsche Aussage. */
+.choice.jetzt-waehlbar:not(:disabled){border-color:#2e8b61;box-shadow:0 0 0 3px #2e8b6122}
+
+/* 02.09.2026: Ansage auf der Abschlussseite, wenn eine Folge ein Pausenspiel freischaltet. */
+.freigeschaltet{background:#eaf7f0;border:2px solid #2e8b61;border-radius:14px;padding:12px 14px;margin:12px 0}
+.freigeschaltet small{display:block;margin-top:5px;font-weight:600;opacity:.8}
+
+/* 02.09.2026: Die Spielewelt im Pause-Fenster braucht etwas mehr Platz und darf scrollen. */
+#pauseOverlay>div{max-width:min(1120px,94vw);max-height:92vh;overflow:auto}
+#pauseOverlay .kc-spielewelt{text-align:left;margin-top:14px}

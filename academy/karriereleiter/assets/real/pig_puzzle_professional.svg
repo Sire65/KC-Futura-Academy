@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-label="Leere Schweinesilhouette für Teilstücke-Puzzle">
+<defs>
+ <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ead7c6"/><stop offset="1" stop-color="#d9c1ad"/></linearGradient>
+</defs>
+<rect width="1000" height="560" fill="#fbf7f1"/>
+<g stroke="#6b5847" stroke-width="5" stroke-linejoin="round">
+ <path fill="url(#body)" d="M170 258c32-77 128-124 251-126l277 2c90 2 159 33 205 91l39 9c26 7 42 29 42 55s-18 49-45 55l-36 8c-46 70-128 109-229 109H410c-120 0-212-42-251-112l-59-16-47-33 47-31 70-11z"/>
+ <path fill="#e4cfbd" d="M122 266l-44-55 68 14 32 32z"/>
+ <path fill="#e1c8b2" d="M870 196c29-41 76-50 91-16 12 26-6 53-37 53 23-17 22-37 4-43-16-5-29 2-41 19z"/>
+ <path fill="#d9c1ad" d="M300 437l-19 83h64l17-83z"/>
+ <path fill="#d9c1ad" d="M397 448l-10 72h62l11-71z"/>
+ <path fill="#d9c1ad" d="M720 446l13 74h62l-17-86z"/>
+ <path fill="#d9c1ad" d="M811 423l26 97h61l-28-117z"/>
+ <path fill="#c9a789" d="M276 520h78l-11 18h-75z"/>
+ <path fill="#c9a789" d="M383 520h72l-8 18h-72z"/>
+ <path fill="#c9a789" d="M730 520h72l-7 18h-72z"/>
+ <path fill="#c9a789" d="M836 520h70l-5 18h-70z"/>
+</g>
+<circle cx="120" cy="290" r="6" fill="#4f4035"/><ellipse cx="62" cy="303" rx="8" ry="5" fill="#a97963"/>
+<!-- subtle professional cut guides; no names -->
+<g fill="none" stroke="#806a57" stroke-width="2.5" stroke-dasharray="10 8" opacity=".58">
+ <path d="M269 170c15 59 19 121 7 184"/>
+ <path d="M381 138c8 66 8 137-5 203"/>
+ <path d="M648 139c-6 60-3 127 8 188"/>
+ <path d="M787 157c-14 62-13 132 10 194"/>
+ <path d="M278 356c126 20 265 25 385 4"/>
+ <path d="M374 341c71 35 165 38 282 10"/>
+</g>
+<text x="500" y="54" text-anchor="middle" font-family="Arial, sans-serif" font-size="29" font-weight="700" fill="#54483e">SCHWEIN · TEILSTÜCKE-PUZZLE</text>
+<text x="500" y="84" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#826f5e">Leere Fachsilhouette · Teilstücke einrasten lassen</text>
+</svg>

@@ -1,0 +1,36 @@
+/* KC Labyrinth V3: feinere Wege, große Motive, eindeutige Eingänge */
+.maze-route{stroke-width:2.1!important;filter:none}
+.maze-cabinet[data-difficulty="easy"] .maze-route{stroke-width:2.2!important}
+.maze-cabinet[data-difficulty="normal"] .maze-route{stroke-width:5!important}
+.maze-cabinet[data-difficulty="pro"] .maze-route{stroke-width:5.5!important;filter:drop-shadow(3px 4px 0 #3b3048) drop-shadow(-1px -1px 0 #f0e8fa)}
+.maze-route.solution{stroke-width:4.5!important}
+.maze-start span,.maze-goal span{font-size:2.35rem;line-height:1}
+.maze-start{min-width:72px;padding:7px}
+.maze-goal{left:calc(50% + 190px);min-width:60px;padding:7px}
+.maze-goal-ring,.maze-goal-icon{opacity:0}
+.route-entry,.route-letter{opacity:0}
+.maze-start::after{content:"A\A B\A C";white-space:pre;position:absolute;left:83px;top:50%;transform:translateY(-50%);font:950 1rem/82px Arial,sans-serif;color:#23170c;text-shadow:0 0 3px #fff,0 0 3px #fff;z-index:8}
+.maze-cabinet[data-difficulty="pro"] .maze-start::after{color:#fff;text-shadow:0 1px 2px #000}
+@media(max-height:800px){.maze-start::after{left:80px;line-height:70px}.maze-goal{left:calc(50% + 168px)}}
+@media(max-width:720px){.maze-start::after{left:76px;line-height:68px}.maze-goal{right:5px;left:auto}}
+
+/* V4: sachliche Navigationskarte statt leuchtender Spielzeugrohre */
+.maze-cabinet[data-difficulty] .maze-map{box-shadow:inset 0 0 0 1px #ffffff30,inset 0 0 24px #001b16!important}
+.maze-cabinet[data-difficulty] .maze-route{stroke:#e6dcc4!important;stroke-width:3.2!important;stroke-linecap:butt!important;stroke-linejoin:miter!important;filter:none!important}
+.maze-cabinet[data-difficulty] .maze-route.solution{stroke:#28a86b!important;stroke-width:4!important;filter:none!important}
+.maze-cabinet[data-difficulty] .maze-route.false-choice{stroke:#a92d3e!important;stroke-width:4!important;stroke-dasharray:none!important}
+.maze-goal{border-radius:5px;background:#182823;box-shadow:none}
+.maze-goal::before{content:"ZIELSCHLEUSE";position:absolute;right:72px;top:50%;transform:translateY(-50%);padding:4px 7px;border-right:3px solid #d7ad52;color:#f5deb0;background:#17211f;font:800 .52rem/1 Arial;letter-spacing:.08em;white-space:nowrap}
+
+/* V5: echtes Wandlabyrinth mit begehbaren Korridoren und Sackgassen */
+.maze-wall-field{fill:#173d33}
+.maze-cabinet[data-difficulty="easy"] .maze-wall-field{fill:#29493f}
+.maze-cabinet[data-difficulty="normal"] .maze-wall-field{fill:#17452f}
+.maze-cabinet[data-difficulty="pro"] .maze-wall-field{fill:#282430}
+.maze-cabinet[data-difficulty] .maze-route,.maze-cabinet[data-difficulty] .maze-branch{fill:none;stroke:#e9dfc7!important;stroke-width:6.5!important;stroke-linecap:square!important;stroke-linejoin:round!important;filter:none!important}
+.maze-cabinet[data-difficulty] .maze-route{cursor:default}
+.maze-cabinet[data-difficulty] .maze-route.solution{stroke:#43b97a!important;stroke-width:6.5!important}
+.maze-cabinet[data-difficulty] .maze-route.false-choice{stroke:#b53a48!important;stroke-width:6.5!important}
+.maze-target-gate{fill:none;stroke:#d5aa4b;stroke-width:2.2;stroke-linecap:square}
+.maze-start::after{line-height:88px;left:83px}
+.maze-goal::before{content:"ZIEL";right:72px;border-right:4px solid #d7ad52;background:#17211f}

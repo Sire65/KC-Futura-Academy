@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "KC_FUTURA_LEARNING_PROGRESS_V1",
+  "title": "KC FUTURA Learning Progress",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "participant", "parts", "certificates", "policy", "migrations"],
+  "properties": {
+    "schema": {"const": "KC_FUTURA_LEARNING_PROGRESS_V1"},
+    "schemaVersion": {"const": 1},
+    "participant": {"type": "object", "required": ["id", "name", "addressMode"]},
+    "parts": {"type": "object", "required": ["part1", "part2", "part3", "part4"]},
+    "certificates": {"type": "object", "required": ["part1", "part2", "part3", "part4", "overall"]},
+    "policy": {"type": "object"},
+    "migrations": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": true
+}

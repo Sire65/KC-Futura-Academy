@@ -1,12 +1,13 @@
 {
   "schema": "KC_TRAINING_VERSION_MANIFEST_V1",
   "product": "KC Bilderrechner – Interaktive Schulung",
-  "trainingVersion": "3.1.0-FUTURA",
-  "basedOnProductVersion": "0.31.3.6.11",
-  "supportedUiSchema": "0.31.3.6-r11-ui.1",
-  "compatibleProductRange": "0.31.3.6 Repair 11",
+  "trainingVersion": "3.14.0-FUTURA",
+  "basedOnProductVersion": "0.31.3.6.12",
+  "supportedUiSchema": "0.31.3.6-r12-ui.1",
+  "compatibleProductRange": "0.31.3.6 Repair 12",
   "status": "Candidate",
-  "change": "Erster Lernschritt startet automatisch mit fester Reihenfolge Erklärung, Vorführung und Extra-Tipp. Wissensfragen werden erst danach freigegeben.",
-  "version": "3.11 FUTURA",
-  "notes": "Tiefenprüfung mit 24 automatisierten Syntax-, Struktur-, Zustands- und Ablaufprüfungen. Browserautomatisierung bleibt durch lokale Administratorrichtlinie blockiert."
+  "change": "Erster Schulungsteil didaktisch konsolidiert: einheitliche Anrede, realistische Umfangsangabe sowie getrennte Erklaerung, Vorfuehrung und aktiv hervorgehobener Extra-Tipp. 02.09.2026: Kapitel 11 sagte, die Infotaste sitze oben rechts - sie sitzt oben LINKS, oben rechts sitzt der Favoritenstern; Text berichtigt. Ausserdem stand hier Repair 11, waehrend die mitgelieferte Kasse Repair 12 ist - die Angabe war veraltet, nicht die Schulung.",
+  "version": "FUTURA 3.14",
+  "academyVersion": "Beta 2.6.15",
+  "notes": "Verbindliche Bezeichnung: Schulungsinhalt FUTURA 3.14, Softwarestand Academy Beta 2.6.15."
 }

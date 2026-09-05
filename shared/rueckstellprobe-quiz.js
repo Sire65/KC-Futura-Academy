@@ -1,0 +1,25 @@
+(()=>{
+  'use strict';
+  const catalog=window.KCAdaptiveQuizCatalog||(window.KCAdaptiveQuizCatalog={});
+  const variant=(question,answers,correct,repeat,seconds)=>({question,answers,correct,repeat,estimatedSeconds:seconds,reviewStatus:'author_review'});
+  Object.assign(catalog,{
+    'academy:rueckstellprobe:1':{
+      meta:{moduleId:'rueckstellprobe',moduleTitle:'Die fehlende Rückstellprobe',sceneIndex:1,speaker:'Dr. Brinkmann',status:'author_review',source:'episode_23'},
+      beginner:variant('Was sollte Michael jetzt als Erstes tun?',['Offen und wahrheitsgemäß erklären, was dokumentiert wurde und was fehlt.','Schnell eine neue Probe abfüllen und mit dem gestrigen Datum versehen.','Behaupten, die Probe sei bereits entsorgt worden.'],0,'Richtig. Bei einer Kontrolle zählen Ehrlichkeit, nachvollziehbare Unterlagen und die sofortige Klärung des Versäumnisses.',20),
+      advanced:variant('Wie reagiert Michael bei der festgestellten Dokumentationslücke professionell?',['Er legt die vorhandenen Unterlagen offen, benennt die fehlende Probe ehrlich und klärt die nächsten Maßnahmen.','Er ergänzt den Eintrag rückwirkend, damit das Buch vollständig aussieht.','Er wartet ab, ob Dr. Brinkmann die fehlende Probe noch einmal anspricht.'],0,'Richtig. Transparenz und eine sofortige Korrektur des Ablaufs sind professionell.',30),
+      expert:variant('Welches Vorgehen wahrt bei einer fehlenden Rückstellprobe die Nachvollziehbarkeit am besten?',['Das Versäumnis wahrheitsgemäß offenlegen, vorhandene Dokumentation vorlegen, die Abweichung festhalten und eine wirksame Korrekturmaßnahme vereinbaren.','Eine Ersatzprobe des aktuellen Tages kennzeichnen und getrennt erläutern, dass sie die fehlende Probe annähernd ersetzt.','Den unvollständigen Eintrag zunächst intern prüfen und erst nach Abschluss der Kontrolle ergänzen.'],0,'Richtig. Abweichung, vorhandene Nachweise und Korrekturmaßnahme bleiben so nachvollziehbar.',45)
+    },
+    'academy:rueckstellprobe:3':{
+      meta:{moduleId:'rueckstellprobe',moduleTitle:'Die fehlende Rückstellprobe',sceneIndex:3,speaker:'Dr. Brinkmann',status:'author_review',source:'episode_23'},
+      beginner:variant('Welche Dokumentation ist vollständig?',['Nur das Datum auf dem Behälter.','Datum, Uhrzeit und Gericht auf dem Behälter sowie ein nachvollziehbarer Eintrag mit Unterschrift im Rückstellprobenbuch.','Ein mündlicher Hinweis an die nächste Schicht.'],1,'Genau. Behälter und Rückstellprobenbuch müssen die Probe eindeutig und nachvollziehbar zuordnen.',20),
+      advanced:variant('Woran lässt sich eine Rückstellprobe eindeutig zuordnen?',['An der Behälterfarbe und dem Namen der Schicht.','An Datum, Uhrzeit und Gericht auf dem Behälter sowie dem dazugehörigen bestätigten Buch-Eintrag.','An der Position im Gefrierschrank und einer mündlichen Übergabe.'],1,'Genau. Kennzeichnung und dokumentierter Eintrag bilden gemeinsam die nachvollziehbare Zuordnung.',30),
+      expert:variant('Welche Dokumentationskette ist für die spätere Nachverfolgung am belastbarsten?',['Behälter mit Datum und Gericht; die Uhrzeit ergibt sich aus dem Dienstplan.','Eindeutig gekennzeichneter Behälter mit Datum, Uhrzeit und Gericht, korrespondierender Buch-Eintrag und bestätigende Unterschrift.','Vollständiger Buch-Eintrag; eine zusätzliche Behälterkennzeichnung ist bei fester Lagerordnung entbehrlich.'],1,'Genau. Erst die lückenlose Verbindung von Probe, Eintrag und Bestätigung macht die Zuordnung belastbar.',45)
+    },
+    'academy:rueckstellprobe:6':{
+      meta:{moduleId:'rueckstellprobe',moduleTitle:'Die fehlende Rückstellprobe',sceneIndex:6,speaker:'Dr. Brinkmann',status:'author_review',source:'episode_23'},
+      beginner:variant('Welche Maßnahme verhindert das Versäumnis am zuverlässigsten?',['Eine verbindliche Tagesabschluss-Checkliste mit klarer Zuständigkeit und Bestätigung.','Eine Erinnerung nur dann, wenn wenig Betrieb ist.','Die Aufgabe ohne Dokumentation an wechselnde Personen weitergeben.'],0,'Richtig. Eine feste Zuständigkeit und eine bestätigte Checkliste machen den Abschluss verlässlich und nachvollziehbar.',20),
+      advanced:variant('Wie wird der Tagesabschluss auch bei starkem Betrieb verlässlich?',['Durch eine feste Checkliste, eine benannte verantwortliche Person und eine abschließende Bestätigung.','Durch eine allgemeine Erinnerung an das gesamte Team kurz vor Feierabend.','Durch die nachträgliche Kontrolle am nächsten Morgen.'],0,'Richtig. Standard, Verantwortung und Bestätigung verhindern Gedächtnislücken.',30),
+      expert:variant('Welche organisatorische Maßnahme senkt das Wiederholungsrisiko am wirksamsten?',['Ein verbindlicher Abschlussprozess mit Prüfpunkten, klarer Zuständigkeit, dokumentierter Bestätigung und geregelter Abweichungsbehandlung.','Eine digitale Erinnerung, die alle Beschäftigten gleichzeitig erhalten und bei Bedarf ignorieren können.','Eine zusätzliche Stichprobe durch die Leitung in unregelmäßigen Abständen ohne feste Abschlussverantwortung.'],0,'Richtig. Der vollständige Prozess ist wirksamer als eine bloße Erinnerung oder gelegentliche Kontrolle.',45)
+    }
+  });
+})();

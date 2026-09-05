@@ -1,0 +1,9 @@
+{
+  "name":"KC Einarmiger Bandit",
+  "short_name":"KC Slot",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#2d170e",
+  "theme_color":"#5a321f",
+  "icons":[]
+}

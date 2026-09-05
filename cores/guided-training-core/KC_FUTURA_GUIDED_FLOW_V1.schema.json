@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "KC_FUTURA_GUIDED_FLOW_V1",
+  "title": "KC FUTURA Guided Training Flow",
+  "type": "object",
+  "required": ["schema", "id", "title", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "KC_FUTURA_GUIDED_FLOW_V1"},
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{2,80}$"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 180},
+    "description": {"type": "string", "maxLength": 1000},
+    "tags": {"type": "array", "items": {"type": "string", "maxLength": 60}, "uniqueItems": true},
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["op"],
+        "properties": {
+          "op": {"enum": ["cue", "focus", "move", "click", "wait", "api", "assert"]},
+          "text": {"type": "string"}, "label": {"type": "string"}, "target": {},
+          "durationMs": {"type": "number", "minimum": 0, "maximum": 30000},
+          "moveMs": {"type": "number", "minimum": 0, "maximum": 30000},
+          "afterMs": {"type": "number", "minimum": 0, "maximum": 30000},
+          "ms": {"type": "number", "minimum": 0, "maximum": 30000},
+          "perform": {"type": "boolean"}, "method": {"type": "string"}, "args": {"type": "array"},
+          "requireResult": {"type": "boolean"}, "check": {"type": "object"}
+        }
+      }
+    }
+  }
+}

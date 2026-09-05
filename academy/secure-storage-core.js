@@ -11,16 +11,19 @@
   let dataKey=null;
   let readyResolve;
   const ready=new Promise(r=>readyResolve=r);
+  const pendingWrites=new Set();
 
   const enc=new TextEncoder();
   const dec=new TextDecoder();
   const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
   const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-  const request=req=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
-  const txDone=tx=>new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Transaktion abgebrochen'))});
+  const activity=phase=>window.dispatchEvent(new CustomEvent('kc:db-traffic',{detail:{database:'indexeddb',phase,at:Date.now()}}));
+  const request=req=>new Promise((resolve,reject)=>{activity('start');req.onsuccess=()=>{activity('end');resolve(req.result)};req.onerror=()=>{activity('end');reject(req.error)}});
+  const txDone=tx=>new Promise((resolve,reject)=>{activity('start');tx.oncomplete=()=>{activity('end');resolve()};tx.onerror=()=>{activity('end');reject(tx.error)};tx.onabort=()=>{activity('end');reject(tx.error||new Error('Transaktion abgebrochen'))}});
 
   function openDb(){
     return new Promise((resolve,reject)=>{
+      activity('start');
       const req=indexedDB.open(DB_NAME,DB_VERSION);
       req.onupgradeneeded=()=>{
         const d=req.result;
@@ -28,8 +31,8 @@
         if(!d.objectStoreNames.contains(META))d.createObjectStore(META,{keyPath:'key'});
         if(!d.objectStoreNames.contains(OUTBOX))d.createObjectStore(OUTBOX,{keyPath:'id'});
       };
-      req.onsuccess=()=>resolve(req.result);
-      req.onerror=()=>reject(req.error);
+      req.onsuccess=()=>{activity('end');resolve(req.result)};
+      req.onerror=()=>{activity('end');reject(req.error)};
     });
   }
 
@@ -88,6 +91,19 @@
     tx.objectStore(RECORDS).delete(key);
     await txDone(tx);
   }
+  function track(operation){pendingWrites.add(operation);operation.finally(()=>pendingWrites.delete(operation));return operation;}
+  function persistWhenReady(key,value){
+    return track(ready.then(async()=>{
+      if(db&&dataKey)return persist(key,value);
+      try{localStorage.setItem(key,String(value));}catch{}
+    }));
+  }
+  function removeWhenReady(key){
+    return track(ready.then(async()=>{
+      if(db&&dataKey)return removePersisted(key);
+      try{localStorage.removeItem(key);}catch{}
+    }));
+  }
   async function loadCache(){
     const rows=await request(db.transaction(RECORDS,'readonly').objectStore(RECORDS).getAll());
     for(const row of rows){
@@ -145,9 +161,9 @@
     version:'1.0.0',
     ready,
     getItem(key){return cache.has(key)?cache.get(key):null;},
-    setItem(key,value){cache.set(key,String(value));persist(key,String(value)).catch(err=>console.error('SecureStorage persist failed',err));},
-    removeItem(key){cache.delete(key);removePersisted(key).catch(err=>console.error('SecureStorage remove failed',err));},
-    async flush(){await new Promise(r=>setTimeout(r,0));},
+    setItem(key,value){cache.set(key,String(value));persistWhenReady(key,String(value)).catch(err=>console.error('SecureStorage persist failed',err));},
+    removeItem(key){cache.delete(key);removeWhenReady(key).catch(err=>console.error('SecureStorage remove failed',err));},
+    async flush(){await ready;await Promise.allSettled([...pendingWrites]);},
     exportRecovery,
     encryptBytes,
     decryptBytes,

@@ -1,0 +1,23 @@
+{
+  "id": "kc-futura-game-slot-machine",
+  "name": "KC FUTURA – Einarmiger Bandit",
+  "version": "1.3.0",
+  "type": "futura-game-module",
+  "entry": "index.html",
+  "storage": "secure-storage-with-local-fallback",
+  "pauseOnly": true,
+  "realMoney": false,
+  "features": [
+    "three-reels",
+    "virtual-points",
+    "red-black-risk",
+    "persistent-statistics",
+    "sound-toggle",
+    "tablet-responsive",
+    "club-face-reels",
+    "circular-face-crop",
+    "real-member-photo-source",
+    "per-member-face-focus",
+    "academy-avatar-reels"
+  ]
+}

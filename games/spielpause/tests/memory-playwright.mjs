@@ -1,0 +1,33 @@
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {chromium}=require('C:/Users/Koch/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+
+const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+const page=await browser.newPage({viewport:{width:1180,height:800}});
+await page.goto('http://127.0.0.1:8765/games/spielpause/index.html');
+await page.getByRole('button',{name:/Memory/i}).click();
+const cards=page.locator('.memory-card');
+await cards.first().waitFor({state:'visible'});
+const labels=await cards.evaluateAll(nodes=>nodes.map(node=>node.querySelector('.card-face small')?.textContent));
+const first=0;
+const second=labels.findIndex((label,index)=>index>0&&label!==labels[first]);
+const third=labels.findIndex((label,index)=>index>0&&index!==second&&label!==labels[first]&&label!==labels[second]);
+await page.evaluate(()=>{
+ window.__memoryTiming={down:0,open:0,close:0,nextOpen:0};
+ const list=[...document.querySelectorAll('.memory-card')];
+ list[0].addEventListener('pointerdown',()=>window.__memoryTiming.down=performance.now(),{once:true});
+ new MutationObserver(()=>{if(list[0].classList.contains('open')&&!window.__memoryTiming.open)window.__memoryTiming.open=performance.now();if(!list[0].classList.contains('open')&&window.__memoryTiming.open)window.__memoryTiming.close=performance.now()}).observe(list[0],{attributes:true,attributeFilter:['class']});
+});
+await cards.nth(first).click();
+await page.waitForTimeout(90);
+const visibleOpenTransform=await cards.nth(first).evaluate(card=>getComputedStyle(card).transform);
+await cards.nth(second).click();
+await page.waitForTimeout(100);
+await page.evaluate(index=>{const card=document.querySelectorAll('.memory-card')[index];new MutationObserver(()=>{if(card.classList.contains('open'))window.__memoryTiming.nextOpen=performance.now()}).observe(card,{attributes:true,attributeFilter:['class']})},third);
+await cards.nth(third).click();
+await page.waitForTimeout(520);
+const timing=await page.evaluate(()=>window.__memoryTiming);
+const result={clickToOpenMs:Number((timing.open-timing.down).toFixed(2)),closeToQueuedOpenMs:Number((timing.nextOpen-timing.close).toFixed(2)),queuedCardOpened:await cards.nth(third).evaluate(card=>card.classList.contains('open')),visibleOpenTransform};
+console.log(JSON.stringify(result));
+if(result.clickToOpenMs>35||result.closeToQueuedOpenMs>20||!result.queuedCardOpened||!visibleOpenTransform.startsWith('matrix3d(-1'))process.exitCode=1;
+await browser.close();

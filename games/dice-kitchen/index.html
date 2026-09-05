@@ -1,0 +1,11 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KC FUTURA · Würfelküche</title><link rel="stylesheet" href="dice-kitchen.css"></head><body>
+<main id="game" hidden>
+ <header><div><small>Belohnung für Teil 2 · reine Unterhaltung</small><h1>KC Würfelküche</h1></div><button id="exit" type="button">Spiel verlassen</button></header>
+ <section class="status"><strong id="message">Drücke „Runde starten“.</strong><span>Runde <b id="round">0</b>/6 · Würfe <b id="rolls">0</b>/3 · Punkte <b id="score">0</b></span></section>
+ <section id="dice" class="dice" aria-label="Fünf Bildwürfel"></section>
+ <nav><button id="start" class="primary pulse">Runde starten</button><button id="roll" class="primary" disabled>Würfeln</button><button id="take" disabled>Ergebnis werten</button><button id="rules">Spielregeln</button></nav>
+ <section class="scoreboard"><div><b id="best">0</b><span>Bestleistung</span></div><div><b id="combo">–</b><span>Beste Kombination</span></div><div><b id="games">0</b><span>Spiele</span></div></section>
+</main>
+<section id="locked" class="locked"><div><h1>KC Würfelküche</h1><p>Dieses Bonusspiel wird nach dem erfolgreichen Abschluss von Teil 2 freigeschaltet.</p><button id="lockedExit">Zurück zur Academy</button></div></section>
+<dialog id="help"><button id="helpClose" class="close">×</button><h2>So wird gespielt</h2><p>Du hast sechs Runden mit jeweils bis zu drei Würfen. Tippe nach dem ersten Wurf Bilder an, die du festhalten möchtest.</p><ul><li>Paar: 20 Punkte</li><li>Zwei Paare: 40 Punkte</li><li>Drei gleiche: 60 Punkte</li><li>Full House: 90 Punkte</li><li>Vier gleiche: 120 Punkte</li><li>Fünf gleiche: 200 Punkte</li><li>Marc und Laura gemeinsam: 25 Bonuspunkte</li></ul><p>Der Weihnachtsbaum ist ein Joker und ergänzt die beste mögliche Kombination.</p></dialog>
+<script src="../../academy/secure-storage-core.js"></script><script src="../../cores/learning-progress-core/learning-progress-core.js?v=1.0.0"></script><script src="dice-kitchen.js"></script></body></html>

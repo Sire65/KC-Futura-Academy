@@ -1,0 +1,14 @@
+KC FUTURA 3.14 · ACADEMY 2.6.15
+================================
+
+Start:
+1. ZIP vollständig entpacken.
+2. Die Datei index.html öffnen.
+
+Die Ordner academy, training-video, pos, avatar-core, shared, cores,
+exchange-core-v31, pc-manager und texte gehören zum Programm und dürfen
+nicht einzeln verschoben oder umbenannt werden.
+
+Dieses CLEAN-RELEASE enthält ausschließlich die aktuelle Laufzeitfassung.
+Entwicklungsduplikate, alte Prüfbilder, historische Berichte und Testdateien
+sind nicht enthalten.

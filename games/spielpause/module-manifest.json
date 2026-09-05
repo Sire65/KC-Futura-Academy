@@ -1,0 +1,26 @@
+{
+  "id": "kc-futura-game-world",
+  "name": "KC Spielpause",
+  "version": "2.3.0-candidate.1",
+  "type": "futura-game-world-module",
+  "entry": "index.html",
+  "studioStatus": "candidate-yellow",
+  "tuevStatus": "candidate-yellow",
+  "testMode": {"lockedGamePreview": true, "productionRequiredValue": false},
+  "storage": "existing-local-settings-adapter",
+  "databaseTables": [],
+  "dependencies": [
+    "kc-futura-game-tic-tac-toe",
+    "kc-sound-core"
+  ],
+  "internalModules": ["learning-progress-read-adapter", "candidate-test-config", "glass-balance-game-v2", "maze-game-v1"],
+  "games": ["memory", "lights", "tic-tac-toe", "slot-machine", "dice-cup", "connect-four", "glass-tower", "kitchen-sequence", "maze"],
+  "difficulties": ["easy", "normal", "pro"],
+  "editions": ["kc-classic", "kc-weihnachtsmarkt"],
+  "governance": {
+    "newMasterCore": false,
+    "duplicateCoreOwnership": false,
+    "directDatabaseMutation": false,
+    "rollback": "Remove games/spielpause and the two launcher links; legacy games remain intact."
+  }
+}

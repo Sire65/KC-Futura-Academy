@@ -4,17 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#102d4c">
-  <title>KC FUTURA Academy · Beta 1.6.6</title>
+  <title>KC FUTURA · Teil 2 Academy · Beta 2.6.15</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../shared/unified-header.css">
 </head>
 <body>
 <div id="app" class="app-shell">
   <header class="topbar">
     <div class="brand">
-      <div class="brand-logo"><img src="assets/kc_logo.webp" alt="Köcheclub Werne"><span>Since 1991</span></div>
+      <div class="brand-logo"><img src="assets/kc_logo.webp" alt="Köcheclub Werne"><span>seit 1991</span></div>
       <div>
         <small>KC FUTURA · Köcheclub Werne</small>
-        <h1>Academy</h1>
+        <h1>Teil 2 · Academy</h1>
         <p>Erstellt &amp; Designed by: Hans-Joachim Koch</p>
       </div>
     </div>
@@ -63,6 +64,7 @@
         <label class="checkline"><input id="modalSubtitles" type="checkbox"> Untertitel anzeigen</label>
         <label class="checkline"><input id="modalSound" type="checkbox"> Ton aktiv</label>
         <label>Lautstärke <b id="modalVolumeValue">7/10</b><input id="modalVolume" type="range" min="1" max="10" step="0.5" value="7"></label>
+        <label>Quiz-Schwierigkeit<select id="modalDifficultyMode"><option value="auto">Automatisch (empfohlen)</option><option value="beginner">Anfänger</option><option value="advanced">Fortgeschritten</option><option value="expert">Experte</option></select></label>
         <label>Quiz-Voreinstellung<select id="modalQuizMode"><option value="standard">Standard mit Ansage und 3-2-1</option><option value="short">Immer verkürzen und sofort freigeben</option></select></label>
         <label class="checkline"><input id="modalShuffleAnswers" type="checkbox"> Antworten pro Durchgang mischen</label>
         <label class="checkline"><input id="modalCountdown" type="checkbox"> Countdown 3-2-1 anzeigen</label>
@@ -171,7 +173,7 @@
 <div class="provider-actions"><button id="supabaseSave" class="primary" disabled>Verbindung speichern</button><button id="supabaseTest" class="secondary" disabled>Verbindung testen</button><button id="supabaseSyncNow" class="secondary" disabled>Jetzt synchronisieren</button></div>
 <div id="supabaseTestDetails" class="cloud-test-details" hidden></div><p id="supabaseAdminMessage" class="settings-note" aria-live="polite">Bitte den Publishable Key einfügen.</p>
 </div></div></section><p id="episodeEditorStatus" class="settings-note" aria-live="polite"></p></div></div>
-<div id="firstRunModal" class="modal-shell" hidden><div class="modal-card first-run-modal" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle"><div class="first-run-badge">Ich bin neu hier</div><h2 id="firstRunTitle">Academy einmalig einrichten</h2><p class="first-run-lead">Danach erkennt die Academy dich auf diesem Gerät automatisch und Laura oder Marc begrüßt dich direkt.</p><div class="first-run-grid"><label class="field first-run-name">Dein Vorname *<input id="firstRunName" type="text" maxlength="40" autocomplete="given-name" placeholder="z. B. Hans"></label><fieldset class="first-run-fieldset"><legend>Anrede</legend><label><input type="radio" name="firstRunAddress" value="du" checked> Du</label><label><input type="radio" name="firstRunAddress" value="sie"> Sie</label></fieldset><fieldset class="first-run-fieldset"><legend>Wer soll dich begrüßen?</legend><label><input type="radio" name="firstRunCoach" value="laura" checked> Laura</label><label><input type="radio" name="firstRunCoach" value="marc"> Marc</label></fieldset><label class="form-check first-run-check"><input id="firstRunSave" class="form-check-input" type="checkbox" checked disabled><span class="form-check-label">Namen, Teilnehmer-ID und Lernstand auf diesem Gerät sicher speichern</span></label><label class="form-check first-run-check"><input id="firstRunUpdateCheck" class="form-check-input" type="checkbox" checked><span class="form-check-label">Jetzt und künftig automatisch nach einer neuen Academy-Version suchen</span></label></div><div class="first-run-note"><b>Automatisch:</b> persönliche Teilnehmer-ID, Wiederherstellungscode und verschlüsselte Speicherung.</div><p id="firstRunHint" class="name-hint">Bitte zuerst den Vornamen eingeben.</p><button id="firstRunContinue" class="primary" disabled>Einrichtung abschließen</button></div></div><div id="participantChoiceModal" class="modal-shell" hidden><div class="modal-card compact participant-choice-modal" role="dialog" aria-modal="true" aria-labelledby="participantChoiceTitle"><h2 id="participantChoiceTitle">Diesen Namen gibt es bereits</h2><p id="participantDuplicateCount"></p><p>Wähle „Das bin ich“, um deinen vorhandenen Lernstand mit dem Wiederherstellungscode zu übernehmen. Sonst verwende bitte einen anderen Namen.</p><div class="participant-choice-actions"><button id="participantSame" class="secondary">Das bin ich</button><button id="participantDifferent" class="primary">Anderen Namen verwenden</button></div><div id="participantRecoveryArea" hidden><label>Wiederherstellungscode<input id="participantRecoveryCode" type="text" maxlength="20" placeholder="z. B. KALLE-4827"></label><button id="participantClaim" class="primary">Lernstand übernehmen</button></div><p id="participantChoiceError" class="admin-error" aria-live="polite"></p><button id="participantChoiceCancel" class="ghost-dark">Abbrechen</button></div></div><div id="participantCodeModal" class="modal-shell" hidden><div class="modal-card compact participant-code-modal" role="dialog" aria-modal="true" aria-labelledby="participantCodeTitle"><h2 id="participantCodeTitle">Dein persönlicher Wiederherstellungscode</h2><p>Bewahre diesen Code sicher auf. Damit kannst du deinen Lernstand später auf einem anderen Gerät übernehmen.</p><div id="participantCodeValue" class="participant-code-value"></div><div class="actions"><button id="participantCodeCopy" class="secondary">Code kopieren</button><button id="participantCodeContinue" class="primary">Weiter zur Academy</button></div></div></div><div id="exitModal" class="modal-shell" hidden>
+<div id="firstRunModal" class="modal-shell" hidden><div class="modal-card first-run-modal" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle"><div class="first-run-badge">Ich bin neu hier</div><h2 id="firstRunTitle">Academy einmalig einrichten</h2><p class="first-run-lead" id="firstRunLead">Danach erkennt die Academy dich auf diesem Gerät automatisch und Laura oder Marc begrüßt dich direkt.</p><div class="first-run-grid"><label class="field first-run-name" id="firstRunNameLabel">Dein Vorname *<input id="firstRunName" type="text" maxlength="40" autocomplete="given-name" placeholder="z. B. Hans"></label><fieldset class="first-run-fieldset"><legend>Anrede</legend><label><input type="radio" name="firstRunAddress" value="du" checked> Du</label><label><input type="radio" name="firstRunAddress" value="sie"> Sie</label></fieldset><fieldset class="first-run-fieldset"><legend id="firstRunCoachLegend">Wer soll dich begrüßen?</legend><label><input type="radio" name="firstRunCoach" value="laura" checked> Laura</label><label><input type="radio" name="firstRunCoach" value="marc"> Marc</label></fieldset><label class="form-check first-run-check"><input id="firstRunSave" class="form-check-input" type="checkbox" checked disabled><span class="form-check-label">Namen, Teilnehmer-ID und Lernstand auf diesem Gerät sicher speichern</span></label><label class="form-check first-run-check"><input id="firstRunUpdateCheck" class="form-check-input" type="checkbox" checked><span class="form-check-label">Jetzt und künftig automatisch nach einer neuen Academy-Version suchen</span></label></div><div class="first-run-note"><b>Automatisch:</b> persönliche Teilnehmer-ID, Wiederherstellungscode und verschlüsselte Speicherung.</div><p id="firstRunHint" class="name-hint">Bitte zuerst den Vornamen eingeben.</p><button id="firstRunContinue" class="primary" disabled>Einrichtung abschließen</button></div></div><div id="participantChoiceModal" class="modal-shell" hidden><div class="modal-card compact participant-choice-modal" role="dialog" aria-modal="true" aria-labelledby="participantChoiceTitle"><h2 id="participantChoiceTitle">Diesen Namen gibt es bereits</h2><p id="participantDuplicateCount"></p><p id="participantChoiceHint">Wähle „Das bin ich“, um deinen vorhandenen Lernstand mit dem Wiederherstellungscode zu übernehmen. Sonst verwende bitte einen anderen Namen.</p><div class="participant-choice-actions"><button id="participantSame" class="secondary">Das bin ich</button><button id="participantDifferent" class="primary">Anderen Namen verwenden</button></div><div id="participantRecoveryArea" hidden><label>Wiederherstellungscode<input id="participantRecoveryCode" type="text" maxlength="20" placeholder="z. B. KALLE-4827"></label><button id="participantClaim" class="primary">Lernstand übernehmen</button></div><p id="participantChoiceError" class="admin-error" aria-live="polite"></p><button id="participantChoiceCancel" class="ghost-dark">Abbrechen</button></div></div><div id="participantCodeModal" class="modal-shell" hidden><div class="modal-card compact participant-code-modal" role="dialog" aria-modal="true" aria-labelledby="participantCodeTitle"><h2 id="participantCodeTitle">Dein persönlicher Wiederherstellungscode</h2><p id="participantCodeHint">Bewahre diesen Code sicher auf. Damit kannst du deinen Lernstand später auf einem anderen Gerät übernehmen.</p><div id="participantCodeValue" class="participant-code-value"></div><div class="actions"><button id="participantCodeCopy" class="secondary">Code kopieren</button><button id="participantCodeContinue" class="primary">Weiter zur Academy</button></div></div></div><div id="exitModal" class="modal-shell" hidden>
   <div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
     <h2 id="exitTitle">Academy verlassen?</h2>
     <p>Der gespeicherte Fortschritt bleibt erhalten. Möchten Sie die Schulung wirklich verlassen?</p>
@@ -182,26 +184,37 @@
   </div>
 </div>
 
-<script src="deployment-config.js?v=2.5.1"></script>
-<script src="secure-storage-core.js?v=2.5.1"></script>
-<script src="../shared/participant-data-core.js?v=2.5.1"></script>
-<script src="../shared/spoken-text-core.js?v=2.5.1"></script>
-<script src="supabase-adapter.js?v=2.5.1"></script>
-<script src="../cores/database-security-core/database-security-core.js?v=2.5.1"></script>
-<script src="../cores/universal-database-connector-core/universal-database-connector-core.js?v=2.5.1"></script>
+<script src="deployment-config.js?v=2.6.15"></script>
+<script src="secure-storage-core.js?v=2.6.15-r1"></script>
+<script src="../cores/learning-progress-core/learning-progress-core.js?v=1.0.0"></script>
+<script src="../cores/codex-core/codex-core.js?v=1.0.0"></script>
+<script src="../shared/participant-data-core.js?v=2.6.15"></script>
+<script src="../shared/spoken-text-core.js?v=2.6.15"></script>
+<script src="../shared/adaptive-quiz-catalog.js?v=2.6.15"></script>
+<script src="../shared/rueckstellprobe-quiz.js?v=2.6.15"></script>
+<script src="../shared/mantaplatte-quiz.js?v=2.6.15"></script>
+<script src="../shared/adaptive-quiz-core.js?v=2.6.15"></script>
+<script src="supabase-adapter.js?v=2.6.15"></script>
+<script src="../cores/database-security-core/database-security-core.js?v=2.6.15"></script>
+<script src="../cores/universal-database-connector-core/universal-database-connector-core.js?v=2.6.15"></script>
 <script src="kc-voice-provider.js"></script>
+<script src="staffel-1-immersion-v2.js?v=2.1.0"></script>
+<script src="../shared/merksatz-pool.js"></script>
+<script src="../shared/merksatz-core.js"></script>
 <script>
 KCSecureStorage.ready.then(()=>{
   const script=document.createElement('script');
-  script.src='app.js?v=2.5.1';
+  script.src='app.js?v=2.6.15-immersion-ui-3';
   document.body.appendChild(script);
 });
 </script>
 
-<script src="configuration-core.js?v=2.5.1"></script>
-<script src="installation-manager-core.js?v=2.5.1"></script>
-<script src="project-health-regression-core.js?v=2.5.1"></script>
-<script src="version-update-release-core.js?v=2.5.1"></script>
+<script src="configuration-core.js?v=2.6.15"></script>
+<script src="installation-manager-core.js?v=2.6.15"></script>
+<script src="project-health-regression-core.js?v=2.6.15"></script>
+<script src="version-update-release-core.js?v=2.6.15"></script>
 
+<script src="../shared/global-search-catalog.js?v=2.6.15"></script>
+<script src="../shared/unified-header.js"></script>
 </body>
 </html>

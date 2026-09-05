@@ -1,0 +1,27 @@
+(()=>{'use strict';
+const KEY='kcAdaptiveQuizConfigV1',OVERRIDE_KEY='kcAdaptiveQuizOverridesV1';
+const LEVELS=['beginner','advanced','expert'];
+const LABELS={beginner:'Anfänger',advanced:'Fortgeschritten',expert:'Experte'};
+const safe=(s,f)=>{try{return JSON.parse(s)||f}catch{return f}};
+const read=()=>safe(localStorage.getItem(KEY),{mode:'auto',promotionWindow:5,promotionCorrect:4,demotionWrong:2});
+const write=v=>{localStorage.setItem(KEY,JSON.stringify(v));return v};
+const overrides=()=>safe(localStorage.getItem(OVERRIDE_KEY),{});
+const catalog=()=>window.KCAdaptiveQuizCatalog||{};
+const catalogEntry=id=>catalog()[id]||null;
+const saveOverrides=v=>localStorage.setItem(OVERRIDE_KEY,JSON.stringify(v));
+function normalizeMode(v){return ['auto',...LEVELS].includes(v)?v:'auto'}
+function levelFromHistory(history=[]){const cfg=read(),recent=history.slice(-Math.max(3,cfg.promotionWindow||5));if(!recent.length)return'beginner';const ok=recent.filter(x=>x.correct).length,wrong=recent.length-ok;if(recent.length>=5&&ok>=5)return'expert';if(ok>=Math.max(3,cfg.promotionCorrect||4))return'advanced';if(wrong>=Math.max(2,cfg.demotionWrong||2))return'beginner';return recent.at(-1)?.level||'beginner'}
+function selectedLevel(history=[],forced){const mode=normalizeMode(forced||read().mode);return mode==='auto'?levelFromHistory(history):mode}
+function fallbackVariant(base,level){const answers=[...(base.answers||[])];return{question:base.question||'',answers,correct:Number(base.correct)||0,repeat:base.repeat||'',level,generatedFallback:true}}
+function resolve(id,base,history=[],forced){const level=selectedLevel(history,forced),all=overrides(),seed=catalogEntry(id),custom=all[id]?.[level]||base.levels?.[level]||seed?.[level];const variant=custom&&Array.isArray(custom.answers)&&custom.answers.length>=2?custom:fallbackVariant(base,level);return{...variant,level,label:LABELS[level],id}}
+function resolveScene(id,scene,history=[],forced){const base={question:typeof scene.question==='function'?scene.question():scene.question||'',answers:(scene.choices||[]).map(x=>x[0]),correct:Math.max(0,(scene.choices||[]).findIndex(x=>x[1]==='good')),repeat:scene.good||''};const r=resolve(id,base,history,forced);return{...r,choices:r.answers.map((x,i)=>[x,i===r.correct?'good':'bad'])}}
+function saveVariant(id,level,data){const all=overrides();all[id]??={};all[id][level]={question:String(data.question||''),answers:(data.answers||[]).map(String),correct:Number(data.correct)||0,repeat:String(data.repeat||'')};saveOverrides(all);return all[id][level]}
+function copyVariant(id,from,to,base){const all=overrides(),seed=catalogEntry(id),source=all[id]?.[from]||base.levels?.[from]||seed?.[from]||fallbackVariant(base,from);return saveVariant(id,to,source)}
+function validateVariant(v){const issues=[];if(!v?.question?.trim())issues.push('Frage fehlt');if(!Array.isArray(v?.answers)||v.answers.length<2)issues.push('Mindestens zwei Antworten erforderlich');if(Number(v?.correct)<0||Number(v?.correct)>=Number(v?.answers?.length||0))issues.push('Richtige Antwort ungültig');if(new Set((v?.answers||[]).map(x=>String(x).trim().toLowerCase())).size!==(v?.answers||[]).length)issues.push('Doppelte Antworten');return{ok:!issues.length,issues}}
+function quality(id,base){const all=overrides(),seed=catalogEntry(id),rows={};for(const l of LEVELS){const v=all[id]?.[l]||base.levels?.[l]||seed?.[l]||fallbackVariant(base,l);rows[l]=validateVariant(v)}const configured=LEVELS.filter(l=>Boolean(all[id]?.[l]||base.levels?.[l]||seed?.[l])).length;return{ok:Object.values(rows).every(x=>x.ok),configured,rows,warning:configured<3?'Nicht alle Stufen individuell gepflegt – Standardantworten werden als sichere Rückfallebene verwendet.':''}}
+function record(history=[],entry){history.push({correct:Boolean(entry.correct),level:entry.level||'beginner',at:new Date().toISOString(),questionId:entry.questionId||''});return history.slice(-50)}
+function similarity(a,b){const aa=String(a||'').toLowerCase().replace(/[^a-z0-9äöüß ]/g,'').split(/\s+/).filter(Boolean),bb=new Set(String(b||'').toLowerCase().replace(/[^a-z0-9äöüß ]/g,'').split(/\s+/).filter(Boolean));if(!aa.length)return 0;return aa.filter(x=>bb.has(x)).length/Math.max(aa.length,bb.size||1)}
+function assessDifficulty(v,level){const issues=[],answers=v?.answers||[],correct=answers[Number(v?.correct)||0]||'';const distractors=answers.filter((_,i)=>i!==(Number(v?.correct)||0));const sims=distractors.map(x=>similarity(correct,x));const avg=sims.length?sims.reduce((a,b)=>a+b,0)/sims.length:0;if(level==='beginner'&&avg>.55)issues.push('Für Anfänger sind die Antworten sehr ähnlich.');if(level==='expert'&&avg<.18)issues.push('Für Experten sind die falschen Antworten noch zu offensichtlich.');if(answers.some(x=>String(x).length<3))issues.push('Sehr kurze Antwort prüfen.');return{ok:!issues.length,issues,similarity:Math.round(avg*100)}}
+function estimateSeconds(v,level){const words=[v?.question,...(v?.answers||[])].join(' ').trim().split(/\s+/).filter(Boolean).length;const factor=level==='expert'?1.45:level==='advanced'?1.2:1;return Math.max(8,Math.round(words/2.7*factor))}
+window.KCAdaptiveQuizCore={version:'0.3.0',levels:LEVELS,labels:LABELS,readConfig:read,saveConfig:v=>write({...read(),...v,mode:normalizeMode(v.mode)}),selectedLevel,resolve,resolveScene,saveVariant,copyVariant,validateVariant,quality,assessDifficulty,estimateSeconds,record,getOverrides:overrides,getCatalog:catalog,catalogEntry};
+})();

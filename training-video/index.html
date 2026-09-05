@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#10243a">
   <title>KC Bilderrechner – Interaktive Schulung 3.14 FUTURA</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?build=2.6.15-r6">
   <link rel="stylesheet" href="training-playback-core.css">
+  <link rel="stylesheet" href="../shared/unified-header.css">
 </head>
 <body>
 <main class="app-shell">
-  <header class="topbar">
-    <div><small>KC BILDERRECHNER · INTERAKTIVE SCHULUNG</small><h1>FUTURA · Wissen und Sicherheit</h1><div class="version-line"><span>Schulung <b data-training-version>3.14 FUTURA + Academy Beta 1.6.1</b></span><span>Grundlage <b data-product-version>KC Bilderrechner V0.31.3.6 Repair 11</b></span></div></div>
-    <div class="topbar-actions"><div id="trainingVoiceMonitor" class="training-voice-monitor is-ready" role="status" aria-live="polite" aria-label="Audio- und Stimmenstatus"><span class="training-scope" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><b id="trainingVoiceMonitorText">Ton bereit</b></div><div class="training-sound-wrap"><button id="globalSoundBtn" class="topbar-icon" type="button" title="Ton ein/aus" aria-label="Ton ein oder aus">🔊</button><div id="trainingVolumePopover" class="training-volume-popover hidden"><label>Lautstärke <b id="trainingVolumeValue">7/10</b></label><div class="training-volume-range-wrap"><input id="trainingVolume" type="range" min="1" max="10" step="0.5" value="7"><div class="training-volume-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="training-volume-scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div></div></div></div><button id="globalSettingsBtn" class="topbar-icon" type="button" title="Einstellungen" aria-label="Einstellungen öffnen">⚙️</button><a class="backlink" href="../index.html">← Startseite</a></div>
+  <header class="topbar training-academy-header">
+    <div class="training-brand"><img src="../academy/assets/kc_logo.webp" alt="Köcheclub Werne"><div><small>KC FUTURA · Köcheclub Werne</small><h1>Teil 1 · Pflichtschulung</h1><p>KC Bilderrechner · FUTURA 3.14</p></div></div>
+    <div id="trainingHeaderProgress" class="training-scene-progress" aria-label="Schulungsfortschritt"><i></i><span id="trainingHeaderProgressText">0 %</span></div>
+    <div id="trainingVoiceMonitor" class="training-voice-monitor is-ready" role="status" aria-live="polite" aria-label="Audio- und Stimmenstatus"><span class="training-scope" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><b id="trainingVoiceMonitorText">Ton bereit</b></div>
+    <div class="training-time-core" aria-label="Zeitinformationen"><span id="trainingDateDisplay">--.--.----</span><strong id="trainingClockDisplay">--:--:--</strong><span id="trainingElapsedDisplay">Laufzeit 00:00:00</span></div>
+    <div class="topbar-actions training-top-actions"><button id="trainingHeaderBack" class="header-ghost" type="button">← Zurück</button><button id="trainingHeaderPause" class="header-ghost" type="button">⏸ Pause</button><div class="training-sound-wrap"><button id="globalSoundBtn" class="topbar-icon" type="button" title="Ton ein/aus" aria-label="Ton ein oder aus">🔊</button><div id="trainingVolumePopover" class="training-volume-popover hidden"><label>Lautstärke <b id="trainingVolumeValue">7/10</b></label><div class="training-volume-range-wrap"><input id="trainingVolume" type="range" min="1" max="10" step="0.5" value="7"><div class="training-volume-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="training-volume-scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div></div></div></div><button id="trainingHeaderDashboard" class="topbar-icon" type="button" title="Mein Lernstand" aria-label="Mein Lernstand öffnen">📊</button><button id="trainingHeaderRoadmap" class="topbar-icon" type="button" title="Schulungsübersicht" aria-label="Schulungsübersicht öffnen">🗺️</button><span class="training-status-separator" aria-hidden="true"></span><div id="trainingDbCluster" class="training-db-cluster" aria-label="Datenbankstatus"></div><button id="globalSettingsBtn" class="topbar-icon" type="button" title="Einstellungen" aria-label="Einstellungen öffnen">⚙️</button><a class="topbar-icon training-exit" href="../index.html" title="Schulung verlassen" aria-label="Schulung verlassen">🚪</a></div>
   </header>
 
   <div id="globalSettingsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="globalSettingsTitle">
@@ -67,7 +71,7 @@
     <div class="welcome-visual">
       <div class="welcome-branding">
         <img class="club-logo" src="Koecheclub_Logo.webp" alt="Köcheclub Werne Logo">
-        <div class="club-wordmark"><strong>Köcheclub Werne</strong><span class="brand-rule" aria-hidden="true"></span><small>since 1991</small></div>
+        <div class="club-wordmark"><strong>Köcheclub Werne</strong><span class="brand-rule" aria-hidden="true"></span><small>seit 1991</small></div>
       </div>
       <span class="welcome-subtitle">Interaktive Schulung · KC Bilderrechner</span>
       <div class="welcome-coach-pair" aria-label="Zwei freundliche Assistenten">
@@ -81,6 +85,34 @@
     </div>
   </section>
 
+
+  <section id="softwareIntroChoice" class="panel software-intro hidden">
+    <div class="software-intro-card">
+      <img id="softwareIntroChoiceCoach" class="software-intro-coach" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Schulungsbegleitung">
+      <div><span class="eyebrow">Kurze Orientierung</span><h2 id="softwareGuideQuestion">Möchtest du eine kurze Einweisung in die Bedienung der Schulungssoftware?</h2><p id="softwareGuideIntro">Wir zeigen dir auf Wunsch zuerst die Kopfzeile, die wichtigsten Anzeigen und die Bedienknöpfe. Danach beginnt die eigentliche Pflichtschulung.</p>
+        <div class="software-intro-actions"><button id="softwareIntroYes" class="primary" type="button">Ja, kurz erklären</button><button id="softwareIntroNo" type="button">Nein, direkt beginnen</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="softwareGuide" class="panel software-guide hidden">
+    <div class="software-guide-head"><div><span class="eyebrow">Bedienung der Schulungssoftware</span><h2>Die wichtigsten Bereiche auf einen Blick</h2><p id="softwareGuideStatus">Wähle einen Bereich aus oder lasse dir die Übersicht vollständig erklären.</p></div><img id="softwareGuideCoach" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Schulungsbegleitung"></div>
+    <div class="software-guide-map">
+      <button type="button" data-guide="Kapitelkreise" data-guide-text="Die Kapitelkreise zeigen die Themen. Ein Haken erscheint nur bei wirklich abgeschlossenen Themen."><b>1 · 2 · 3</b><span>Kapitel und Sprungmarken</span></button>
+      <button type="button" data-guide="Lernfortschritt" data-guide-text="Der Lernfortschritt zeigt, wie viel des aktuellen Schulungsteils bereits abgeschlossen ist."><b>33 %</b><span>Lernfortschritt</span></button>
+      <button type="button" data-guide="Zeit" data-guide-text="Datum, Uhrzeit und Laufzeit helfen dir bei der zeitlichen Orientierung."><b>14:08</b><span>Datum und Laufzeit</span></button>
+      <button type="button" data-guide="Zurück und Pause" data-guide-text="Mit Zurück wechselst du zum vorherigen Bereich. Pause dunkelt die Schulung ab und bietet dir das direkte Fortsetzen an."><b>← &nbsp; ‖</b><span>Zurück und Pause</span></button>
+      <button type="button" data-guide="Ton" data-guide-text="Ein Klick auf den Lautsprecher öffnet die Lautstärke. Ein Doppelklick schaltet den Ton ein oder aus."><b>Ton</b><span>Lautsprecher und Stimme</span></button>
+      <button type="button" data-guide="Übersichten" data-guide-text="Hier öffnest du deinen Lernstand und die vollständige Schulungsübersicht."><b>Diagramm</b><span>Lernstand und Übersicht</span></button>
+      <button type="button" data-guide="Systemstatus" data-guide-text="Die Leuchten zeigen den Zustand der lokalen und der Online-Datenbank. Ein Klick öffnet die Systeminformationen."><b>DB</b><span>Datenbankstatus</span></button>
+      <button type="button" data-guide="Einstellungen und Ausgang" data-guide-text="Über das Zahnrad änderst du dein Profil. Die Tür verlässt das Programm."><b>Zahnrad · Tür</b><span>Einstellungen und Ausgang</span></button>
+    </div>
+    <div class="software-intro-actions"><button id="softwareGuideReplay" type="button">Noch einmal erklären</button><button id="softwareGuideContinue" class="primary" type="button">Weiter zur Begrüßung</button></div>
+  </section>
+
+  <section id="personalTrainingIntro" class="panel personal-training-intro hidden">
+    <div class="personal-training-card"><div class="personal-training-portrait"><img id="personalTrainingCoach" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Schulungsbegleitung"><span id="personalTrainingPulse" aria-hidden="true"></span></div><div><span class="eyebrow" id="coachSectionEyebrow">Deine Schulungsbegleitung</span><h2 id="personalTrainingTitle">Hallo, ich bin Laura.</h2><p id="personalTrainingText"></p><div class="software-intro-actions"><button id="personalTrainingReplay" type="button">Begrüßung wiederholen</button><button id="personalTrainingContinue" class="primary" type="button">Einführung starten</button></div></div></div>
+  </section>
 
   <section id="futuraIntro" class="panel futura-intro hidden">
     <div id="futuraOpeningStage" class="futura-stage futura-opening-stage">
@@ -106,7 +138,7 @@
     <div class="chapter-overview-layout">
       <div class="chapter-overview-copy">
         <span class="eyebrow">Pflichtschulung · Grundlagen und Verkauf</span>
-        <h2>Das erwartet Sie in diesem Kapitel</h2>
+        <h2 id="chapterOverviewTitle">Das erwartet dich in diesem Kapitel</h2>
         <p id="chapterOverviewLead">In diesem Kapitel schauen wir uns die Kassenoberfläche an und lernen die wichtigsten Abläufe für einen sicheren Verkauf.</p>
         <ul class="chapter-overview-list">
           <li>Kopfzeile, Statusanzeigen und Betriebsmodus verstehen</li>
@@ -118,8 +150,8 @@
           <li>Sondertasten und typische Situationen am Weihnachtsmarkt kennenlernen</li>
         </ul>
         <div class="chapter-overview-facts">
-          <div><strong id="chapterOverviewSteps">165</strong><span>Einzelschritte</span></div>
-          <div><strong id="chapterOverviewDuration">ca. 12 Min.</strong><span>voraussichtliche Dauer</span></div>
+          <div><strong id="chapterOverviewSteps">12</strong><span>geführte Themen</span></div>
+          <div><strong id="chapterOverviewDuration">ca. 30–40 Min.</strong><span>mit Vorführungen und Fragen</span></div>
           <div><strong>Übungen + Quiz</strong><span>Abschluss des Kapitels</span></div>
         </div>
         <div class="chapter-overview-actions">
@@ -130,7 +162,7 @@
       <aside class="chapter-overview-coach">
         <img id="chapterOverviewCoachImage" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Schulungsbegleitung">
         <strong id="chapterOverviewCoachName">Laura</strong>
-        <span>zeigt, was Sie gleich lernen</span>
+        <span id="chapterOverviewCoachText">zeigt, was du gleich lernst</span>
       </aside>
     </div>
   </section>
@@ -155,14 +187,38 @@
     </div>
   </div>
 
-  <section id="dashboard" class="panel hidden">
-    <div class="learner-line"><div><span class="eyebrow">Dein Lernpfad</span><h2 id="greeting">Willkommen</h2></div><div class="score-pill"><span id="overallScore">0</span>% bestanden</div></div>
-    <div class="module-grid">
-      <button class="module-card" data-module="quick"><span>1</span><div><strong>Grundlagen und Verkauf</strong><small>12 Kapitel: Motivation, Oberfläche, Artikel, Mengen, Löschen und Zahlung</small></div><b id="quickState">Starten</b></button>
-      <button class="module-card" data-module="advanced"><span>2</span><div><strong>Sonderfunktionen und Artikelintelligenz</strong><small>10 Kapitel: Trinkgeld, Konto, Personal, Pfand, Infos, Varianten, Favoriten, Pool, Happy Hour und Reklamation</small></div><b id="advancedState">Starten</b></button>
-      <button class="module-card" data-module="practice"><span>3</span><div><strong>Interaktive Praxisprüfung</strong><small>Aufgaben selbst erledigen und direkt prüfen lassen</small></div><b id="practiceState">Starten</b></button>
+  <div id="partOneCompleteOverlay" class="chapter-choice-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="partOneCompleteTitle">
+    <div class="chapter-choice-card part-transition-card">
+      <span class="eyebrow">Teil 1 erfolgreich abgeschlossen</span>
+      <div class="part-transition-icon" aria-hidden="true">✓</div>
+      <h2 id="partOneCompleteTitle">Sehr gut – die Pflichtschulung ist geschafft!</h2>
+      <p id="partOneCompleteText">Dein Lernstand wurde gespeichert. Möchtest du eine Pause machen oder gleich mit Teil 2 in der FUTURA Academy weitermachen?</p>
+      <div class="chapter-choice-actions"><button id="partOnePause" type="button">⏸ Pause machen</button><button id="partTwoContinue" class="primary" type="button">Teil 2 jetzt starten ▶</button></div>
+
+  <div id="glueckskeksOverlay" class="chapter-choice-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="glueckskeksTitel">
+    <div class="chapter-choice-card">
+      <h2 id="glueckskeksTitel">Du hast einen Glückskeks erhalten</h2>
+      <p id="glueckskeksFrage">Möchtest du ihn öffnen?</p>
+      <div id="glueckskeksKeksGanz" style="font-size:5rem;cursor:pointer;margin:20px 0;text-align:center;transition:transform .15s" role="button" tabindex="0" aria-label="Glückskeks öffnen">🥠</div>
+      <div id="glueckskeksErgebnis" class="hidden" style="text-align:center">
+        <div style="font-size:3.5rem;margin:10px 0">🥠💥</div>
+        <div style="background:#fdfaf3;border:1px solid #e4dcc3;border-radius:6px;padding:16px 20px;margin:14px auto;max-width:340px;font-style:italic;color:#3a3324;box-shadow:0 4px 14px #0002" id="glueckskeksZettel"></div>
+      </div>
+      <div class="chapter-choice-actions"><button id="glueckskeksSchliessen" class="primary hidden" type="button">Weiter ▶</button></div>
     </div>
-    <div class="dashboard-actions"><button id="continueBtn" class="primary">Weiterlernen</button><button id="certificateBtn" class="hidden" disabled>Teilnahmezertifikat</button><button id="feedbackBtn" class="hidden">Schulung bewerten</button><button id="exportLearningReport" class="hidden" aria-hidden="true" tabindex="-1">Lernbericht</button><button id="changeProfile" class="ghost">Name/Stimme ändern</button></div>
+  </div>
+    </div>
+  </div>
+
+  <section id="dashboard" class="panel hidden">
+    <div class="learner-line"><div><span class="eyebrow" id="pathEyebrow">Dein Lernpfad</span><h2 id="greeting">Willkommen</h2></div><div class="score-pill"><span id="overallScore">0</span>% bestanden</div></div>
+    <div class="module-grid">
+      <button class="module-card" data-module="quick"><span>1.1</span><div><strong>Grundlagen und Verkauf</strong><small>12 Kapitel: Motivation, Oberfläche, Artikel, Mengen, Löschen und Zahlung</small></div><b id="quickState">Starten</b></button>
+      <button class="module-card" data-module="advanced"><span>1.2</span><div><strong>Sonderfunktionen und Artikelintelligenz</strong><small>13 Kapitel: Trinkgeld, Konto, Personal, Pfand, Infos, Varianten, Favoriten, Pool, Happy Hour und Reklamation</small></div><b id="advancedState">Starten</b></button>
+      <button class="module-card" data-module="practice"><span>1.3</span><div><strong>Interaktive Praxisprüfung</strong><small>Aufgaben selbst erledigen und direkt prüfen lassen</small></div><b id="practiceState">Starten</b></button>
+      <button id="openAcademyPart2" class="module-card academy-module-card" type="button"><span>2</span><div><strong>FUTURA Academy</strong><small>Praxissituationen, Kommunikation und zusätzliche Lernfolgen</small></div><b id="academyState">Öffnen</b></button>
+    </div>
+    <div class="dashboard-actions"><button id="continueBtn" class="primary">Weiterlernen</button><button id="certificateBtn" class="hidden" disabled>Teilnahmezertifikat</button><button id="bonusBtn" class="hidden" type="button">Bonusgeschichten</button><button id="feedbackBtn" class="hidden">Schulung bewerten</button><button id="exportLearningReport" class="hidden" aria-hidden="true" tabindex="-1">Lernbericht</button><button id="changeProfile" class="ghost">Name/Stimme ändern</button></div>
     <section class="extension-overview" aria-labelledby="extensionOverviewTitle">
       <div class="extension-overview-head"><div><span class="eyebrow">Freiwillige Weiterbildung</span><h3 id="extensionOverviewTitle">Weitere FUTURA-Lernmodule</h3><p>Diese Zusatzmodule werden nach und nach ergänzt. Sie gehören nicht zur Pflichtschulung des Bilderrechners.</p></div><span id="extensionUnlockState" class="extension-lock">Nach Pflichtschulung sichtbar</span></div>
       <div class="extension-card-grid">
@@ -196,7 +252,7 @@
       <div class="progress-copy"><strong id="lessonPercent">0 %</strong><span id="lessonRemaining">Noch 0 Inhalte</span></div>
       <div class="progress-track" aria-label="Gesamtfortschritt"><span id="lessonTopProgress"></span></div>
     </div>
-    <div class="lesson-head"><div><span id="lessonModule" class="eyebrow"></span><h2 id="lessonTitle"></h2></div>
+    <div class="lesson-head"><div class="lesson-live-summary"><div class="lesson-heading-data"><span id="lessonModule"></span><span id="lessonTitle"></span></div><strong>Live-Oberfläche des KC Bilderrechners</strong><small>Die Schulung öffnet und markiert die passenden Bereiche direkt in der Originaloberfläche.</small></div>
       <div class="lesson-options" aria-label="Schulungseinstellungen">
         <label><input id="assistantToggle" type="checkbox" checked> Assistent ein</label>
         <label><input id="soundToggle" type="checkbox" checked> Ton ein</label>
@@ -205,17 +261,13 @@
     <div id="lessonStepTrack" class="lesson-step-track" aria-label="Lektionsfortschritt"></div>
     <div class="lesson-stage coach-dock-layout">
       <div class="lesson-workspace">
-        <div class="workspace-label">
-          <span>Live-Oberfläche des KC Bilderrechners</span>
-          <small>Die Schulung öffnet und markiert die passenden Bereiche direkt in der Originaloberfläche.</small>
-        </div>
         <div id="lessonStillPreview" class="lesson-still-preview hidden" aria-live="polite">
           <div class="still-preview-heading"><span class="eyebrow">Zuerst in Ruhe ansehen</span><h3 id="lessonStillTitle">Bereich des Bilderrechners</h3><p id="lessonStillSubtitle"></p></div>
-          <div class="still-preview-content"><img id="lessonStillImage" alt="Vorläufiges Schulungsbild"><ol id="lessonStillFeatures" class="lesson-still-features" aria-label="Funktionen dieses Bereichs"></ol></div>
+          <div class="still-preview-content"><div class="still-image-stage"><img id="lessonStillImage" alt="Vorläufiges Schulungsbild"><span id="lessonStillCursor" class="still-demo-cursor" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M8 4 53 36 34 39 24 58Z" fill="#ef1b24" stroke="#fff" stroke-width="5" stroke-linejoin="round"/><path d="m32 39 12 19" stroke="#6d0005" stroke-width="7" stroke-linecap="round"/></svg><i></i></span></div><ol id="lessonStillFeatures" class="lesson-still-features" aria-label="Funktionen dieses Bereichs"></ol></div>
           <div class="still-preview-actions"><button id="lessonStillReplay" type="button">🔊 Erklärung wiederholen</button><button id="lessonStillContinue" class="primary" type="button">Zur bewegten Vorführung ▶</button></div>
         </div>
         <div id="lessonVisual" class="lesson-visual original-pos-frame scrollable-pos">
-          <iframe id="lessonPosFrame" scrolling="yes" title="Originaler KC Bilderrechner" src="../pos/index.html?training=1&embeddedTraining=1&ui=0.31.3.6-r12"></iframe>
+          <iframe id="lessonPosFrame" scrolling="no" title="Originaler KC Bilderrechner" src="../pos/index.html?training=1&embeddedTraining=1&ui=0.31.3.6-r13&guided=1.0.1"></iframe>
         </div>
       </div>
 
@@ -224,18 +276,19 @@
           <div id="coachPortraitWrap" class="coach-portrait-wrap">
             <img id="coachGuideImage" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Assistent">
             <span class="coach-status-dot" aria-hidden="true"></span>
+            <div id="stepCounter" class="step-counter"></div>
+            <span id="coachModeLabel" class="coach-mode-label">Geführte Schulung</span>
           </div>
           <div class="coach-title-block">
-            <div id="stepCounter" class="step-counter"></div><div id="currentAction" class="current-action">Vorbereitung</div>
+            <div id="currentAction" class="current-action">Vorbereitung</div>
             <strong id="coachGuideTitle">Dein Assistent</strong>
-            <span id="coachModeLabel" class="coach-mode-label">Geführte Schulung</span>
           </div>
           <button id="collapseCoach" class="coach-collapse" type="button" title="Coachbereich einklappen" aria-label="Coachbereich einklappen">›</button>
         </div>
 
         <div class="coach-dock-body">
           <p id="coachGuideText" class="coach-main-text"></p>
-          <div id="lessonTip" class="tip extra-tip-card"><span class="tip-icon" aria-hidden="true">💡</span><div><strong id="tipLabel">Extra-Tipp</strong><p id="tipText"></p></div></div>
+          <div id="lessonTip" class="tip extra-tip-card" aria-live="polite"><span class="tip-icon" aria-hidden="true">💡</span><div><strong id="tipLabel">Extra-Tipp</strong><p id="tipText"></p></div></div>
         </div>
 
         <div class="coach-dock-progress">
@@ -272,12 +325,12 @@
         <div class="practice-coach"><img id="practiceCoachImage" src="../avatar-core/assets/chef/chef_female_neutral_armless_v0257.png" alt="Assistent"><div><strong id="practiceCoachName">Laura begleitet dich</strong><small id="practiceCoachText">Lies die Aufgabe und führe sie anschließend in der Kasse aus.</small></div></div>
         <div class="task-number" id="taskNumber">1</div><p id="taskText"></p><div id="taskHint" class="tip"></div><button id="practiceSpeak" type="button">🔊 Hinweis vorlesen</button><div class="task-score"><span>Versuche</span><strong id="attempts">0</strong></div>
       </aside>
-      <div class="simulator original-pos-frame scrollable-pos" id="simulator"><iframe id="practicePosFrame" scrolling="yes" title="Originaler KC Bilderrechner – Praxis" src="../pos/index.html?training=1&embeddedTraining=1&ui=0.31.3.6-r12"></iframe></div>
+      <div class="simulator original-pos-frame scrollable-pos" id="simulator"><iframe id="practicePosFrame" scrolling="no" title="Originaler KC Bilderrechner – Praxis" src="../pos/index.html?training=1&embeddedTraining=1&ui=0.31.3.6-r13&guided=1.0.1"></iframe></div>
     </div>
   </section>
 
   <section id="certificate" class="panel hidden certificate-panel">
-    <div id="certificatePaper" class="certificate-paper"><div class="cert-seal">✓</div><span>Köcheclub Werne</span><h2>Schulungszertifikat</h2><p>Hiermit wird bestätigt, dass</p><h3 id="certName"></h3><p>mit Erfolg an der interaktiven Schulung zum</p><h3 class="cert-product">KC Bilderrechner</h3><p>teilgenommen und die praktische Schulung abgeschlossen hat.</p><div class="cert-content"><strong>Schulungsinhalte</strong><span>Bedienung der Benutzeroberfläche · Verkaufsvorgänge und Warenkorbverwaltung · Zahlungsabwicklung · Sonderfunktionen · Praktische Übungen</span></div><p id="certDate"></p><p class="cert-version">Schulung <b data-training-version>3.14 FUTURA + Academy Beta 1.6.1</b> · Grundlage <b data-product-version>KC Bilderrechner V0.31.3.6 Repair 11</b></p><div class="cert-signatures"><div><span class="signature-placeholder">Unterschrift folgt</span><strong>Clubsprecher</strong></div><div><span class="signature-placeholder">Unterschrift folgt</span><strong>Schulungsleiter</strong></div></div></div>
+    <div id="certificatePaper" class="certificate-paper"><div class="cert-seal">✓</div><span>Köcheclub Werne</span><h2>Schulungszertifikat</h2><p>Hiermit wird bestätigt, dass</p><h3 id="certName"></h3><p>mit Erfolg an der interaktiven Schulung zum</p><h3 class="cert-product">KC Bilderrechner</h3><p>teilgenommen und die praktische Schulung abgeschlossen hat.</p><div class="cert-content"><strong>Schulungsinhalte</strong><span>Bedienung der Benutzeroberfläche · Verkaufsvorgänge und Warenkorbverwaltung · Zahlungsabwicklung · Sonderfunktionen · Praktische Übungen</span></div><p id="certDate"></p><p class="cert-version">Schulungsinhalt <b data-training-version>FUTURA 3.14</b> · Software <b>Academy Beta 2.6.15</b> · Grundlage <b data-product-version>KC Bilderrechner V0.31.3.6 Repair 11</b></p><div class="cert-signatures"><div><span class="signature-placeholder">Unterschrift folgt</span><strong>Clubsprecher</strong></div><div><span class="signature-placeholder">Unterschrift folgt</span><strong>Schulungsleiter</strong></div></div></div>
     <div class="certificate-style-picker" aria-label="Zertifikatgestaltung"><strong>Gestaltung:</strong><button id="certificateClassic" class="active" type="button">Classic</button><button id="certificateModern" type="button">Modern · edel</button></div>
     <div class="controls"><button id="printCertificate" class="primary">Zertifikat drucken / als PDF speichern</button><button id="downloadCertificate">Zertifikat als HTML speichern</button><button id="openBonus" class="primary">Bonusgeschichten öffnen</button><button id="closeCertificate">Zur Übersicht</button></div>
   </section>
@@ -378,14 +431,26 @@
 </main>
 <button id="trainingTuvBtn" class="tuv-floating" type="button" title="Schulungs-TÜV und Diagnose">TÜV</button>
 <script src="../academy/deployment-config.js?v=2.3.0"></script>
-<script src="../academy/secure-storage-core.js?v=2.3.0"></script>
+<script src="../academy/secure-storage-core.js?v=2.3.1"></script>
+<script src="../cores/learning-progress-core/learning-progress-core.js?v=1.0.0"></script>
+<script src="../cores/codex-core/codex-core.js?v=1.0.0"></script>
 <script src="../academy/supabase-adapter.js?v=2.3.0"></script>
 <script src="../shared/participant-data-core.js?v=2.3.0"></script>
 <script src="../shared/spoken-text-core.js?v=2.3.2"></script>
+<script src="../shared/adaptive-quiz-catalog.js?v=2.6.15"></script>
+<script src="../shared/adaptive-quiz-core.js?v=2.6.15"></script>
 <script src="../avatar-core/avatar-core.js"></script>
 <script src="version-sync-core.js"></script>
 <script src="training-playback-core.js"></script>
 <script src="../texte/geschichten.js"></script>
-<script src="app.js"></script>
+<script src="../shared/glueckskeks-sprueche.js"></script>
+<script src="../shared/merksatz-pool.js"></script>
+<script src="../shared/merksatz-core.js"></script>
+<script src="app.js?build=2.6.15-r6"></script>
+<script src="../academy/deployment-config.js"></script>
+<script src="../academy/supabase-adapter.js"></script>
+<script src="../cores/database-security-core/database-security-core.js"></script>
+<script src="../shared/global-search-catalog.js?v=2.6.15"></script>
+<script src="../shared/unified-header.js"></script>
 </body>
 </html>
